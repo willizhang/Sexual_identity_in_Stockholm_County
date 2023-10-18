@@ -1,0 +1,1200 @@
+---
+title: "Self-reported sexual identity among approximately 1.6 million people in Stockholm County in 2010"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+### 1. Load Packages
+```{r}
+library(haven)
+library(data.table)
+library(naniar)
+library(bayesrules)
+library(rstan)
+library(rstanarm)
+library(bayesplot)
+library(tidyverse)
+library(brms)
+library(jomo)
+library(mitml)
+library(mitools)
+library(epiR)
+library(nnet)
+library(ggplot2)
+library(ggbreak)
+library(mice)
+library(ggrepel)
+library(ggpubr)
+library(ggmosaic)
+library(tidyr)
+library(dplyr)
+library(finalfit)
+library(survey)
+library(readxl)
+library(svyVGAM)
+```
+
+### 2. Import and Visualise Data
+```{r}
+# d_2010 <- read_sas("G:/CES/SRHR/SPHC LGBTQ health data/sphc10_14_21.sas7bdat")
+
+# sampling strata
+n_miss( d_2010$stratum )
+d_2010$sampling_strata <- as.factor( d_2010$stratum )
+length( unique( d_2010$sampling_strata ) ) # 39 strata
+
+d_2010 <- d_2010 %>%
+  mutate( sampling_strata_region = recode( sampling_strata, 
+                                           `2101` = "Upplands Väsby",
+                                           `2102` = "Vallentuna",
+                                           `2103` = "Österåker",
+                                           `2104` = "Värmdö",
+                                           `2105` = "Järfälla",
+                                           `2106` = "Ekerö",
+                                           `2107` = "Huddinge",
+                                           `2108` = "Botkyrka",
+                                           `2109` = "Salem",
+                                           `2110` = "Haninge",
+                                           `2111` = "Tyresö",
+                                           `2112` = "Upplands-Bro",
+                                           `2113` = "Nykvarn",
+                                           `2114` = "Täby",
+                                           `2115` = "Danderyd",
+                                           `2116` = "Sollentuna",
+                                           `2117` = "Södertälje",
+                                           `2118` = "Nacka",
+                                           `2119` = "Sundbyberg",
+                                           `2120` = "Solna",
+                                           `2121` = "Lidingö",
+                                           `2122` = "Vaxholm",
+                                           `2123` = "Norrtälje",
+                                           `2124` = "Sigtuna",
+                                           `2125` = "Nynäshamn",
+                                           `2201` = "Rinkeby-Kista",
+                                           `2202` = "Spånga-Tensta",
+                                           `2203` = "Hässelby-Vällingby",
+                                           `2204` = "Bromma",
+                                           `2205` = "Kungsholmen",
+                                           `2206` = "Norrmalm",
+                                           `2207` = "Östermalm",
+                                           `2208` = "Södermalm",
+                                           `2209` = "Enskede, Årsta-Vantör",
+                                           `2210` = "Skarpnäck",
+                                           `2211` = "Farsta",
+                                           `2212` = "Älvsjö",
+                                           `2213` = "Hägersten-Liljeholmen",
+                                           `2214` = "Skärholmen"
+                                           ) )
+
+# sexual identity
+table( d_2010$F10U87G78, useNA = "always" )
+d_2010$F10U87G78[ d_2010$F10U87G78 == 9 ] <- NA
+d_2010$sexual_identity <- factor( ifelse( d_2010$F10U87G78 == 1, "Heterosexual", 
+                                          ifelse( d_2010$F10U87G78 == 2, "Homosexual",
+                                                  ifelse( d_2010$F10U87G78 == 3, "Bisexual", "Uncertain" ) ) ),
+                                  levels = c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" ) )
+table( d_2010$sexual_identity, useNA = "always" )
+
+# sex
+table( d_2010$kon, useNA = "always" )
+d_2010$sex <- factor( ifelse( d_2010$kon == 1, "Male", "Female" ),
+                      levels = c( "Male", "Female" ) )
+table( d_2010$sex, useNA = "always" )
+
+# age
+summary( d_2010$F10alder )
+d_2010$age <- d_2010$F10alder
+d_2010$age_cat <- factor( ifelse( d_2010$age <= 29, "18-29", 
+                                  ifelse( d_2010$age >=30 & d_2010$age <= 44, "30-44",
+                                          ifelse( d_2010$age >= 45 & d_2010$age <= 59, "45-59", ">=60" ) ) ),
+                          levels = c( "18-29", "30-44", "45-59", ">=60" ) )
+table( d_2010$age_cat, useNA = "always" )
+
+# interaction term between age and sex
+d_2010$age_sex <- interaction( d_2010$age_cat, d_2010$sex )
+
+# country of birth
+table( d_2010$fodelseland, useNA = "always" )
+d_2010$country_of_birth <- factor( ifelse( d_2010$fodelseland == "Afrika", "Africa",
+                                           ifelse( d_2010$fodelseland == "Asien", "Asia",
+                                                   ifelse( d_2010$fodelseland == "Europa", "Europe",
+                                                           ifelse( d_2010$fodelseland == "Sverige", "Sweden", "Americas" ) ) ) ),
+                                   levels = c( "Africa", "Americas", "Asia", "Europe", "Sweden" ) )
+table( d_2010$country_of_birth, useNA = "always" )
+
+# education
+table( d_2010$utbniva2010, useNA = "always" )
+d_2010$education <- factor( ifelse( d_2010$utbniva2010 <= 2, "<=9 years",
+                                    ifelse( d_2010$utbniva2010 <= 4, "10-12 years", ">=13 years" ) ), 
+                            levels = c( "<=9 years", "10-12 years", ">=13 years" ) )
+table( d_2010$education, useNA = "always" )
+
+# disposable income
+summary( d_2010$dispink2010, useNA = "always" )
+d_2010$income <- factor( ifelse( d_2010$dispink2010 <= 2500, "<=2,500",
+                                 ifelse( d_2010$dispink2010 > 2500 & d_2010$dispink2010 <= 3500, "(2,500, 3,500]",
+                                         ifelse( d_2010$dispink2010 > 3500 & d_2010$dispink2010 <= 4500, "(3,500, 4,500]", ">4,500" ) ) ),
+                         levels = c( "<=2,500", "(2,500, 3,500]", "(3,500, 4,500]", ">4,500" ) )
+table( d_2010$income, useNA = "always" )
+
+# marital status
+table( d_2010$civil2010, useNA = "always" )
+d_2010$marital_status <- factor( ifelse( d_2010$civil2010 == "G" | d_2010$civil2010 == "RP", "Currently married",
+                                         ifelse( d_2010$civil2010 == "OG", "Never married", "Other" ) ), 
+                                 levels = c( "Never married", "Currently married", "Other" ) )
+table( d_2010$marital_status, useNA = "always" )
+
+# living alone
+table( d_2010$F10U53aG57a, useNA = "always" )
+d_2010$F10U53aG57a[ d_2010$F10U53aG57a == 9 ] <- NA
+d_2010$living_alone <- factor( ifelse( d_2010$F10U53aG57a == 1, "no", "yes" ), 
+                               levels = c( "yes", "no" ) )
+table( d_2010$living_alone, useNA = "always" )
+
+# personal support
+table( d_2010$F10U57G62, useNA = "always" )
+d_2010$F10U57G62[ d_2010$F10U57G62 == 9 ] <- NA
+d_2010$personal_support <- factor( ifelse( d_2010$F10U57G62 <= 2, "yes", "no" ), 
+                                   levels = c( "yes", "no" ) )
+table( d_2010$personal_support, useNA = "always" )
+
+
+##### demographic characteristics #####
+
+# among respondents (n = 30,767)
+# make characteristics table
+explanatory =  c( "sex", "age_cat", "country_of_birth", "education", "income", "marital_status", "living_alone", "personal_support" )
+dependent = "sexual_identity"
+
+d_2010_table <- d_2010 %>% 
+  summary_factorlist( dependent,
+                      explanatory, 
+                      na_include = TRUE,
+                      na_include_dependent = TRUE, 
+                      total_col = TRUE,
+                      add_col_totals = TRUE )
+
+# Fisher's test
+x1 <- table( d_2010$sex, d_2010$sexual_identity )
+x1
+format( round( fisher.test( x1[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x1[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x1[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
+
+x2 <- table( d_2010$age_cat, d_2010$sexual_identity )
+x2
+format( round( fisher.test( x2[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x2[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x2[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
+
+x3 <- table( d_2010$country_of_birth, d_2010$sexual_identity )
+x3
+format( round( fisher.test( x3[, c( 1, 2 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x3[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x3[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x4 <- table( d_2010$education, d_2010$sexual_identity )
+x4
+format( round( fisher.test( x4[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x4[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x4[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
+
+x5 <- table( d_2010$income, d_2010$sexual_identity )
+x5
+format( round( fisher.test( x5[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x5[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x5[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x6 <- table( d_2010$marital_status, d_2010$sexual_identity )
+x6
+format( round( fisher.test( x6[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x6[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x6[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x7 <- table( d_2010$living_alone, d_2010$sexual_identity )
+x7
+format( round( fisher.test( x7[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x7[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x7[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
+
+x8 <- table( d_2010$personal_support, d_2010$sexual_identity )
+x8
+format( round( fisher.test( x8[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x8[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x8[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
+
+
+##### design weights #####
+
+summary( d_2010$F10dvikt )
+d_2010$design_weight <- d_2010$F10dvikt
+
+
+##### UNIT non-response #####
+
+d_2010$design_weight_unit_nonresponse <- d_2010$F10dbvikt # weights calculated assuming Missing Completely At Random (MCAR) within each stratum
+summary( d_2010$design_weight_unit_nonresponse )
+sum( d_2010$design_weight_unit_nonresponse ) # No. of source population = 1,602,868
+
+# calculate overall unit response rate
+unitresponse_prob <- d_2010 %>% 
+  group_by( sampling_strata_region ) %>% 
+  summarise( unitresponse_prob = unique( design_weight ) / unique( design_weight_unit_nonresponse ),
+             no.of.population = sum( design_weight_unit_nonresponse ) )
+
+d_2010 <- d_2010 %>% 
+  left_join( unitresponse_prob, by = "sampling_strata_region" )
+
+
+##### ITEM non-response #####
+
+# calculate item response rate
+itemresponse_prob <- d_2010 %>% 
+  group_by( sampling_strata_region ) %>% 
+  summarise( itemresponse_prob = sum( !is.na( sexual_identity ) ) / n() )
+
+d_2010 <- d_2010 %>% 
+  left_join( itemresponse_prob, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob = ifelse( is.na( sexual_identity ), 0, itemresponse_prob ) )
+
+# adjust design weights to take into account both unit and item non-response
+# assume MCAR within each sampling stratum
+d_2010$design_weight_unit_item_nonresponse <- ifelse( d_2010$itemresponse_prob == 0, 0,
+                                                      d_2010$design_weight_unit_nonresponse*( 1/d_2010$itemresponse_prob ) )
+
+
+##### summary of stratified sampling #####
+
+sampling_frame_2010 <- as.data.frame( d_2010 %>% 
+                                   group_by( sampling_strata_region ) %>% 
+                                   reframe( no.of.population = unique( no.of.population ), 
+                                            sample_size = unique( no.of.population/design_weight ),
+                                            unitresponse = n(),
+                                            itemresponse = sum( itemresponse_prob != 0 ) ) )
+
+sampling_frame_2010$unitresponse_rate <- sampling_frame_2010$unitresponse/sampling_frame_2010$sample_size
+sampling_frame_2010$itemresponse_rate <- sampling_frame_2010$itemresponse/sampling_frame_2010$unitresponse
+sampling_frame_2010$overallresponse_rate <- sampling_frame_2010$itemresponse/sampling_frame_2010$sample_size
+
+sampling_frame_2010$unitresponse_label <- paste0( sampling_frame_2010$unitresponse, " (", 
+                                             sprintf( "%.1f", sampling_frame_2010$unitresponse_rate*100 ), "%)" )
+sampling_frame_2010$overallresponse_label <- paste0( sampling_frame_2010$itemresponse, " (", 
+                                                sprintf( "%.1f", sampling_frame_2010$overallresponse_rate*100 ), "%)" )
+
+round( weighted.mean( sampling_frame_2010$unitresponse_rate, sampling_frame_2010$no.of.population ), 3 ) # overall unit response rate
+round( weighted.mean( sampling_frame_2010$itemresponse_rate, sampling_frame_2010$no.of.population ), 3 ) # overall item response rate
+round( weighted.mean( sampling_frame_2010$overallresponse_rate, sampling_frame_2010$no.of.population ), 3 ) # overall response rate
+
+writexl::write_xlsx( sampling_frame_2010, "sampling_frame_2010.xlsx" ) # to be combined with SPHC-B 2014 and 2021 in order to make plots
+
+
+##### calibrated weights #####
+
+d_2010$calibrated_weight <- d_2010$F10kalvikt
+
+# visualize calibrated weights across sampling strata
+ggplot( d_2010 %>% 
+          group_by( sampling_strata_region ) %>% 
+          summarise( mean_weight = mean( calibrated_weight ), sd_weight = sd( calibrated_weight ) ),
+        aes( y = reorder( sampling_strata_region, -mean_weight ), x = mean_weight ) ) +
+  geom_line( aes( group = 1 ) ) +
+  geom_point() +
+  geom_errorbarh( aes( xmin = mean_weight - sd_weight, xmax = mean_weight + sd_weight ), height = 0.4, alpha = 0.5 ) +
+  scale_x_continuous( limits = c( 0, 210 ), breaks = c( 0, 50, 100, 150, 200 ), expand = c( 0, 0 ) ) +
+  labs( y = NULL, x = "Mean and Standard Deviation of Calibrated Weights" ) +
+  theme_classic() +
+  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ) )
+```
+
+### 3. Estimation of Proportions of Sexual Identities
+#### 3.1. Complete-case analysis
+##### 3.1.1. By sex
+```{r}
+# Notes: Because some demographic variables had different missing patterns, analysis was conducted separately for each of them
+
+##### prepare dataset #####
+
+# calculate item response rate among those who had complete data on sexual identity and sex
+itemresponse_prob_cc_sex <- d_2010 %>%
+  group_by( sampling_strata_region ) %>%
+  summarise( itemresponse_prob_cc_sex = 
+               sum( !is.na( sexual_identity ) &
+                      !is.na( sex ) ) / n() 
+             )
+
+d_2010 <- d_2010 %>% 
+  left_join( itemresponse_prob_cc_sex, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob_cc_sex = ifelse( is.na( sexual_identity ) | is.na( sex ), 0,
+                                             itemresponse_prob_cc_sex ) )
+
+# adjust design weights to take into account both unit and item non-response
+# assume MCAR within each sampling stratum
+d_2010$design_weight_unit_item_nonresponse_cc_sex <- ifelse( d_2010$itemresponse_prob_cc_sex == 0, 0,
+                                                             d_2010$design_weight_unit_nonresponse*( 1/d_2010$itemresponse_prob_cc_sex ) )
+
+# extract variables
+d_2010_cc_sex <- as.data.frame( d_2010[ !is.na( d_2010$sexual_identity ) &
+                                          !is.na( d_2010$sex ), ] %>% 
+                                  select( "sampling_strata_region", "no.of.population", "design_weight_unit_item_nonresponse_cc_sex", "sexual_identity", "sex" ) )
+
+n_miss( d_2010_cc_sex ) # 0 missing
+summary( d_2010_cc_sex )
+
+
+##### define survey design #####
+
+survey_design_cc_sex <- svydesign( ids = ~ 1, 
+                                   strata = ~ sampling_strata_region,
+                                   weights = ~ design_weight_unit_item_nonresponse_cc_sex,
+                                   fpc = ~ no.of.population,
+                                   data = d_2010_cc_sex )
+
+
+##### calculate proportion of each sexual identity by sex #####
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" )
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+                        by = ~ sex,
+                        design = survey_design_cc_sex,
+                        FUN = svyciprop,
+                        vartype = "ci",
+                        method = "beta" )
+  
+  colnames( prop_cc_sex ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
+  
+  list_of_df[[cat]] <- prop_cc_sex
+}
+
+prop_cc_sex <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+  }, 
+  list_of_df )
+
+prop_cc_sex <- left_join( prop_cc_sex,
+                          d_2010_cc_sex %>% 
+                            group_by( subgroup = sex ) %>% 
+                            summarise( sample_size_2010 = n() ),
+                          by = "subgroup" ) %>%
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 3.1.2. By age group
+```{r}
+##### prepare dataset #####
+
+# calculate item response rate among those who had complete data on sexual identity and age
+itemresponse_prob_cc_age <- d_2010 %>%
+  group_by( sampling_strata_region ) %>%
+  summarise( itemresponse_prob_cc_age = 
+               sum( !is.na( sexual_identity ) &
+                      !is.na( age_cat ) ) / n() 
+             )
+
+d_2010 <- d_2010 %>% 
+  left_join( itemresponse_prob_cc_age, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob_cc_age = ifelse( is.na( sexual_identity ) | is.na( age_cat ), 0,
+                                             itemresponse_prob_cc_age ) )
+
+# adjust design weights to take into account both unit and item non-response
+# assume MCAR within each sampling stratum
+d_2010$design_weight_unit_item_nonresponse_cc_age <- ifelse( d_2010$itemresponse_prob_cc_age == 0, 0,
+                                                             d_2010$design_weight_unit_nonresponse*( 1/d_2010$itemresponse_prob_cc_age ) )
+
+# extract variables
+d_2010_cc_age <- as.data.frame( d_2010[ !is.na( d_2010$sexual_identity ) &
+                                          !is.na( d_2010$age_cat ), ] %>% 
+                                  select( "sampling_strata_region", "no.of.population", "design_weight_unit_item_nonresponse_cc_age", "sexual_identity", "age_cat" ) )
+
+n_miss( d_2010_cc_age ) # 0 missing
+summary( d_2010_cc_age )
+
+
+##### define survey design #####
+
+survey_design_cc_age <- svydesign( ids = ~ 1, 
+                                   strata = ~ sampling_strata_region,
+                                   weights = ~ design_weight_unit_item_nonresponse_cc_age,
+                                   fpc = ~ no.of.population,
+                                   data = d_2010_cc_age )
+
+
+##### calculate proportion of each sexual identity by age #####
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" )
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_age <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+                        by = ~ age_cat,
+                        design = survey_design_cc_age,
+                        FUN = svyciprop,
+                        vartype = "ci",
+                        method = "beta" )
+  
+  colnames( prop_cc_age ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
+  
+  list_of_df[[cat]] <- prop_cc_age
+}
+
+prop_cc_age <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+  }, 
+  list_of_df )
+
+prop_cc_age <- left_join( prop_cc_age,
+                          d_2010_cc_age %>% 
+                            group_by( subgroup = age_cat ) %>% 
+                            summarise( sample_size_2010 = n() ),
+                          by = "subgroup" ) %>%
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 3.1.3. By sex*age group
+```{r}
+##### prepare dataset #####
+
+# calculate item response rate among those who had complete data on sexual identity and age_sex
+itemresponse_prob_cc_age_sex <- d_2010 %>%
+  group_by( sampling_strata_region ) %>%
+  summarise( itemresponse_prob_cc_age_sex = 
+               sum( !is.na( sexual_identity ) &
+                      !is.na( age_sex ) ) / n() 
+  )
+
+d_2010 <- d_2010 %>% 
+  left_join( itemresponse_prob_cc_age_sex, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob_cc_age_sex = ifelse( is.na( sexual_identity ) | is.na( age_sex ), 0,
+                                                 itemresponse_prob_cc_age_sex ) )
+
+# adjust design weights to take into account both unit and item non-response
+# assume MCAR within each sampling stratum
+d_2010$design_weight_unit_item_nonresponse_cc_age_sex <- ifelse( d_2010$itemresponse_prob_cc_age_sex == 0, 0,
+                                                                 d_2010$design_weight_unit_nonresponse*( 1/d_2010$itemresponse_prob_cc_age_sex ) )
+
+# extract variables
+d_2010_cc_age_sex <- as.data.frame( d_2010[ !is.na( d_2010$sexual_identity ) &
+                                              !is.na( d_2010$age_sex ), ] %>% 
+                                      select( "sampling_strata_region", "no.of.population", "design_weight_unit_item_nonresponse_cc_age_sex", "sexual_identity", "age_sex" ) )
+
+n_miss( d_2010_cc_age_sex ) # 0 missing
+summary( d_2010_cc_age_sex )
+
+
+##### define survey design #####
+
+survey_design_cc_age_sex <- svydesign( ids = ~ 1, 
+                                       strata = ~ sampling_strata_region,
+                                       weights = ~ design_weight_unit_item_nonresponse_cc_age_sex,
+                                       fpc = ~ no.of.population,
+                                       data = d_2010_cc_age_sex )
+
+
+##### calculate proportion of each sexual identity by age_sex #####
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" )
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_age_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+                            by = ~ age_sex,
+                            design = survey_design_cc_age_sex,
+                            FUN = svyciprop,
+                            vartype = "ci",
+                            method = "beta" )
+  
+  colnames( prop_cc_age_sex ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
+  
+  list_of_df[[cat]] <- prop_cc_age_sex
+}
+
+prop_cc_age_sex <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+prop_cc_age_sex <- left_join( prop_cc_age_sex,
+                              d_2010_cc_age_sex %>% 
+                                group_by( subgroup = age_sex ) %>% 
+                                summarise( sample_size_2010 = n() ),
+                              by = "subgroup" ) %>%
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 3.1.4. By education
+```{r}
+##### prepare dataset #####
+
+# calculate item response rate among those who had complete data on sexual identity and education
+itemresponse_prob_cc_education <- d_2010 %>%
+  group_by( sampling_strata_region ) %>%
+  summarise( itemresponse_prob_cc_education = 
+               sum( !is.na( sexual_identity ) &
+                      !is.na( education ) ) / n() 
+             )
+
+d_2010 <- d_2010 %>% 
+  left_join( itemresponse_prob_cc_education, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob_cc_education = ifelse( is.na( sexual_identity ) | is.na( education ), 0,
+                                             itemresponse_prob_cc_education ) )
+
+# adjust design weights to take into account both unit and item non-response
+# assume MCAR within each sampling stratum
+d_2010$design_weight_unit_item_nonresponse_cc_education <- ifelse( d_2010$itemresponse_prob_cc_education == 0, 0,
+                                                                   d_2010$design_weight_unit_nonresponse*( 1/d_2010$itemresponse_prob_cc_education ) )
+
+# extract variables
+d_2010_cc_education <- as.data.frame( d_2010[ !is.na( d_2010$sexual_identity ) &
+                                          !is.na( d_2010$education ), ] %>% 
+                                  select( "sampling_strata_region", "no.of.population", "design_weight_unit_item_nonresponse_cc_education", "sexual_identity", "education" ) )
+
+n_miss( d_2010_cc_education ) # 0 missing
+summary( d_2010_cc_education )
+
+
+##### define survey design #####
+
+survey_design_cc_education <- svydesign( ids = ~ 1, 
+                                         strata = ~ sampling_strata_region,
+                                         weights = ~ design_weight_unit_item_nonresponse_cc_education,
+                                         fpc = ~ no.of.population,
+                                         data = d_2010_cc_education )
+
+
+##### calculate proportion of each sexual identity by education #####
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" )
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_education <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+                              by = ~ education,
+                              design = survey_design_cc_education,
+                              FUN = svyciprop,
+                              vartype = "ci",
+                              method = "beta" )
+  
+  colnames( prop_cc_education ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
+  
+  list_of_df[[cat]] <- prop_cc_education
+}
+
+prop_cc_education <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+  }, 
+  list_of_df )
+
+prop_cc_education <- left_join( prop_cc_education,
+                                d_2010_cc_education %>% 
+                                  group_by( subgroup = education ) %>% 
+                                  summarise( sample_size_2010 = n() ),
+                                by = "subgroup" ) %>%
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 3.1.5. By income
+```{r}
+##### prepare dataset #####
+
+# calculate item response rate among those who had complete data on sexual identity and income
+itemresponse_prob_cc_income <- d_2010 %>%
+  group_by( sampling_strata_region ) %>%
+  summarise( itemresponse_prob_cc_income = 
+               sum( !is.na( sexual_identity ) &
+                      !is.na( income ) ) / n() 
+             )
+
+d_2010 <- d_2010 %>% 
+  left_join( itemresponse_prob_cc_income, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob_cc_income = ifelse( is.na( sexual_identity ) | is.na( income ), 0,
+                                                itemresponse_prob_cc_income ) )
+
+# adjust design weights to take into account both unit and item non-response
+# assume MCAR within each sampling stratum
+d_2010$design_weight_unit_item_nonresponse_cc_income <- ifelse( d_2010$itemresponse_prob_cc_income == 0, 0,
+                                                                d_2010$design_weight_unit_nonresponse*( 1/d_2010$itemresponse_prob_cc_income ) )
+
+# extract variables
+d_2010_cc_income <- as.data.frame( d_2010[ !is.na( d_2010$sexual_identity ) &
+                                             !is.na( d_2010$income ), ] %>% 
+                                     select( "sampling_strata_region", "no.of.population", "design_weight_unit_item_nonresponse_cc_income", "sexual_identity", "income" ) )
+
+n_miss( d_2010_cc_income ) # 0 missing
+summary( d_2010_cc_income )
+
+
+##### define survey design #####
+
+survey_design_cc_income <- svydesign( ids = ~ 1, 
+                                      strata = ~ sampling_strata_region,
+                                      weights = ~ design_weight_unit_item_nonresponse_cc_income,
+                                      fpc = ~ no.of.population,
+                                      data = d_2010_cc_income )
+
+
+##### calculate proportion of each sexual identity by income #####
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" )
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_income <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+                           by = ~ income,
+                           design = survey_design_cc_income,
+                           FUN = svyciprop,
+                           vartype = "ci",
+                           method = "beta" )
+  
+  colnames( prop_cc_income ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
+  
+  list_of_df[[cat]] <- prop_cc_income
+}
+
+prop_cc_income <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+  }, 
+  list_of_df )
+
+prop_cc_income <- left_join( prop_cc_income,
+                             d_2010_cc_income %>% 
+                               group_by( subgroup = income ) %>% 
+                               summarise( sample_size_2010 = n() ),
+                             by = "subgroup" ) %>%
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 3.1.6. By country of birth
+```{r}
+##### prepare dataset #####
+
+# calculate item response rate among those who had complete data on sexual identity and country of birth
+itemresponse_prob_cc_country_of_birth <- d_2010 %>%
+  group_by( sampling_strata_region ) %>%
+  summarise( itemresponse_prob_cc_country_of_birth = 
+               sum( !is.na( sexual_identity ) &
+                      !is.na( country_of_birth ) ) / n() 
+             )
+
+d_2010 <- d_2010 %>% 
+  left_join( itemresponse_prob_cc_country_of_birth, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob_cc_country_of_birth = ifelse( is.na( sexual_identity ) | is.na( country_of_birth ), 0,
+                                                          itemresponse_prob_cc_country_of_birth ) )
+
+# adjust design weights to take into account both unit and item non-response
+# assume MCAR within each sampling stratum
+d_2010$design_weight_unit_item_nonresponse_cc_country_of_birth <- ifelse( 
+  d_2010$itemresponse_prob_cc_country_of_birth == 0, 0,
+  d_2010$design_weight_unit_nonresponse*( 1/d_2010$itemresponse_prob_cc_country_of_birth ) )
+
+# extract variables
+d_2010_cc_country_of_birth <- as.data.frame( d_2010[ !is.na( d_2010$sexual_identity ) &
+                                                       !is.na( d_2010$country_of_birth ), ] %>%
+                                               select( "sampling_strata_region", "no.of.population", "design_weight_unit_item_nonresponse_cc_country_of_birth", "sexual_identity", "country_of_birth" ) )
+
+d_2010_cc_country_of_birth$country_of_birth <- factor( 
+  ifelse( d_2010_cc_country_of_birth$country_of_birth == "Sweden", "Sweden",
+          ifelse( d_2010_cc_country_of_birth$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
+  levels = c( "Sweden", "Europe", "Outside Europe" ) 
+  )
+
+n_miss( d_2010_cc_country_of_birth ) # 0 missing
+summary( d_2010_cc_country_of_birth )
+
+
+##### define survey design #####
+
+survey_design_cc_country_of_birth <- svydesign( ids = ~ 1, 
+                                                strata = ~ sampling_strata_region,
+                                                weights = ~ design_weight_unit_item_nonresponse_cc_country_of_birth,
+                                                fpc = ~ no.of.population,
+                                                data = d_2010_cc_country_of_birth )
+
+
+##### calculate proportion of each sexual identity by country of birth #####
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" )
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_country_of_birth <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+                                     by = ~ country_of_birth,
+                                     design = survey_design_cc_country_of_birth,
+                                     FUN = svyciprop,
+                                     vartype = "ci",
+                                     method = "beta" )
+  
+  colnames( prop_cc_country_of_birth ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
+  
+  list_of_df[[cat]] <- prop_cc_country_of_birth
+}
+
+prop_cc_country_of_birth <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+  }, 
+  list_of_df )
+
+prop_cc_country_of_birth <- left_join( prop_cc_country_of_birth,
+                                       d_2010_cc_country_of_birth %>% 
+                                         group_by( subgroup = country_of_birth ) %>% 
+                                         summarise( sample_size_2010 = n() ),
+                                       by = "subgroup" ) %>%
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 3.1.7. By marital status
+```{r}
+##### prepare dataset #####
+
+# calculate item response rate among those who had complete data on sexual identity and marital status
+itemresponse_prob_cc_marital_status <- d_2010 %>%
+  group_by( sampling_strata_region ) %>%
+  summarise( itemresponse_prob_cc_marital_status = 
+               sum( !is.na( sexual_identity ) &
+                      !is.na( marital_status ) ) / n() 
+             )
+
+d_2010 <- d_2010 %>% 
+  left_join( itemresponse_prob_cc_marital_status, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob_cc_marital_status = ifelse( is.na( sexual_identity ) | is.na( marital_status ), 0,
+                                                        itemresponse_prob_cc_marital_status ) )
+
+# adjust design weights to take into account both unit and item non-response
+# assume MCAR within each sampling stratum
+d_2010$design_weight_unit_item_nonresponse_cc_marital_status <- ifelse( 
+  d_2010$itemresponse_prob_cc_marital_status == 0, 0,
+  d_2010$design_weight_unit_nonresponse*( 1/d_2010$itemresponse_prob_cc_marital_status ) )
+
+# extract variables
+d_2010_cc_marital_status <- as.data.frame( d_2010[ !is.na( d_2010$sexual_identity ) &
+                                                     !is.na( d_2010$marital_status ), ] %>% 
+                                             select( "sampling_strata_region", "no.of.population", "design_weight_unit_item_nonresponse_cc_marital_status", "sexual_identity", "marital_status" ) )
+
+n_miss( d_2010_cc_marital_status ) # 0 missing
+summary( d_2010_cc_marital_status )
+
+
+##### define survey design #####
+
+survey_design_cc_marital_status <- svydesign( ids = ~ 1, 
+                                              strata = ~ sampling_strata_region,
+                                              weights = ~ design_weight_unit_item_nonresponse_cc_marital_status,
+                                              fpc = ~ no.of.population,
+                                              data = d_2010_cc_marital_status )
+
+
+##### calculate proportion of each sexual identity by marital status #####
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" )
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_marital_status <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+                                   by = ~ marital_status,
+                                   design = survey_design_cc_marital_status,
+                                   FUN = svyciprop,
+                                   vartype = "ci",
+                                   method = "beta" )
+  
+  colnames( prop_cc_marital_status ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
+  
+  list_of_df[[cat]] <- prop_cc_marital_status
+}
+
+prop_cc_marital_status <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+  }, 
+  list_of_df )
+
+prop_cc_marital_status <- left_join( prop_cc_marital_status,
+                                     d_2010_cc_marital_status %>% 
+                                       group_by( subgroup = marital_status ) %>% 
+                                       summarise( sample_size_2010 = n() ),
+                                     by = "subgroup" ) %>%
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 3.1.8. By living status
+```{r}
+##### prepare dataset #####
+
+# calculate item response rate among those who had complete data on sexual identity and living status
+itemresponse_prob_cc_living_alone <- d_2010 %>%
+  group_by( sampling_strata_region ) %>%
+  summarise( itemresponse_prob_cc_living_alone = 
+               sum( !is.na( sexual_identity ) &
+                      !is.na( living_alone ) ) / n() 
+             )
+
+d_2010 <- d_2010 %>% 
+  left_join( itemresponse_prob_cc_living_alone, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob_cc_living_alone = ifelse( is.na( sexual_identity ) | is.na( living_alone ), 0,
+                                                      itemresponse_prob_cc_living_alone ) )
+
+# adjust design weights to take into account both unit and item non-response
+# assume MCAR within each sampling stratum
+d_2010$design_weight_unit_item_nonresponse_cc_living_alone <- ifelse( 
+  d_2010$itemresponse_prob_cc_living_alone == 0, 0,
+  d_2010$design_weight_unit_nonresponse*( 1/d_2010$itemresponse_prob_cc_living_alone ) )
+
+# extract variables
+d_2010_cc_living_alone <- as.data.frame( d_2010[ !is.na( d_2010$sexual_identity ) &
+                                                     !is.na( d_2010$living_alone ), ] %>% 
+                                             select( "sampling_strata_region", "no.of.population", "design_weight_unit_item_nonresponse_cc_living_alone", "sexual_identity", "living_alone" ) )
+
+d_2010_cc_living_alone$living_alone <- as.factor(
+  ifelse( 
+    d_2010_cc_living_alone$living_alone == "yes", "living_alone_yes",
+    "living_alone_no" ) )
+
+n_miss( d_2010_cc_living_alone ) # 0 missing
+summary( d_2010_cc_living_alone )
+
+
+##### define survey design #####
+
+survey_design_cc_living_alone <- svydesign( ids = ~ 1, 
+                                            strata = ~ sampling_strata_region,
+                                            weights = ~ design_weight_unit_item_nonresponse_cc_living_alone,
+                                            fpc = ~ no.of.population,
+                                            data = d_2010_cc_living_alone )
+
+
+##### calculate proportion of each sexual identity by living status #####
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" )
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_living_alone <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+                                 by = ~ living_alone,
+                                 design = survey_design_cc_living_alone,
+                                 FUN = svyciprop,
+                                 vartype = "ci",
+                                 method = "beta" )
+  
+  colnames( prop_cc_living_alone ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
+  
+  list_of_df[[cat]] <- prop_cc_living_alone
+}
+
+prop_cc_living_alone <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+  }, 
+  list_of_df )
+
+prop_cc_living_alone <- left_join( prop_cc_living_alone,
+                                   d_2010_cc_living_alone %>% 
+                                     group_by( subgroup = living_alone ) %>% 
+                                     summarise( sample_size_2010 = n() ),
+                                   by = "subgroup" ) %>%
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 3.1.9. By personal support
+```{r}
+##### prepare dataset #####
+
+# calculate item response rate among those who had complete data on sexual identity and personal support
+itemresponse_prob_cc_personal_support <- d_2010 %>%
+  group_by( sampling_strata_region ) %>%
+  summarise( itemresponse_prob_cc_personal_support = 
+               sum( !is.na( sexual_identity ) &
+                      !is.na( personal_support ) ) / n() 
+             )
+
+d_2010 <- d_2010 %>% 
+  left_join( itemresponse_prob_cc_personal_support, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob_cc_personal_support = ifelse( 
+    is.na( sexual_identity ) | is.na( personal_support ), 0,
+    itemresponse_prob_cc_personal_support ) 
+    )
+
+# adjust design weights to take into account both unit and item non-response
+# assume MCAR within each sampling stratum
+d_2010$design_weight_unit_item_nonresponse_cc_personal_support <- ifelse( 
+  d_2010$itemresponse_prob_cc_personal_support == 0, 0,
+  d_2010$design_weight_unit_nonresponse*( 1/d_2010$itemresponse_prob_cc_personal_support ) )
+
+# extract variables
+d_2010_cc_personal_support <- as.data.frame( d_2010[ !is.na( d_2010$sexual_identity ) &
+                                                       !is.na( d_2010$personal_support ), ] %>% 
+                                           select( "sampling_strata_region", "no.of.population", "design_weight_unit_item_nonresponse_cc_personal_support", "sexual_identity", "personal_support" ) )
+
+d_2010_cc_personal_support$personal_support <- as.factor(
+  ifelse( 
+    d_2010_cc_personal_support$personal_support == "yes", "personal_support_yes",
+    "personal_support_no" ) )
+
+n_miss( d_2010_cc_personal_support ) # 0 missing
+summary( d_2010_cc_personal_support )
+
+
+##### define survey design #####
+
+survey_design_cc_personal_support <- svydesign( ids = ~ 1, 
+                                                strata = ~ sampling_strata_region,
+                                                weights = ~ design_weight_unit_item_nonresponse_cc_personal_support,
+                                                fpc = ~ no.of.population,
+                                                data = d_2010_cc_personal_support )
+
+
+##### calculate proportion of each sexual identity by personal support #####
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" )
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_personal_support <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+                                     by = ~ personal_support,
+                                     design = survey_design_cc_personal_support,
+                                     FUN = svyciprop,
+                                     vartype = "ci",
+                                     method = "beta" )
+  
+  colnames( prop_cc_personal_support ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
+  
+  list_of_df[[cat]] <- prop_cc_personal_support
+}
+
+prop_cc_personal_support <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+  }, 
+  list_of_df )
+
+prop_cc_personal_support <- left_join( prop_cc_personal_support,
+                                       d_2010_cc_personal_support %>% 
+                                         group_by( subgroup = personal_support ) %>% 
+                                         summarise( sample_size_2010 = n() ),
+                                       by = "subgroup" ) %>%
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 3.1.10. Overall proportions of sexual identities in Stockholm County
+```{r}
+##### define survey design #####
+
+survey_design_cc_overall <- svydesign( ids = ~ 1, 
+                                       strata = ~ sampling_strata_region,
+                                       weights = ~ design_weight_unit_item_nonresponse,
+                                       fpc = ~ no.of.population,
+                                       data = d_2010[ !is.na( d_2010$sexual_identity ), ] )
+
+
+##### calculate proportion of each sexual identity in Stockholm County #####
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" )
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_overall <- svyciprop( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+                                design = survey_design_cc_overall,
+                                vartype = "ci",
+                                method = "beta" )
+  
+  prop_cc_overall <- data.frame( prop_cc_overall[ 1 ], confint( prop_cc_overall )[ 1 ], confint( prop_cc_overall )[ 2 ] )
+  
+  colnames( prop_cc_overall ) <- c( paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
+  
+  list_of_df[[cat]] <- prop_cc_overall
+}
+
+prop_cc_overall <- Reduce( function( df1, df2 ) {
+  cbind( df1, df2 )
+  }, 
+  list_of_df ) %>% 
+  as.data.frame() %>%
+  rownames_to_column( var = "subgroup" )
+
+prop_cc_overall[ 1, 1 ] <- "Stockholm County"
+
+prop_cc_overall <- bind_cols( prop_cc_overall,
+                              d_2010[ !is.na( d_2010$sexual_identity ), ] %>% 
+                                summarise( sample_size_2010 = n() ) ) %>%
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 3.1.11. Merge datasets
+```{r}
+prop_cc_summary_2010 <- rbind( prop_cc_sex, 
+                               prop_cc_age,
+                               prop_cc_age_sex,
+                               prop_cc_education, 
+                               prop_cc_income, 
+                               prop_cc_country_of_birth, 
+                               prop_cc_marital_status,
+                               prop_cc_living_alone,
+                               prop_cc_personal_support,
+                               prop_cc_overall 
+                               )
+
+writexl::write_xlsx( prop_cc_summary_2010, "prop_cc_summary_2010.xlsx" )
+```
+
+#### 3.2. Multiple impuation and inverse probability weighting
+```{r}
+
+```
+
+### 4. Relation between Sexual Identity and Demographic Factors
+#### 4.1. Complete-case analysis
+```{r}
+##### prepare dataset #####
+
+# calculate item response rate among those who had complete data on all variables included in the model
+itemresponse_prob_mlr <- d_2010 %>%
+  group_by( sampling_strata_region ) %>%
+  summarise( itemresponse_prob_mlr = 
+               sum( !is.na( sexual_identity ) & # only sexual identity and education have missing values
+                      !is.na( education ) ) / n()
+             )
+
+d_2010 <- d_2010 %>% 
+  left_join( itemresponse_prob_mlr, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob_mlr = ifelse( is.na( sexual_identity ) | is.na( education ), 0,
+                                          itemresponse_prob_mlr ) )
+
+# adjust design weights to take into account both unit and item non-response
+# assume MCAR within each sampling stratum
+d_2010$design_weight_unit_item_nonresponse_mlr <- ifelse( d_2010$itemresponse_prob_mlr == 0, 0,
+                                                          d_2010$design_weight_unit_nonresponse*( 1/d_2010$itemresponse_prob_mlr ) )
+
+# extract variables
+d_2010_cc_mlr <- as.data.frame( d_2010[ !is.na( d_2010$sexual_identity ) &
+                                          !is.na( d_2010$education ), ] %>% 
+                                  select( "sampling_strata_region", "no.of.population", "design_weight_unit_item_nonresponse_mlr", "sexual_identity", "age_cat", "age", "sex", "country_of_birth", "education", "income", "marital_status" ) )
+
+d_2010_cc_mlr$country_of_birth <- factor( ifelse( d_2010_cc_mlr$country_of_birth == "Sweden", "Sweden",
+                                                  ifelse( d_2010_cc_mlr$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
+                                          levels = c( "Sweden", "Europe", "Outside Europe" ) )
+
+d_2010_cc_mlr$marital_status <- relevel( d_2010_cc_mlr$marital_status, ref = "Currently married" )
+
+n_miss( d_2010_cc_mlr ) # 0 missing
+summary( d_2010_cc_mlr )
+
+
+##### Define design objects #####
+
+# define design object 1
+survey_design_cc_mlr_1 <- svydesign( ids = ~ 1, 
+                                     strata = ~ sampling_strata_region,
+                                     weights = ~ design_weight_unit_item_nonresponse_mlr,
+                                     fpc = ~ no.of.population,
+                                     data = d_2010_cc_mlr )
+
+# define design object 2
+# change reference category of predictors
+d_2010_cc_mlr$age_cat <- relevel( d_2010_cc_mlr$age_cat, ref = ">=60" )
+d_2010_cc_mlr$sex <- relevel( d_2010_cc_mlr$sex, ref = "Female" )
+d_2010_cc_mlr$education <- relevel( d_2010_cc_mlr$education, ref = ">=13 years" )
+d_2010_cc_mlr$income <- relevel( d_2010_cc_mlr$income, ref = ">4,500" )
+d_2010_cc_mlr$marital_status <- relevel( d_2010_cc_mlr$marital_status, ref = "Never married" )
+
+summary( d_2010_cc_mlr )
+
+survey_design_cc_mlr_2 <- svydesign( ids = ~ 1, 
+                                     strata = ~ sampling_strata_region,
+                                     weights = ~ design_weight_unit_item_nonresponse_mlr,
+                                     fpc = ~ no.of.population,
+                                     data = d_2010_cc_mlr )
+
+
+##### Fit weighted MLR models #####
+
+fml_mlr <- sexual_identity ~ age_cat + sex + age_cat*sex + education + country_of_birth + income + marital_status + sampling_strata_region
+
+# fit MLR model 1
+model_mlr_cc_1 <- svy_vglm( fml_mlr, 
+                            design = survey_design_cc_mlr_1, 
+                            family = multinomial( refLevel = "Heterosexual" )
+                            )
+
+model_mlr_cc_output_1 <- merge( summary( model_mlr_cc_1 )[[ "coeftable" ]] %>% 
+                                  as.data.frame() %>%
+                                  rownames_to_column( var = "category" ),
+                                confint( model_mlr_cc_1 ) %>%
+                                  as.data.frame() %>%
+                                  rownames_to_column( var = "category" ), 
+                                by = "category" ) %>%
+  select( "category", "Coef", "2.5 %", "97.5 %", "p" ) %>%
+  mutate(
+    OR_2010 = exp( Coef ),
+    lower_ci_2010 = exp( `2.5 %` ),
+    upper_ci_2010 = exp( `97.5 %` ) ) %>%
+  rename(
+    category_2010 = category,
+    p_2010 = p
+    )
+
+levels( survey_design_cc_mlr_1$variables$sexual_identity )
+new_cats <- c( "Homosexual", "Bisexual", "Uncertain" )
+
+for ( i in 1:3 ) {
+  model_mlr_cc_output_1$category_2010 <- gsub(
+    pattern = paste0( ":", i ), 
+    replacement = paste0( "_", new_cats[i] ), 
+    x = model_mlr_cc_output_1$category_2010 )
+  }
+
+model_mlr_cc_output_1_wide <- model_mlr_cc_output_1 %>%
+  separate( category_2010, into = c( "category_2010", "sexual_identity" ), 
+            sep = "_(?=[^_]+$)",
+            extra = "merge" ) %>%
+  pivot_wider(
+    names_from = sexual_identity, 
+    values_from = c( Coef, `2.5 %`, `97.5 %`, p_2010, OR_2010, lower_ci_2010, upper_ci_2010 )
+    )
+
+model_mlr_cc_output_1_wide <- model_mlr_cc_output_1_wide %>% select( "category_2010", "Coef_Homosexual", "2.5 %_Homosexual", "97.5 %_Homosexual", "p_2010_Homosexual", "OR_2010_Homosexual", "lower_ci_2010_Homosexual", "upper_ci_2010_Homosexual", "Coef_Bisexual", "2.5 %_Bisexual", "97.5 %_Bisexual", "p_2010_Bisexual", "OR_2010_Bisexual", "lower_ci_2010_Bisexual", "upper_ci_2010_Bisexual", "Coef_Uncertain", "2.5 %_Uncertain", "97.5 %_Uncertain", "p_2010_Uncertain", "OR_2010_Uncertain", "lower_ci_2010_Uncertain", "upper_ci_2010_Uncertain" )
+
+# writexl::write_xlsx( model_mlr_cc_output_1_wide, "model_mlr_cc_output_1_wide_2010.xlsx" )
+
+
+# fit MLR model 2
+model_mlr_cc_2 <- svy_vglm( fml_mlr, 
+                            design = survey_design_cc_mlr_2, 
+                            family = multinomial( refLevel = "Heterosexual" )
+                            )
+
+model_mlr_cc_output_2 <- merge( summary( model_mlr_cc_2 )[[ "coeftable" ]] %>% 
+                                  as.data.frame() %>%
+                                  rownames_to_column( var = "category" ),
+                                confint( model_mlr_cc_2 ) %>%
+                                  as.data.frame() %>%
+                                  rownames_to_column( var = "category" ), 
+                                by = "category" ) %>%
+  select( "category", "Coef", "2.5 %", "97.5 %", "p" ) %>%
+  mutate(
+    OR_2010 = exp( Coef ),
+    lower_ci_2010 = exp( `2.5 %` ),
+    upper_ci_2010 = exp( `97.5 %` ) ) %>%
+  rename(
+    category_2010 = category,
+    p_2010 = p
+    )
+
+for ( i in 1:3 ) {
+  model_mlr_cc_output_2$category_2010 <- gsub(
+    pattern = paste0( ":", i ), 
+    replacement = paste0( "_", new_cats[i] ), 
+    x = model_mlr_cc_output_2$category_2010 )
+  }
+
+model_mlr_cc_output_2_wide <- model_mlr_cc_output_2 %>%
+  separate( category_2010, into = c( "category_2010", "sexual_identity" ), 
+            sep = "_(?=[^_]+$)",
+            extra = "merge" ) %>%
+  pivot_wider(
+    names_from = sexual_identity, 
+    values_from = c( Coef, `2.5 %`, `97.5 %`, p_2010, OR_2010, lower_ci_2010, upper_ci_2010 )
+    )
+
+model_mlr_cc_output_2_wide <- model_mlr_cc_output_2_wide %>% select( "category_2010", "Coef_Homosexual", "2.5 %_Homosexual", "97.5 %_Homosexual", "p_2010_Homosexual", "OR_2010_Homosexual", "lower_ci_2010_Homosexual", "upper_ci_2010_Homosexual", "Coef_Bisexual", "2.5 %_Bisexual", "97.5 %_Bisexual", "p_2010_Bisexual", "OR_2010_Bisexual", "lower_ci_2010_Bisexual", "upper_ci_2010_Bisexual", "Coef_Uncertain", "2.5 %_Uncertain", "97.5 %_Uncertain", "p_2010_Uncertain", "OR_2010_Uncertain", "lower_ci_2010_Uncertain", "upper_ci_2010_Uncertain" )
+
+save.image(file = "Preliminary_working_environment_2010.RData")
+```
