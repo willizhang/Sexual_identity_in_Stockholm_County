@@ -1,10 +1,5 @@
 .Rproj.user
 .Rhistory
-.RData
+*.RData
 .Ruserdata
-.xlsx
-data.RData
-d_2002_&_2006.RData
-d_2010.RData
-d_2014.RData
-d_2021.RData
+*.xlsx
