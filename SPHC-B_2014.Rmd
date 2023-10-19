@@ -160,7 +160,7 @@ table( d_2014$personal_support, useNA = "always" )
 ##### demographic characteristics #####
 
 # among respondents (n = 22,250)
-# make characteristics table
+# make characteristics table by sexual identity
 explanatory =  c( "sex", "age_cat", "country_of_birth", "education", "income", "marital_status", "living_alone", "personal_support" )
 dependent = "sexual_identity"
 d_2014_table <- d_2014 %>% 
@@ -227,37 +227,30 @@ summary( d_2014$F14dvikt )
 d_2014$design_weight <- d_2014$F14dvikt
 
 
-##### UNIT non-response #####
+##### non-response #####
 
+# unit non-response
 d_2014$design_weight_unit_nonresponse <- d_2014$F14dbvikt # weights calculated assuming Missing Completely At Random (MCAR) within each stratum
 summary( d_2014$design_weight_unit_nonresponse )
 sum( d_2014$design_weight_unit_nonresponse ) # No. of source population = 1,764,671
 
-# calculate overall unit response rate
 unitresponse_prob <- d_2014 %>% 
   group_by( sampling_strata_region ) %>% 
   summarise( unitresponse_prob = unique( design_weight ) / unique( design_weight_unit_nonresponse ),
-             no.of.population = sum( design_weight_unit_nonresponse ) )
+             no.of.population = sum( design_weight_unit_nonresponse ),
+             sample_size = unique( no.of.population )/unique( design_weight ) ) # calculate overall unit response rate, and no. of population and sample size within each stratum
 
 d_2014 <- d_2014 %>% 
   left_join( unitresponse_prob, by = "sampling_strata_region" )
 
-
-##### ITEM non-response #####
-
-# calculate item response rate
+# item non-response
 itemresponse_prob <- d_2014 %>% 
   group_by( sampling_strata_region ) %>% 
-  summarise( itemresponse_prob = sum( !is.na( sexual_identity ) ) / n() )
+  summarise( itemresponse_prob = sum( !is.na( sexual_identity ) ) / n() ) # calculate item response rate
 
 d_2014 <- d_2014 %>% 
   left_join( itemresponse_prob, by = "sampling_strata_region" ) %>% 
   mutate( itemresponse_prob = ifelse( is.na( sexual_identity ), 0, itemresponse_prob ) )
-
-# adjust design weights to take into account both unit and item non-response
-# assume MCAR within each sampling stratum
-d_2014$design_weight_unit_item_nonresponse <- ifelse( d_2014$itemresponse_prob == 0, 0,
-                                                      d_2014$design_weight_unit_nonresponse*( 1/d_2014$itemresponse_prob ) )
 
 
 ##### summary of stratified sampling #####
@@ -282,7 +275,7 @@ round( weighted.mean( sampling_frame_2014$unitresponse_rate, sampling_frame_2014
 round( weighted.mean( sampling_frame_2014$itemresponse_rate, sampling_frame_2014$no.of.population ), 3 ) # overall item response rate
 round( weighted.mean( sampling_frame_2014$overallresponse_rate, sampling_frame_2014$no.of.population ), 3 ) # overall response rate
 
-writexl::write_xlsx( sampling_frame_2014, "sampling_frame_2014.xlsx" ) # to be combined with SPHC-B 2010 and 2021 in order to make plots
+writexl::write_xlsx( sampling_frame_2014, "sampling_frame_2014.xlsx" )
 
 
 ##### calibrated weights #####
@@ -303,6 +296,26 @@ ggplot( d_2014 %>%
   theme( axis.text.y = element_text( family = "Arial", size = 11 ),
          axis.title.x = element_text( family = "Arial", size = 11 ),
          axis.text.x = element_text( family = "Arial", size = 11 ) )
+
+
+##### replicating non-respondent rows for sampling design #####
+
+# because d_2014 includes data only for respondents (unit response), we need to duplicate rows for non-respondents
+# so that the final dataset represents the sampling process
+rows_to_add <- d_2014 %>%
+  group_by( sampling_strata_region ) %>%
+  summarise( to_add = unique( sample_size ) - n(),
+             no.of.population = unique( no.of.population ),
+             sample_size = unique( sample_size ),
+             design_weight = unique( design_weight ) )
+
+sum( rows_to_add$to_add ) # 30,787 non-respondents
+
+rows_to_add$to_add <- round( rows_to_add$to_add ) # to resolve floating-point precision issues
+
+replicated_rows <- rows_to_add[ rep( row.names( rows_to_add ), rows_to_add$to_add ), c( 1, 3:5 ) ]
+
+d_2014_complete <- bind_rows( d_2014, replicated_rows )
 ```
 
 ### 3. Estimation of Proportions of Sexual Identities
@@ -973,6 +986,15 @@ prop_cc_personal_support <- left_join( prop_cc_personal_support,
 
 ##### 3.1.10. Overall proportions of sexual identities in Stockholm County
 ```{r}
+##### prepare dataset #####
+
+# adjust design weights to take into account both unit and item non-response
+# assume MCAR within each sampling stratum
+d_2014$design_weight_unit_item_nonresponse <- ifelse( 
+  d_2014$itemresponse_prob == 0, 0,
+  d_2014$design_weight_unit_nonresponse*( 1/d_2014$itemresponse_prob ) )
+
+
 ##### define survey design #####
 
 survey_design_cc_overall <- svydesign( ids = ~ 1, 
