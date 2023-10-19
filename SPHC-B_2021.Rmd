@@ -1,5 +1,5 @@
 ---
-title: "Self-reported sexual identity among approximately 1.8 million people in Stockholm County in 2021"
+title: "Self-reported sexual identity in Stockholm County in 2021"
 author: Guoqiang Zhang
 email: guoqiang.zhang@ki.se
 output: html_notebook
@@ -289,23 +289,9 @@ replicated_rows <- rows_to_add[ rep( row.names( rows_to_add ), rows_to_add$to_ad
 d_2021_complete <- bind_rows( d_2021, replicated_rows )
 ```
 
-### 3. Weighted Descriptive Statistics
-#### 3.1. Define survey design
-```{r}
-
-```
-
-#### 3.2. Calculate descriptive statistics
-```{r}
-
-degf(survey_design_cc)
-
-
-```
-
-### 4. Estimation of Proportions of Sexual Identities
-#### 4.1. Complete-case analysis
-##### 4.1.1. By sex
+### 3. Estimation of Proportions of Sexual Identities
+#### 3.1. Complete-case analysis
+##### 3.1.1. By sex
 ```{r}
 # Notes: Because some demographic variables had different missing patterns, analysis was conducted separately for each of them
 
@@ -378,7 +364,7 @@ prop_cc_sex <- left_join( prop_cc_sex,
   mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 4.1.2. By age group
+##### 3.1.2. By age group
 ```{r}
 ##### prepare dataset #####
 
@@ -449,7 +435,7 @@ prop_cc_age <- left_join( prop_cc_age,
   mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 4.1.3. By sex*age group
+##### 3.1.3. By sex*age group
 ```{r}
 ##### prepare dataset #####
 
@@ -520,7 +506,7 @@ prop_cc_age_sex <- left_join( prop_cc_age_sex,
   mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 4.1.4. By education
+##### 3.1.4. By education
 ```{r}
 ##### prepare dataset #####
 
@@ -591,7 +577,7 @@ prop_cc_education <- left_join( prop_cc_education,
   mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 4.1.5. By income
+##### 3.1.5. By income
 ```{r}
 ##### prepare dataset #####
 
@@ -662,7 +648,7 @@ prop_cc_income <- left_join( prop_cc_income,
   mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 4.1.6. By country of birth
+##### 3.1.6. By country of birth
 ```{r}
 ##### prepare dataset #####
 
@@ -740,7 +726,7 @@ prop_cc_country_of_birth <- left_join( prop_cc_country_of_birth,
   mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 4.1.7. By marital status
+##### 3.1.7. By marital status
 ```{r}
 ##### prepare dataset #####
 
@@ -812,7 +798,7 @@ prop_cc_marital_status <- left_join( prop_cc_marital_status,
   mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 4.1.8. Overall proportions of sexual identities in Stockholm County
+##### 3.1.8. Overall proportions of sexual identities in Stockholm County
 ```{r}
 ##### prepare dataset #####
 
@@ -865,7 +851,7 @@ prop_cc_overall <- bind_cols( prop_cc_overall,
   mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 4.1.9. Merge datasets
+##### 3.1.9. Merge datasets
 ```{r}
 prop_cc_summary_2021 <- rbind( prop_cc_sex, 
                                prop_cc_age,

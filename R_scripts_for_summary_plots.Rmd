@@ -133,9 +133,9 @@ ggplot( tidyr::gather( sampling_frame_2021, "Response rate", "Value", unitrespon
 ##### 3.1.1. Prepare dataset for plotting
 ```{r}
 # datasets for proportion of sexual identity
-prop_cc_summary_2010 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_Identity_R/prop_cc_summary_2010.xlsx")
-prop_cc_summary_2014 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_Identity_R/prop_cc_summary_2014.xlsx")
-prop_cc_summary_2021 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_Identity_R/prop_cc_summary_2021.xlsx")
+prop_cc_summary_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_summary_2010.xlsx")
+prop_cc_summary_2014 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_summary_2014.xlsx")
+prop_cc_summary_2021 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_summary_2021.xlsx")
 
 # to make it easier to combine across datasets
 # a note on these changes will be added on the graph later
