@@ -1,5 +1,7 @@
 ---
-title: "R Notebook"
+title: "R scripts for summary plots across surveys"
+author: Guoqiang Zhang
+email: guoqiang.zhang@ki.se
 output: html_notebook
 editor_options: 
   chunk_output_type: console
