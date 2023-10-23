@@ -389,6 +389,7 @@ prop_cc_sex <- left_join( prop_cc_sex,
 ```
 
 ##### 3.1.3. By age group
+###### 3.1.3.1. Calculate proportion by pre-specified age cut-off
 ```{r}
 list_of_df <- list()
 
@@ -417,6 +418,77 @@ prop_cc_age <- left_join( prop_cc_age,
                             summarise( sample_size_2014 = n() ),
                           by = "subgroup" ) %>%
   mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
+```
+
+###### 3.1.3.2. Calculate proportion ratio by varying age cut-offs
+```{r}
+d_2014_iteration_age <- d_2014_complete
+
+min_age <- min( d_2014_iteration_age$age, na.rm = TRUE )
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" )
+
+results_df <- data.frame()
+
+for ( cut_off in ( min_age + 1 ):90 ) {
+  d_2014_iteration_age$age_iteration <- ifelse( d_2014_iteration_age$age <= cut_off, "young", "old" )
+  
+  survey_design_iteration_age <- svydesign( ids = ~ 1, 
+                                            strata = ~ sampling_strata_region,
+                                            weights = ~ design_weight,
+                                            fpc = ~ no.of.population,
+                                            data = d_2014_iteration_age )
+  
+  list_of_df <- list()
+  
+  for ( cat in categories ) {
+    prop_cc_age_iteration <- svyby(
+      formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+      by = ~ age_iteration,
+      design = subset( survey_design_iteration_age, !is.na( sexual_identity ) & !is.na( age ) ),
+      FUN = svyciprop,
+      method = "beta" )
+    
+    colnames( prop_cc_age_iteration ) <- c( "subgroup", 
+                                            paste0( cat, "_point_estimate_2014" ), 
+                                            paste0( cat, "_se_2014" ) )
+    
+    list_of_df[[cat]] <- prop_cc_age_iteration
+  }
+  
+  prop_cc_age_iteration_merged <- Reduce( function( df1, df2 ) { 
+    merge( df1, df2, by = "subgroup" ) 
+    }, 
+    list_of_df
+    )
+  
+  prop_cc_age_iteration_merged$cut_off <- cut_off
+  
+  results_df <- rbind( results_df, prop_cc_age_iteration_merged )
+  }
+
+results_wide <- results_df %>%
+  select( -ends_with( "_se_2014" ) ) %>%
+  pivot_wider( names_from = subgroup, 
+               values_from = c( Heterosexual_point_estimate_2014, 
+                                Homosexual_point_estimate_2014, 
+                                Bisexual_point_estimate_2014, 
+                                `None of the above_point_estimate_2014` ) 
+               )
+
+colnames( results_wide ) <- gsub( "_point_estimate_2014", "", colnames( results_wide ) )
+
+results_wide$Heterosexual_pr_2014 <- results_wide$Heterosexual_young/results_wide$Heterosexual_old
+results_wide$Homosexual_pr_2014 <- results_wide$Homosexual_young/results_wide$Homosexual_old
+results_wide$Bisexual_pr_2014 <- results_wide$Bisexual_young/results_wide$Bisexual_old
+results_wide$`None of the above_pr_2014` <- results_wide$`None of the above_young`/results_wide$`None of the above_old`
+
+results_wide$Heterosexual_pr_2014[ is.infinite( results_wide$Heterosexual_pr_2014 ) ] <- NA
+results_wide$Homosexual_pr_2014[ is.infinite( results_wide$Homosexual_pr_2014 ) ] <- NA
+results_wide$Bisexual_pr_2014[ is.infinite( results_wide$Bisexual_pr_2014 ) ] <- NA
+results_wide$`None of the above_pr_2014`[ is.infinite( results_wide$`None of the above_pr_2014` ) ] <- NA
+
+writexl::write_xlsx( results_wide, "prop_cc_age_iteration_2014.xlsx" )
 ```
 
 ##### 3.1.4. By sex*age group

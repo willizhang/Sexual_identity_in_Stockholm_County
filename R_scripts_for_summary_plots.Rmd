@@ -1649,6 +1649,77 @@ p_cc_age_sex <- add_text(
 plot( p_cc_age_sex )
 ```
 
+##### 3.1.7. Proportion ratio by varing age cut-offs
+```{r}
+# import datasets
+prop_cc_age_iteration_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_age_iteration_2010.xlsx") %>%
+  select( "cut_off", "Heterosexual_pr_2010", "Homosexual_pr_2010", "Bisexual_pr_2010", "Uncertain_pr_2010" )
+
+prop_cc_age_iteration_2014 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_age_iteration_2014.xlsx") %>%
+  select( "cut_off", "Heterosexual_pr_2014", "Homosexual_pr_2014", "Bisexual_pr_2014", "None of the above_pr_2014" )
+
+prop_cc_age_iteration_2021 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_age_iteration_2021.xlsx") %>%
+  select( "cut_off", "Heterosexual_pr_2021", "Homosexual_pr_2021", "Bisexual_pr_2021", "None of the above_pr_2021" )
+
+prop_cc_age_iteration_merged <- prop_cc_age_iteration_2010 %>%
+  full_join( prop_cc_age_iteration_2014, by = "cut_off" ) %>%
+  full_join( prop_cc_age_iteration_2021, by = "cut_off" )
+
+prop_cc_age_iteration_merged <- prop_cc_age_iteration_merged %>% 
+  rename( Other_pr_2010 = Uncertain_pr_2010,
+          Other_pr_2014 = `None of the above_pr_2014`,
+          Other_pr_2021 = `None of the above_pr_2021`
+          )
+
+long_data <- prop_cc_age_iteration_merged %>%
+  pivot_longer( 
+    cols = - cut_off, 
+    names_to = c( "sexual_identity", "year" ),
+    names_pattern = "([A-Za-z\\s]+)_pr_(\\d+)",
+    values_to = "proportion_ratio"
+  )
+
+ggplot( long_data, 
+        aes( x = cut_off, y = proportion_ratio, color = sexual_identity, linetype = year ) 
+        ) +
+  
+  geom_line( ) +
+  
+  scale_linetype_manual( values = c( "2010" = "dotdash", "2014" = "dashed", "2021" = "solid" ),
+                         labels = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ) 
+                         ) +
+  
+  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D" ),
+                      breaks = c( "Heterosexual", "Homosexual", "Bisexual", "Other" ),
+                      labels = c( "Heterosexual", "Homosexual", "Bisexual", "Otherᵇ" )
+                      ) +
+  
+  scale_x_continuous( limits = c( 18, 65 ), 
+                      breaks = c( 18, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65 ),
+                      expand = c( 0.02, 0 )
+                      ) +
+  
+  scale_y_continuous( limits = c( 0, 7 ), 
+                      breaks = c( 0, 1, 2, 3, 4, 5, 6, 7 ),
+                      expand = c( 0.03, 0 ) 
+                      ) +
+  
+  labs( x = "Age cut-off (years)", 
+        y = "Proportion ratioᵃ"
+        ) +
+  
+  theme_classic() +
+  
+  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.position = "right",
+         legend.title = element_blank()
+         )
+```
+
 ### 4. Forest Plots for Relation between Sexual Identity and Demographic Factors
 #### 4.1. Complete-case analysis
 ```{r}

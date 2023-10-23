@@ -346,6 +346,7 @@ prop_cc_sex <- left_join( prop_cc_sex,
 ```
 
 ##### 3.1.3. By age group
+###### 3.1.3.1. Calculate proportion by pre-specified age cut-off
 ```{r}
 list_of_df <- list()
 
@@ -374,6 +375,77 @@ prop_cc_age <- left_join( prop_cc_age,
                             summarise( sample_size_2021 = n() ),
                           by = "subgroup" ) %>%
   mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
+```
+
+###### 3.1.3.2. Calculate proportion ratio by varying age cut-offs
+```{r}
+d_2021_iteration_age <- d_2021_complete
+
+min_age <- min( d_2021_iteration_age$age, na.rm = TRUE )
+
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" )
+
+results_df <- data.frame()
+
+for ( cut_off in ( min_age + 1 ):90 ) {
+  d_2021_iteration_age$age_iteration <- ifelse( d_2021_iteration_age$age <= cut_off, "young", "old" )
+  
+  survey_design_iteration_age <- svydesign( ids = ~ 1, 
+                                            strata = ~ sampling_strata_region,
+                                            weights = ~ design_weight,
+                                            fpc = ~ no.of.population,
+                                            data = d_2021_iteration_age )
+  
+  list_of_df <- list()
+  
+  for ( cat in categories ) {
+    prop_cc_age_iteration <- svyby(
+      formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+      by = ~ age_iteration,
+      design = subset( survey_design_iteration_age, !is.na( sexual_identity ) & !is.na( age ) ),
+      FUN = svyciprop,
+      method = "beta" )
+    
+    colnames( prop_cc_age_iteration ) <- c( "subgroup", 
+                                            paste0( cat, "_point_estimate_2021" ), 
+                                            paste0( cat, "_se_2021" ) )
+    
+    list_of_df[[cat]] <- prop_cc_age_iteration
+  }
+  
+  prop_cc_age_iteration_merged <- Reduce( function( df1, df2 ) { 
+    merge( df1, df2, by = "subgroup" ) 
+    }, 
+    list_of_df
+    )
+  
+  prop_cc_age_iteration_merged$cut_off <- cut_off
+  
+  results_df <- rbind( results_df, prop_cc_age_iteration_merged )
+  }
+
+results_wide <- results_df %>%
+  select( -ends_with( "_se_2021" ) ) %>%
+  pivot_wider( names_from = subgroup, 
+               values_from = c( Heterosexual_point_estimate_2021, 
+                                Homosexual_point_estimate_2021, 
+                                Bisexual_point_estimate_2021, 
+                                `None of the above_point_estimate_2021` ) 
+               )
+
+colnames( results_wide ) <- gsub( "_point_estimate_2021", "", colnames( results_wide ) )
+
+results_wide$Heterosexual_pr_2021 <- results_wide$Heterosexual_young/results_wide$Heterosexual_old
+results_wide$Homosexual_pr_2021 <- results_wide$Homosexual_young/results_wide$Homosexual_old
+results_wide$Bisexual_pr_2021 <- results_wide$Bisexual_young/results_wide$Bisexual_old
+results_wide$`None of the above_pr_2021` <- results_wide$`None of the above_young`/results_wide$`None of the above_old`
+
+results_wide$Heterosexual_pr_2021[ is.infinite( results_wide$Heterosexual_pr_2021 ) ] <- NA
+results_wide$Homosexual_pr_2021[ is.infinite( results_wide$Homosexual_pr_2021 ) ] <- NA
+results_wide$Bisexual_pr_2021[ is.infinite( results_wide$Bisexual_pr_2021 ) ] <- NA
+results_wide$`None of the above_pr_2021`[ is.infinite( results_wide$`None of the above_pr_2021` ) ] <- NA
+
+writexl::write_xlsx( results_wide, "prop_cc_age_iteration_2021.xlsx" )
 ```
 
 ##### 3.1.4. By sex*age group
@@ -578,9 +650,9 @@ prop_cc_summary_2021 <- rbind( prop_cc_sex,
 writexl::write_xlsx( prop_cc_summary_2021, "prop_cc_summary_2021.xlsx" )
 ```
 
-#### 4.2. Multiple imputation and inverse probability weighting
-##### 4.2.1. Multiple imputation
-###### 4.2.1.1. Obtain incomplete dataset
+#### 3.2. Multiple imputation and inverse probability weighting
+##### 3.2.1. Multiple imputation
+###### 3.2.1.1. Obtain incomplete dataset
 ```{r}
 d_2021_ic <- as.data.frame( d_2021 %>% 
                               select( "sampling_strata", "sampling_strata_region", "no.of.population", "calibrated_weight", "sexual_identity", "age", "sex", "fodelseland", "utbniva2021", "dispink2021", "marital_status" ) ) %>%
@@ -597,7 +669,7 @@ d_2021_ic <- within( d_2021_ic, education <- factor( education ) )
 sapply( d_2021_ic, class ) # all continuous variables are numeric, and all categorical variables are factor
 ```
 
-###### 4.2.1.2. Visualize missing pattern and select auxiliary variables
+###### 3.2.1.2. Visualize missing pattern and select auxiliary variables
 ```{r}
 # identify missing variables
 vis_miss( d_2021_ic )
@@ -626,7 +698,7 @@ plot( d_2021_ic$marital_status, d_2021_ic$sexual_identity )
 # finally, include all the variables as auxiliary variables for sexual identity, including sampling strata, age, sex, country of birth, education, income, and marital status
 ```
 
-###### 4.2.1.3. Two-level multivariate normal imputation with latent normal variable approach
+###### 3.2.1.3. Two-level multivariate normal imputation with latent normal variable approach
 ```{r}
 # use multiple imputation to account for item non-response
 # assume Missing At Random (MAR)
@@ -690,7 +762,7 @@ imp <- jomoImpute( data = d_2021_ic,
 save.image( file = "working_environment_2021.RData" )
 ```
 
-###### 4.2.1.4. Validate imputations
+###### 3.2.1.4. Validate imputations
 ```{r}
 # validate imputation
 summary( imp ) # summarize model and display convergence statistics
@@ -700,7 +772,7 @@ plot( imp ) # display convergence plots and autocorrelation plot
 implist <- mitmlComplete( imp, "all" )
 ```
 
-##### 4.2.2. Inverse probability weighting
+##### 3.2.2. Inverse probability weighting
 ```{r}
 # use inverse probability weighting to account for unit non-response
 
@@ -785,122 +857,77 @@ df_overall$sampling_strata_region <- "Stockholm County"
 prop_cc_summary_2021 <- rbind( prop_cc_summary, df_overall )
 ```
 
-### 5. Relation between Sexual Identity and Demographic Factors
-#### 5.1. Complete-case analysis
+### 4. Relation between Sexual Identity and Demographic Factors
+#### 4.1. Complete-case analysis
+##### 4.1.1. Define survey design
 ```{r}
-##### prepare dataset #####
+# prepare dataset
+d_2021_complete_lbr <- d_2021_complete
 
-# calculate item response rate among those who had complete data on all variables included in the model
-itemresponse_prob_cc_lr <- d_2021 %>%
-  group_by( sampling_strata_region ) %>%
-  summarise( itemresponse_prob_cc_lr = 
-               sum( !is.na( sexual_identity ) &
-                      !is.na( sex ) &
-                      !is.na( age_cat ) &
-                      !is.na( education ) &
-                      !is.na( income ) &
-                      !is.na( marital_status ) &
-                      !is.na( country_of_birth )
-                    ) / n() 
-  )
-
-d_2021 <- d_2021 %>%
-  left_join( itemresponse_prob_cc_lr, by = "sampling_strata_region" ) %>%
-  mutate(
-    itemresponse_prob_cc_lr = ifelse(
-      is.na( sexual_identity ) |
-        is.na( sex ) |
-        is.na( age_cat ) |
-        is.na( education ) |
-        is.na( income ) |
-        is.na( marital_status ) |
-        is.na( country_of_birth ),
-      0,
-      itemresponse_prob_cc_lr
-    )
-  )
-
-# adjust design weights to take into account both unit and item non-response
-# assume MCAR within each sampling stratum
-d_2021$design_weight_unit_item_nonresponse_cc_lr <- ifelse( d_2021$itemresponse_prob_cc_lr == 0, 0,
-                                                             d_2021$design_weight_unit_nonresponse*( 1/d_2021$itemresponse_prob_cc_lr ) )
-
-# extract variables
-d_2021_cc_lr <- as.data.frame(
-  d_2021[ !is.na( d_2021$sexual_identity ) &
-            !is.na( d_2021$sex ) &
-            !is.na( d_2021$age_cat ) &
-            !is.na( d_2021$education ) &
-            !is.na( d_2021$income ) &
-            !is.na( d_2021$marital_status ) &
-            !is.na( d_2021$country_of_birth ), ] ) %>%
-    select(
-      "sampling_strata_region",
-      "no.of.population",
-      "design_weight_unit_item_nonresponse_cc_lr",
-      "sexual_identity",
-      "sex",
-      "age_cat",
-      "education",
-      "income",
-      "marital_status",
-      "country_of_birth"
-    )
-
-d_2021_cc_lr$country_of_birth <- factor(
-  ifelse( d_2021_cc_lr$country_of_birth == "Sweden", "Sweden",
-          ifelse( d_2021_cc_lr$country_of_birth == "Europe", "Europe",
-                  "Outside Europe" ) ),
+d_2021_complete_lbr$country_of_birth <- factor( 
+  ifelse( d_2021_complete_lbr$country_of_birth == "Sweden", "Sweden",
+          ifelse( d_2021_complete_lbr$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
   levels = c( "Sweden", "Europe", "Outside Europe" )
   )
 
-d_2021_cc_lr$marital_status <- relevel( d_2021_cc_lr$marital_status, ref = "Currently married" )
+d_2021_complete_lbr$marital_status <- relevel( d_2021_complete_lbr$marital_status, ref = "Currently married" )
 
-n_miss( d_2021_cc_lr ) # 0 missing
-summary( d_2021_cc_lr )
+d_2021_complete_lbr$sexual_minority <- factor(
+  ifelse( d_2021_complete_lbr$sexual_identity == "Heterosexual", "Heterosexual", "Sexual_minority" ),
+  levels = c( "Heterosexual", "Sexual_minority" ) )
 
+d_2021_complete_lbr$homosexual <- factor(
+  ifelse( d_2021_complete_lbr$sexual_identity == "Homosexual", "Homosexual", "Non-homosexual" ),
+  levels = c( "Non-homosexual", "Homosexual" ) )
 
-##### Define survey design #####
+d_2021_complete_lbr$bisexual <- factor(
+  ifelse( d_2021_complete_lbr$sexual_identity == "Bisexual", "Bisexual", "Non-bisexual" ),
+  levels = c( "Non-bisexual", "Bisexual" ) )
 
-survey_design_cc_lr <- svydesign(
-  ids = ~ 1,
-  strata = ~ sampling_strata_region,
-  weights = ~ design_weight_unit_item_nonresponse_cc_lr,
-  fpc = ~ no.of.population,
-  data = d_2021_cc_lr
-)
+d_2021_complete_lbr$other <- factor(
+  ifelse( d_2021_complete_lbr$sexual_identity == "None of the above", "Other", "Non-other" ),
+  levels = c( "Non-other", "Other" ) )
 
+d_2021_complete_lbr <- d_2021_complete_lbr %>% 
+  mutate( 
+    nomiss = !is.na( sexual_identity ) & !is.na( age_cat ) & !is.na( sex ) & !is.na( education ) &
+      !is.na( country_of_birth ) & !is.na( income ) & !is.na( marital_status ) 
+    )
 
-##### Fit weighted logistic regression model #####
+# create survey design
+survey_design_cc_lbr <- svydesign( ids = ~ 1, 
+                                   strata = ~ sampling_strata_region,
+                                   weights = ~ design_weight,
+                                   fpc = ~ no.of.population,
+                                   data = d_2021_complete_lbr )
 
-fml_lr <- sexual_identity ~ age_cat + sex + age_cat*sex + education + country_of_birth + income + marital_status + sampling_strata_region
+# the following analyses assume MCAR
+```
 
-# homosexual vs heterosexual
-model_lr_cc_homosexual <- svyglm(
-  fml_lr,
-  design = subset(
-    survey_design_cc_lr,
-    sexual_identity == "Heterosexual" |
-      sexual_identity == "Homosexual"
-  ),
+##### 4.1.2. Fit log-binomial regression model
+```{r}
+# sexual minority group vs heterosexual
+model_lbr_cc_sexual_minority <- svyglm(
+  sexual_minority ~ age_cat + sex + age_cat*sex + education + country_of_birth + income + marital_status + sampling_strata_region,
+  design = subset( survey_design_cc_lbr, nomiss ),
   family = quasibinomial( link = "logit" )
-)
+  )
 
-summary( model_lr_cc_homosexual )
+summary( model_lbr_cc_heterosexual )
 
 model_lr_cc_homosexual_output <- round( cbind(
   summary(
-    model_lr_cc_homosexual,
-    df.resid = degf( model_lr_cc_homosexual$survey.design )
+    model_lbr_cc_heterosexual,
+    df.resid = degf( model_lbr_cc_heterosexual$survey.design )
   )$coef,
   confint(
-    model_lr_cc_homosexual,
-    ddf = degf( model_lr_cc_homosexual$survey.design )
+    model_lbr_cc_heterosexual,
+    ddf = degf( model_lbr_cc_heterosexual$survey.design )
   ) ), 4 )
 
-cbind( "AOR" = exp(   coef(model_lr_cc_homosexual)),
-                       exp(confint(model_lr_cc_homosexual,
-                           df.resid=degf(model_lr_cc_homosexual$survey.design))))[-1,]
+cbind( "AOR" = exp(   coef(model_lbr_cc_sexual_minority)),
+                       exp(confint(model_lbr_cc_sexual_minority,
+                           df.resid=degf(model_lbr_cc_sexual_minority$survey.design))))
 
 
 # bisexual vs heterosexual
