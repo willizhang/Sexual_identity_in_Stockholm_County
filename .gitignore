@@ -3,8 +3,8 @@
 *.RData
 .Ruserdata
 *.xlsx
-Question.R
 .DS_Store
 Trends_plots.Rmd
-Backup_scripts.R
-profession.R
+*.R
+*.svg
+*.pdf
