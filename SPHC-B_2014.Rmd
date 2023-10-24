@@ -130,6 +130,37 @@ d_2014$education <- factor( ifelse( d_2014$utbniva2014 <= 2, "<=9 years",
                             levels = c( "<=9 years", "10-12 years", ">=13 years" ) )
 table( d_2014$education, useNA = "always" )
 
+# occupation
+table( d_2014$SSYK_kl, useNA = "always" )
+d_2014$occupation <- factor(
+  ifelse(
+    d_2014$SSYK_kl == "Yrken inom byggverksamhet och tillverkning" |
+      d_2014$SSYK_kl == "Yrken inom lantbruk, trädgård, skogsbruk och fiske" |
+      d_2014$SSYK_kl == "Yrken inom maskinell tillverkning och transport m.m.",
+    "Manual and field trades",
+    ifelse(
+      d_2014$SSYK_kl == "Service-, omsorgs- och försäljningsyrken" |
+        d_2014$SSYK_kl == "Yrken inom administration och kundtjänst" |
+        d_2014$SSYK_kl == "Yrken med krav på kortare utbildning eller introduktion",
+      "Service and support",
+      ifelse(
+        d_2014$SSYK_kl == "Yrken med krav på fördjupad högskolekompetens" |
+          d_2014$SSYK_kl == "Yrken med krav på högskolekompetens eller motsvarande" |
+          d_2014$SSYK_kl == "Chefsyrken" |
+          d_2014$SSYK_kl == "Militära yrken",
+        "Expertise and leadership",
+        NA
+      )
+    )
+  ),
+  levels = c(
+    "Manual and field trades",
+    "Service and support",
+    "Expertise and leadership"
+  )
+)
+table( d_2014$occupation, useNA = "always" )
+
 # disposable income
 summary( d_2014$dispink2014, useNA = "always" )
 d_2014$dispink2014[ d_2014$dispink2014 < 0 ] <- NA
@@ -163,7 +194,7 @@ table( d_2014$personal_support, useNA = "always" )
 
 # among respondents (n = 22,250)
 # make characteristics table by sexual identity
-explanatory =  c( "sex", "age_cat", "country_of_birth", "education", "income", "marital_status", "living_alone", "personal_support" )
+explanatory =  c( "sex", "age_cat", "country_of_birth", "education", "occupation", "income", "marital_status", "living_alone", "personal_support" )
 dependent = "sexual_identity"
 d_2014_table <- d_2014 %>% 
   summary_factorlist( dependent,
@@ -221,6 +252,12 @@ x8
 format( round( fisher.test( x8[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x8[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x8[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
+
+x9 <- table( d_2014$occupation, d_2014$sexual_identity )
+x9
+format( round( fisher.test( x9[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x9[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x9[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
 
 
 ##### design weights #####
@@ -430,7 +467,7 @@ categories <- c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" )
 
 results_df <- data.frame()
 
-for ( cut_off in ( min_age + 1 ):90 ) {
+for ( cut_off in ( min_age ):90 ) {
   d_2014_iteration_age$age_iteration <- ifelse( d_2014_iteration_age$age <= cut_off, "young", "old" )
   
   survey_design_iteration_age <- svydesign( ids = ~ 1, 
@@ -553,7 +590,38 @@ prop_cc_education <- left_join( prop_cc_education,
   mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.6. By income
+##### 3.1.6. By occupation
+```{r}
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_occupation <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+                              by = ~ occupation,
+                              design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( occupation ) ),
+                              FUN = svyciprop,
+                              vartype = "ci",
+                              method = "beta" )
+  
+  colnames( prop_cc_occupation ) <- c( "subgroup", paste0( cat, "_point_estimate_2014" ), paste0( cat, "_lower_ci_2014" ), paste0( cat, "_upper_ci_2014" ) )
+  
+  list_of_df[[cat]] <- prop_cc_occupation
+}
+
+prop_cc_occupation <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+prop_cc_occupation <- left_join( prop_cc_occupation,
+                                d_2014_complete_cc[ !is.na( d_2014_complete_cc$sexual_identity ) &
+                                                      !is.na( d_2014_complete_cc$occupation ), ] %>% 
+                                  group_by( subgroup = occupation ) %>% 
+                                  summarise( sample_size_2014 = n() ),
+                                by = "subgroup" ) %>%
+  mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
+```
+
+##### 3.1.7. By income
 ```{r}
 list_of_df <- list()
 
@@ -584,7 +652,7 @@ prop_cc_income <- left_join( prop_cc_income,
   mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.7. By country of birth
+##### 3.1.8. By country of birth
 ```{r}
 list_of_df <- list()
 
@@ -615,7 +683,7 @@ prop_cc_country_of_birth <- left_join( prop_cc_country_of_birth,
   mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.8. By marital status
+##### 3.1.9. By marital status
 ```{r}
 list_of_df <- list()
 
@@ -646,7 +714,7 @@ prop_cc_marital_status <- left_join( prop_cc_marital_status,
   mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.9. By living status
+##### 3.1.10. By living status
 ```{r}
 list_of_df <- list()
 
@@ -677,7 +745,7 @@ prop_cc_living_alone <- left_join( prop_cc_living_alone,
   mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.10. By personal support
+##### 3.1.11. By personal support
 ```{r}
 list_of_df <- list()
 
@@ -709,7 +777,7 @@ prop_cc_personal_support <- left_join( prop_cc_personal_support,
 
 ```
 
-##### 3.1.11. Overall proportions of sexual identities in Stockholm County
+##### 3.1.12. Overall proportions of sexual identities in Stockholm County
 ```{r}
 list_of_df <- list()
 
@@ -741,12 +809,13 @@ prop_cc_overall <- bind_cols( prop_cc_overall,
   mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.12. Merge datasets
+##### 3.1.13. Merge datasets
 ```{r}
 prop_cc_summary_2014 <- rbind( prop_cc_sex, 
                                prop_cc_age,
                                prop_cc_age_sex,
-                               prop_cc_education, 
+                               prop_cc_education,
+                               prop_cc_occupation,
                                prop_cc_income, 
                                prop_cc_country_of_birth, 
                                prop_cc_marital_status,

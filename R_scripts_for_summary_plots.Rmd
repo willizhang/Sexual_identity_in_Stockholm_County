@@ -149,7 +149,7 @@ prop_cc_summary <- prop_cc_summary_2010 %>%
   full_join( prop_cc_summary_2021, by = "subgroup" )
 
 # modify table format
-desired_order <- c( "Male", "Female", "16-29", "30-44", "45-59", ">=60", "16-29.Male", "30-44.Male", "45-59.Male", ">=60.Male", "16-29.Female", "30-44.Female", "45-59.Female", ">=60.Female", "<=9 years", "10-12 years", ">=13 years", "Sweden", "Europe", "Outside Europe", "<=2,500", "(2,500, 3,500]", "(3,500, 4,500]", ">4,500", "Currently married", "Never married", "Other", "living_alone_yes", "living_alone_no", "personal_support_yes", "personal_support_no", "Stockholm County" )
+desired_order <- c( "Male", "Female", "16-29", "30-44", "45-59", ">=60", "16-29.Male", "30-44.Male", "45-59.Male", ">=60.Male", "16-29.Female", "30-44.Female", "45-59.Female", ">=60.Female", "Sweden", "Europe", "Outside Europe", "<=9 years", "10-12 years", ">=13 years", "Manual and field trades", "Service and support", "Expertise and leadership", "<=2,500", "(2,500, 3,500]", "(3,500, 4,500]", ">4,500", "Currently married", "Never married", "Other", "living_alone_yes", "living_alone_no", "personal_support_yes", "personal_support_no", "Stockholm County" )
 
 prop_cc_summary <- prop_cc_summary %>%
   mutate( subgroup = factor( subgroup, levels = desired_order ) ) %>%
@@ -165,22 +165,25 @@ prop_cc_summary <- prop_cc_summary %>%
   add_row( subgroup = "Age by sex", .before = 9 )
 
 prop_cc_summary <- prop_cc_summary %>% 
-  add_row( subgroup = "Education years", .before = 18 )
+  add_row( subgroup = "Country of birth", .before = 18 )
 
 prop_cc_summary <- prop_cc_summary %>% 
-  add_row( subgroup = "Country of birth", .before = 22 )
+  add_row( subgroup = "Education years", .before = 22 )
 
 prop_cc_summary <- prop_cc_summary %>% 
-  add_row( subgroup = "Income (100 kr/yr)ᵈ", .before = 26 )
+  add_row( subgroup = "Occupationᵈ", .before = 26 )
 
 prop_cc_summary <- prop_cc_summary %>% 
-  add_row( subgroup = "Marital statusᵉ", .before = 31 )
+  add_row( subgroup = "Income (100 kr/yr)ᵉ", .before = 30 )
 
 prop_cc_summary <- prop_cc_summary %>% 
-  add_row( subgroup = "Living alone", .before = 35 )
+  add_row( subgroup = "Marital statusᶠ", .before = 35 )
 
 prop_cc_summary <- prop_cc_summary %>% 
-  add_row( subgroup = "Personal support", .before = 38 )
+  add_row( subgroup = "Living alone", .before = 39 )
+
+prop_cc_summary <- prop_cc_summary %>% 
+  add_row( subgroup = "Personal support", .before = 42 )
 
 prop_cc_summary$subgroup[ prop_cc_summary$subgroup == "16-29" ] <- "16–29 yrsᵇ"
 prop_cc_summary$subgroup[ prop_cc_summary$subgroup == "30-44" ] <- "30–44 yrs"
@@ -347,7 +350,7 @@ p_cc_heterosexual <- forest(
 
 p_cc_heterosexual <- edit_plot(
   p_cc_heterosexual,
-  row = c(1, 4, 9, 13, 17, 22, 26, 29, 32),
+  row = c( 1, 4, 9, 13, 17, 21, 26, 30, 33, 36 ),
   gp = gpar(fontface = "bold")
 )
 
@@ -615,7 +618,7 @@ p_cc_homosexual <- forest(
 
 p_cc_homosexual <- edit_plot(
   p_cc_homosexual,
-  row = c(1, 4, 9, 13, 17, 22, 26, 29, 32),
+  row = c( 1, 4, 9, 13, 17, 21, 26, 30, 33, 36 ),
   gp = gpar(fontface = "bold")
 )
 
@@ -883,7 +886,7 @@ p_cc_bisexual <- forest(
 
 p_cc_bisexual <- edit_plot(
   p_cc_bisexual,
-  row = c(1, 4, 9, 13, 17, 22, 26, 29, 32),
+  row = c( 1, 4, 9, 13, 17, 21, 26, 30, 33, 36 ),
   gp = gpar(fontface = "bold")
 )
 
@@ -1040,8 +1043,9 @@ prop_cc_summary_other <- prop_cc_summary[ -c( 9:17 ), c( 1, 11:13, 14, 24:26, 27
 
 prop_cc_summary_other$Subgroup[ prop_cc_summary_other$Subgroup == "   16–29 yrsᵇ" ] <- "   16–29 yrsᶜ"
 prop_cc_summary_other$Subgroup[ prop_cc_summary_other$Subgroup == "   Europeᶜ" ] <- "   Europeᵈ"
-prop_cc_summary_other$Subgroup[ prop_cc_summary_other$Subgroup == "Income (100 kr/yr)ᵈ" ] <- "Income (100 kr/yr)ᵉ"
-prop_cc_summary_other$Subgroup[ prop_cc_summary_other$Subgroup == "Marital statusᵉ" ] <- "Marital statusᶠ"
+prop_cc_summary_other$Subgroup[ prop_cc_summary_other$Subgroup == "Occupationᵈ" ] <- "Occupationᵉ"
+prop_cc_summary_other$Subgroup[ prop_cc_summary_other$Subgroup == "Income (100 kr/yr)ᵉ" ] <- "Income (100 kr/yr)ᶠ"
+prop_cc_summary_other$Subgroup[ prop_cc_summary_other$Subgroup == "Marital statusᶠ" ] <- "Marital statusᵍ"
 
 prop_cc_summary_other <- prop_cc_summary_other %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -1156,7 +1160,7 @@ p_cc_other <- forest(
 
 p_cc_other <- edit_plot(
   p_cc_other,
-  row = c(1, 4, 9, 13, 17, 22, 26, 29, 32),
+  row = c( 1, 4, 9, 13, 17, 21, 26, 30, 33, 36 ),
   gp = gpar(fontface = "bold")
 )
 
@@ -1694,8 +1698,8 @@ ggplot( long_data,
                       labels = c( "Heterosexual", "Homosexual", "Bisexual", "Otherᵇ" )
                       ) +
   
-  scale_x_continuous( limits = c( 18, 65 ), 
-                      breaks = c( 18, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65 ),
+  scale_x_continuous( limits = c( 15, 65 ), 
+                      breaks = c( 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65 ),
                       expand = c( 0.02, 0 )
                       ) +
   
