@@ -16,6 +16,7 @@ library(dplyr)
 library(tidyr)
 library(tibble)
 library(ggplot2)
+library(ggbreak)
 library(knitr)
 ```
 
@@ -1657,34 +1658,50 @@ plot( p_cc_age_sex )
 ```{r}
 # import datasets
 prop_cc_age_iteration_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_age_iteration_2010.xlsx") %>%
-  select( "cut_off", "Heterosexual_pr_2010", "Homosexual_pr_2010", "Bisexual_pr_2010", "Uncertain_pr_2010" )
+  select( "cut_off", "Heterosexual_young", "Homosexual_young", "Bisexual_young", "Uncertain_young", "Heterosexual_pr_2010", "Homosexual_pr_2010", "Bisexual_pr_2010", "Uncertain_pr_2010" ) %>%
+  rename( 
+    Heterosexual_prop_2010 = Heterosexual_young,
+    Homosexual_prop_2010 = Homosexual_young,
+    Bisexual_prop_2010 = Bisexual_young,
+    Other_prop_2010 = Uncertain_young,
+    Other_pr_2010 = Uncertain_pr_2010
+    )
 
 prop_cc_age_iteration_2014 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_age_iteration_2014.xlsx") %>%
-  select( "cut_off", "Heterosexual_pr_2014", "Homosexual_pr_2014", "Bisexual_pr_2014", "None of the above_pr_2014" )
+  select( "cut_off", "Heterosexual_young", "Homosexual_young", "Bisexual_young", "None of the above_young", "Heterosexual_pr_2014", "Homosexual_pr_2014", "Bisexual_pr_2014", "None of the above_pr_2014" ) %>%
+  rename( 
+    Heterosexual_prop_2014 = Heterosexual_young,
+    Homosexual_prop_2014 = Homosexual_young,
+    Bisexual_prop_2014 = Bisexual_young,
+    Other_prop_2014 = `None of the above_young`,
+    Other_pr_2014 = `None of the above_pr_2014`
+    )
 
 prop_cc_age_iteration_2021 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_age_iteration_2021.xlsx") %>%
-  select( "cut_off", "Heterosexual_pr_2021", "Homosexual_pr_2021", "Bisexual_pr_2021", "None of the above_pr_2021" )
+  select( "cut_off", "Heterosexual_young", "Homosexual_young", "Bisexual_young", "None of the above_young", "Heterosexual_pr_2021", "Homosexual_pr_2021", "Bisexual_pr_2021", "None of the above_pr_2021" ) %>%
+  rename( 
+    Heterosexual_prop_2021 = Heterosexual_young,
+    Homosexual_prop_2021 = Homosexual_young,
+    Bisexual_prop_2021 = Bisexual_young,
+    Other_prop_2021 = `None of the above_young`,
+    Other_pr_2021 = `None of the above_pr_2021`
+    )
 
 prop_cc_age_iteration_merged <- prop_cc_age_iteration_2010 %>%
   full_join( prop_cc_age_iteration_2014, by = "cut_off" ) %>%
   full_join( prop_cc_age_iteration_2021, by = "cut_off" )
 
-prop_cc_age_iteration_merged <- prop_cc_age_iteration_merged %>% 
-  rename( Other_pr_2010 = Uncertain_pr_2010,
-          Other_pr_2014 = `None of the above_pr_2014`,
-          Other_pr_2021 = `None of the above_pr_2021`
-          )
-
-long_data <- prop_cc_age_iteration_merged %>%
+long_data <- prop_cc_age_iteration_merged %>% 
   pivot_longer( 
     cols = - cut_off, 
-    names_to = c( "sexual_identity", "year" ),
-    names_pattern = "([A-Za-z\\s]+)_pr_(\\d+)",
-    values_to = "proportion_ratio"
+    names_to = c( "Sexuality", "Age_Group", "Year" ), 
+    names_pattern = "([A-Za-z]+)_(\\w+)_(\\d+)", 
+    values_to = "Value" 
   )
 
-ggplot( long_data, 
-        aes( x = cut_off, y = proportion_ratio, color = sexual_identity, linetype = year ) 
+# plot proportion ratio
+ggplot( long_data[ long_data$Age_Group == "pr", ], 
+        aes( x = cut_off, y = Value, color = Sexuality, linetype = Year ) 
         ) +
   
   geom_line( ) +
@@ -1695,7 +1712,7 @@ ggplot( long_data,
   
   scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D" ),
                       breaks = c( "Heterosexual", "Homosexual", "Bisexual", "Other" ),
-                      labels = c( "Heterosexual", "Homosexual", "Bisexual", "Otherᵇ" )
+                      labels = c( "Heterosexual", "Homosexual", "Bisexual", "Otherᶜ" )
                       ) +
   
   scale_x_continuous( limits = c( 15, 65 ), 
@@ -1705,11 +1722,11 @@ ggplot( long_data,
   
   scale_y_continuous( limits = c( 0, 7 ), 
                       breaks = c( 0, 1, 2, 3, 4, 5, 6, 7 ),
-                      expand = c( 0.03, 0 ) 
+                      expand = c( 0.04, 0 ) 
                       ) +
   
-  labs( x = "Age cut-off (years)", 
-        y = "Proportion ratioᵃ"
+  labs( x = "Age cut-off (years)ᵃ", 
+        y = "Proportion ratioᵇ"
         ) +
   
   theme_classic() +
@@ -1721,6 +1738,53 @@ ggplot( long_data,
          legend.text = element_text( family = "Arial", size = 10 ),
          legend.position = "right",
          legend.title = element_blank()
+         )
+
+
+# plot proportion
+ggplot( long_data[ long_data$Age_Group == "prop", ], 
+        aes( x = cut_off, y = Value, color = Sexuality, linetype = Year ) 
+        ) +
+  
+  geom_line( ) +
+  
+  scale_linetype_manual( values = c( "2010" = "dotdash", "2014" = "dashed", "2021" = "solid" ),
+                         labels = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ) 
+                         ) +
+  
+  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D" ),
+                      breaks = c( "Heterosexual", "Homosexual", "Bisexual", "Other" ),
+                      labels = c( "Heterosexual", "Homosexual", "Bisexual", "Otherᶜ" )
+                      ) +
+  
+  scale_x_continuous( limits = c( 15, 90 ), 
+                      breaks = seq( 15, 90, by = 5 ),
+                      expand = c( 0.02, 0 )
+                      ) +
+  
+  scale_y_continuous( labels = scales::percent,
+                      limits = c( 0, 1 ), 
+                      breaks = c( 0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.7, 0.8, 0.9, 1 )
+                      ) +
+  
+  scale_y_break( c( 0.12, 0.75 ), scales = 1, space = 0.3, expand = c( 0, 0 ) ) +
+  
+  labs( x = "Age cut-off (years)ᵃ", 
+        y = "Proportionᵇ"
+        ) +
+  
+  theme_classic() +
+  
+  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.position = "right",
+         legend.title = element_blank(),
+         axis.text.y.right = element_blank(),
+         axis.ticks.y.right = element_blank(),
+         axis.line.y.right = element_blank()
          )
 ```
 

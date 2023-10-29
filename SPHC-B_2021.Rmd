@@ -413,7 +413,7 @@ prop_cc_age <- left_join( prop_cc_age,
   mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
 ```
 
-###### 3.1.3.2. Calculate proportion ratio by varying age cut-offs
+###### 3.1.3.2. Calculate proportion and proportion ratio by varying age cut-offs
 ```{r}
 d_2021_iteration_age <- d_2021_complete
 
