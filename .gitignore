@@ -5,6 +5,7 @@
 *.xlsx
 .DS_Store
 Trends_plots.Rmd
-*.R
+Question.R
+Backup_scripts.R
 *.svg
 *.pdf

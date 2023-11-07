@@ -915,7 +915,7 @@ ggplot( data = results_long,
   geom_hline( yintercept = 0.5, linetype = "dashed", color = "grey50", linewidth = 0.5 ) +
 
   scale_x_discrete( labels = c( "16–29 yearsᵃ", "30–44 years", "45–59 years", "\u2265 60 years" ),
-                    expand = c( 0.05, 0 )
+                    expand = c( 0.1, 0 )
                       ) +
   
   scale_y_continuous( labels = scales::percent,

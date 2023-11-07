@@ -27,6 +27,7 @@ library(dplyr)
 library(finalfit)
 library(survey)
 library(svyVGAM)
+source("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/Helper_function.R") # helper function
 ```
 
 ### 2. Import and Visualise Data
@@ -929,160 +930,411 @@ prop_cc_summary_2021 <- rbind( prop_cc_summary, df_overall )
 #### 4.1. Complete-case analysis
 ##### 4.1.1. Define survey design
 ```{r}
-# prepare dataset
-d_2021_complete_lbr <- d_2021_complete
+##### prepare dataset #####
 
-d_2021_complete_lbr$country_of_birth <- factor( 
-  ifelse( d_2021_complete_lbr$country_of_birth == "Sweden", "Sweden",
-          ifelse( d_2021_complete_lbr$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
+d_2021_cc_model <- d_2021_complete
+
+# exposures of interest, including age, sex, country of birth, education, income, and marital status
+d_2021_cc_model$age_exp <- relevel( d_2021_cc_model$age_cat, ref = "45-59" )
+
+d_2021_cc_model$sex_exp <- relevel( d_2021_cc_model$sex, ref = "Male" )
+
+d_2021_cc_model$country_of_birth_exp <- factor( 
+  ifelse( d_2021_cc_model$country_of_birth == "Sweden", "Sweden",
+          ifelse( d_2021_cc_model$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
   levels = c( "Sweden", "Europe", "Outside Europe" )
   )
 
-d_2021_complete_lbr$marital_status <- relevel( d_2021_complete_lbr$marital_status, ref = "Currently married" )
+d_2021_cc_model$education_exp <- relevel( d_2021_cc_model$education, ref = ">=13 years" )
 
-d_2021_complete_lbr$sexual_minority <- factor(
-  ifelse( d_2021_complete_lbr$sexual_identity == "Heterosexual", "Heterosexual", "Sexual_minority" ),
-  levels = c( "Heterosexual", "Sexual_minority" ) )
+d_2021_cc_model$income_exp <- relevel( d_2021_cc_model$income, ref = ">4,500" )
 
-d_2021_complete_lbr$homosexual <- factor(
-  ifelse( d_2021_complete_lbr$sexual_identity == "Homosexual", "Homosexual", "Non-homosexual" ),
-  levels = c( "Non-homosexual", "Homosexual" ) )
+d_2021_cc_model$marital_status_exp <- relevel( d_2021_cc_model$marital_status, ref = "Currently married" )
 
-d_2021_complete_lbr$bisexual <- factor(
-  ifelse( d_2021_complete_lbr$sexual_identity == "Bisexual", "Bisexual", "Non-bisexual" ),
-  levels = c( "Non-bisexual", "Bisexual" ) )
 
-d_2021_complete_lbr$other <- factor(
-  ifelse( d_2021_complete_lbr$sexual_identity == "None of the above", "Other", "Non-other" ),
-  levels = c( "Non-other", "Other" ) )
+# outcomes of interest, including sexual minority, homosexual, bisexual, and other
+d_2021_cc_model$sexual_minority <- ifelse( d_2021_cc_model$sexual_identity == "Heterosexual", 0, 1 )
 
-d_2021_complete_lbr <- d_2021_complete_lbr %>% 
+d_2021_cc_model$homosexual <- ifelse( d_2021_cc_model$sexual_identity == "Homosexual", 1, 0 )
+
+d_2021_cc_model$bisexual <- ifelse( d_2021_cc_model$sexual_identity == "Bisexual", 1, 0 )
+
+d_2021_cc_model$other <- ifelse( d_2021_cc_model$sexual_identity == "None of the above", 1, 0 )
+
+
+# confounding variables, including age, sex, country of birth, education, income, marital status, 
+# and place of residence (i.e., sampling strata)
+d_2021_cc_model$age_conf <- d_2021_cc_model$age # age
+
+d_2021_cc_model$sex_conf <- d_2021_cc_model$sex # sex
+
+d_2021_cc_model$country_of_birth_conf <- d_2021_cc_model$country_of_birth # country of birth (grouped into five categories due to sparse data)
+
+d_2021_cc_model$education_conf <- as.factor( d_2021_cc_model$utbniva2021 ) # education
+
+d_2021_cc_model$income_conf <- d_2021_cc_model$dispink2021 # disposable income
+
+d_2021_cc_model$marital_status_conf <- d_2021_cc_model$marital_status # marital status (grouped into three categories due to sparse data)
+
+d_2021_cc_model$place_of_residence_conf <- d_2021_cc_model$sampling_strata_region # place of residence
+
+
+# a variable indicating missing values
+d_2021_cc_model <- d_2021_cc_model %>% 
   mutate( 
-    nomiss = !is.na( sexual_identity ) & !is.na( age_cat ) & !is.na( sex ) & !is.na( education ) &
-      !is.na( country_of_birth ) & !is.na( income ) & !is.na( marital_status ) 
+    nomiss = !is.na( sexual_identity ) & !is.na( age_conf ) & !is.na( sex_conf ) & 
+      !is.na( country_of_birth_conf ) & !is.na( education_conf ) & !is.na( income_conf ) & 
+      !is.na( marital_status_conf ) & !is.na( place_of_residence_conf )
     )
 
-# create survey design
-survey_design_cc_lbr <- svydesign( ids = ~ 1, 
-                                   strata = ~ sampling_strata_region,
-                                   weights = ~ design_weight,
-                                   fpc = ~ no.of.population,
-                                   data = d_2021_complete_lbr )
+
+##### create survey design #####
+survey_design_cc_model <- subset(
+  
+  svydesign( ids = ~ 1,
+             strata = ~ sampling_strata_region,
+             weights = ~ design_weight,
+             fpc = ~ no.of.population,
+             data = d_2021_cc_model ),
+  
+  # restrict to only individuals with complete data on all variables included in the model
+  nomiss )
+
 
 # the following analyses assume MCAR
 ```
 
-##### 4.1.2. Fit log-binomial regression model
+##### 4.1.2. Define model formula
 ```{r}
-# sexual minority group vs heterosexual
-model_lbr_cc_sexual_minority <- svyglm(
-  sexual_minority ~ age_cat + sex + age_cat*sex + education + country_of_birth + income + marital_status + sampling_strata_region,
-  design = subset( survey_design_cc_lbr, nomiss ),
-  family = quasibinomial( link = "logit" )
+##### exposure of interest: age #####
+
+# sexual minority
+fml_sexual_minority_age <- sexual_minority ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+
+# homosexual
+fml_homosexual_age <- homosexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+
+# bisexual
+fml_bisexual_age <- bisexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+
+# other
+fml_other_age <- other ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+
+# list of formulas
+fml_list_age <- list(
+  fml_sexual_minority_age = fml_sexual_minority_age,
+  fml_homosexual_age = fml_homosexual_age,
+  fml_bisexual_age = fml_bisexual_age,
+  fml_other_age = fml_other_age
   )
 
-summary( model_lbr_cc_heterosexual )
 
-model_lr_cc_homosexual_output <- round( cbind(
-  summary(
-    model_lbr_cc_heterosexual,
-    df.resid = degf( model_lbr_cc_heterosexual$survey.design )
-  )$coef,
-  confint(
-    model_lbr_cc_heterosexual,
-    ddf = degf( model_lbr_cc_heterosexual$survey.design )
-  ) ), 4 )
+##### exposure of interest: sex #####
 
-cbind( "AOR" = exp(   coef(model_lbr_cc_sexual_minority)),
-                       exp(confint(model_lbr_cc_sexual_minority,
-                           df.resid=degf(model_lbr_cc_sexual_minority$survey.design))))
+# sexual minority
+fml_sexual_minority_sex <- sexual_minority ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
+# homosexual
+fml_homosexual_sex <- homosexual ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
-# bisexual vs heterosexual
-model_lr_cc_bisexual <- svyglm(
-  fml_lr,
-  design = subset(
-    survey_design_cc_lr,
-    sexual_identity == "Heterosexual" |
-      sexual_identity == "Bisexual"
-  ),
-  family = quasibinomial( link = "logit" )
-)
+# bisexual
+fml_bisexual_sex <- bisexual ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
-summary(model_lr_cc_bisexual)
+# other
+fml_other_sex <- other ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
-
-# other vs heterosexual
-model_lr_cc_other <- svyglm(
-  fml_lr,
-  design = subset(
-    survey_design_cc_lr,
-    sexual_identity == "Heterosexual" |
-      sexual_identity == "None of the above"
-  ),
-  family = quasibinomial( link = "logit" )
-)
-
-summary(model_lr_cc_other)
-
-
-
-
-round(
-  cbind(
-    summary(model_lr_cc_homosexual,
-              df.resid=degf(model_lr_cc_homosexual$survey.design))$coef,
-    confint(model_lr_cc_homosexual,
-              ddf=degf(model_lr_cc_homosexual$survey.design))
+# list of formulas
+fml_list_sex <- list(
+  fml_sexual_minority_sex = fml_sexual_minority_sex,
+  fml_homosexual_sex = fml_homosexual_sex,
+  fml_bisexual_sex = fml_bisexual_sex,
+  fml_other_sex = fml_other_sex
   )
-, 4)
-
-PR <- cbind("PR" = exp(   coef(model_lr_cc_homosexual)),
-                       exp(confint(model_lr_cc_homosexual,
-                           df.resid=degf(model_lr_cc_homosexual$survey.design))))[-1,]
-round(PR, 3)
 
 
-model_lr_cc_homosexual_output <- merge( coef( model_lr_cc_homosexual ) %>% 
-                                  as.data.frame() %>%
-                                  rownames_to_column( var = "category" ),
-                                confint( model_lr_cc_homosexual ) %>%
-                                  as.data.frame() %>%
-                                  rownames_to_column( var = "category" ), 
-                                by = "category" ) %>%
-  select( "category", "Coef", "2.5 %", "97.5 %", "p" ) %>%
-  mutate(
-    OR_2021 = exp( Coef ),
-    lower_ci_2021 = exp( `2.5 %` ),
-    upper_ci_2021 = exp( `97.5 %` ) ) %>%
-  rename(
-    category_2021 = category,
-    p_2021 = p
-    )
+##### exposure of interest: country of birth #####
 
-levels( survey_design_cc_lr$variables$sexual_identity )
-new_cats <- c( "Homosexual", "Bisexual", "None of the above" )
+# sexual minority
+fml_sexual_minority_country_of_birth <- sexual_minority ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
-for ( i in 1:3 ) {
-  model_lr_cc_output$category_2021 <- gsub(
-    pattern = paste0( ":", i ), 
-    replacement = paste0( "_", new_cats[i] ), 
-    x = model_lr_cc_output$category_2021 )
-  }
+# homosexual
+fml_homosexual_country_of_birth <- homosexual ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
-model_lr_cc_output_wide <- model_lr_cc_output %>%
-  separate( category_2021, into = c( "category_2021", "sexual_identity" ), 
-            sep = "_(?=[^_]+$)",
-            extra = "merge" ) %>%
-  pivot_wider(
-    names_from = sexual_identity, 
-    values_from = c( Coef, `2.5 %`, `97.5 %`, p_2021, OR_2021, lower_ci_2021, upper_ci_2021 )
-    )
+# bisexual
+fml_bisexual_country_of_birth <- bisexual ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
-model_lr_cc_output_wide <- model_lr_cc_output_wide %>% select( "category_2021", "Coef_Homosexual", "2.5 %_Homosexual", "97.5 %_Homosexual", "p_2021_Homosexual", "OR_2021_Homosexual", "lower_ci_2021_Homosexual", "upper_ci_2021_Homosexual", "Coef_Bisexual", "2.5 %_Bisexual", "97.5 %_Bisexual", "p_2021_Bisexual", "OR_2021_Bisexual", "lower_ci_2021_Bisexual", "upper_ci_2021_Bisexual", "Coef_None of the above", "2.5 %_None of the above", "97.5 %_None of the above", "p_2021_None of the above", "OR_2021_None of the above", "lower_ci_2021_None of the above", "upper_ci_2021_None of the above" )
+# other
+fml_other_country_of_birth <- other ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
-writexl::write_xlsx( model_lr_cc_output_wide, "model_lr_cc_output_wide_2021.xlsx" )
+# list of formulas
+fml_list_country_of_birth <- list(
+  fml_sexual_minority_country_of_birth = fml_sexual_minority_country_of_birth,
+  fml_homosexual_country_of_birth = fml_homosexual_country_of_birth,
+  fml_bisexual_country_of_birth = fml_bisexual_country_of_birth,
+  fml_other_country_of_birth = fml_other_country_of_birth
+)
+
+
+##### exposure of interest: education #####
+
+# sexual minority
+fml_sexual_minority_education <- sexual_minority ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
+
+# homosexual
+fml_homosexual_education <- homosexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
+
+# bisexual
+fml_bisexual_education <- bisexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
+
+# other
+fml_other_education <- other ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
+
+# list of formulas
+fml_list_education <- list(
+  fml_sexual_minority_education = fml_sexual_minority_education,
+  fml_homosexual_education = fml_homosexual_education,
+  fml_bisexual_education = fml_bisexual_education,
+  fml_other_education = fml_other_education
+  )
+
+
+##### exposure of interest: income #####
+
+# sexual minority
+fml_sexual_minority_income <- sexual_minority ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
+
+# homosexual
+fml_homosexual_income <- homosexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
+
+# bisexual
+fml_bisexual_income <- bisexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
+
+# other
+fml_other_income <- other ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
+
+# list of formulas
+fml_list_income <- list(
+  fml_sexual_minority_income = fml_sexual_minority_income,
+  fml_homosexual_income = fml_homosexual_income,
+  fml_bisexual_income = fml_bisexual_income,
+  fml_other_income = fml_other_income
+  )
+
+
+##### exposure of interest: marital status #####
+
+# sexual minority
+fml_sexual_minority_marital_status <- sexual_minority ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
+
+# homosexual
+fml_homosexual_marital_status <- homosexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
+
+# bisexual
+fml_bisexual_marital_status <- bisexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
+
+# other
+fml_other_marital_status <- other ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
+
+# list of formulas
+fml_list_marital_status <- list(
+  fml_sexual_minority_marital_status = fml_sexual_minority_marital_status,
+  fml_homosexual_marital_status = fml_homosexual_marital_status,
+  fml_bisexual_marital_status = fml_bisexual_marital_status,
+  fml_other_marital_status = fml_other_marital_status
+  )
 ```
+
+##### 4.1.3. Fit Poisson, log-binomial, and logistic regression models
+```{r}
+# fit the three models for each exposure and each outcome
+exposures <- c( "age", "sex", "country_of_birth", "education", "income", "marital_status" )
+
+all_models_cc <- list()
+
+for ( exposure in exposures ) {
+  all_models_cc[[ exposure ]] <- list()
+  
+  fml_list_name <- paste( "fml_list", exposure, sep = "_" )
+  
+  for ( name in names( get( fml_list_name ) ) ) {
+    all_models_cc[[ exposure ]][[ name ]] <- fit_models( get( fml_list_name )[[ name ]],
+                                                         survey_design_cc_model )
+  }
+}
+```
+
+##### 4.1.4. Extract results
+```{r}
+models <- c( "poisson", "log_binomial", "logistic" )
+identities <- c( "sexual_minority", "homosexual", "bisexual", "other" )
+
+##### exposure of interest: age #####
+
+exposures_age <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29:sex_expFemale", "age_exp30-44:sex_expFemale", "age_exp>=60:sex_expFemale" )
+outcomes_age <- c( "fml_sexual_minority_age", "fml_homosexual_age", "fml_bisexual_age", "fml_other_age" )
+
+# extract coefficients and 95% CI
+results_cc_age_coef <- list()
+
+for ( outcome in outcomes_age ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_age_coef[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "age", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_age, 
+      design = survey_design_cc_model
+    )
+  }
+}
+
+
+##### exposure of interest: sex #####
+
+exposures_sex <- c( "sex_expFemale" )
+outcomes_sex <- c( "fml_sexual_minority_sex", "fml_homosexual_sex", "fml_bisexual_sex", "fml_other_sex" )
+
+# extract coefficients and 95% CI
+results_cc_sex_coef <- list()
+
+for ( outcome in outcomes_sex ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_sex_coef[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "sex", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_sex, 
+      design = survey_design_cc_model
+    )
+  }
+}
+
+# extract proportion ratios and 95% CI for each model across exposures
+results_cc_sex_pr_poisson <- extract_results_pr( results_cc_sex_coef, "poisson", identities, "sex" )
+results_cc_sex_pr_log_binomial <- extract_results_pr( results_cc_sex_coef, "log_binomial", identities, "sex" )
+results_cc_sex_pr_logistic <- extract_results_pr( results_cc_sex_coef, "logistic", identities, "sex" )
+
+
+##### exposure of interest: country of birth #####
+
+exposures_country_of_birth <- c( "country_of_birth_expEurope", "country_of_birth_expOutside Europe" )
+outcomes_country_of_birth <- c( "fml_sexual_minority_country_of_birth", "fml_homosexual_country_of_birth", "fml_bisexual_country_of_birth", "fml_other_country_of_birth" )
+
+# extract coefficients and 95% CI
+results_cc_country_of_birth_coef <- list()
+
+for ( outcome in outcomes_country_of_birth ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_country_of_birth_coef[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "country_of_birth",
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_country_of_birth, 
+      design = survey_design_cc_model
+    )
+  }
+}
+
+# extract proportion ratios and 95% CI for each model across exposures
+results_cc_country_of_birth_pr_poisson <- extract_results_pr( results_cc_country_of_birth_coef, "poisson", identities, "country_of_birth" )
+results_cc_country_of_birth_pr_log_binomial <- extract_results_pr( results_cc_country_of_birth_coef, "log_binomial", identities, "country_of_birth" )
+results_cc_country_of_birth_pr_logistic <- extract_results_pr( results_cc_country_of_birth_coef, "logistic", identities, "country_of_birth" )
+
+
+##### exposure of interest: education #####
+
+exposures_education <- c( "education_exp<=9 years", "education_exp10-12 years" )
+outcomes_education <- c( "fml_sexual_minority_education", "fml_homosexual_education", "fml_bisexual_education", "fml_other_education" )
+
+# extract coefficients and 95% CI
+results_cc_education_coef <- list()
+
+for ( outcome in outcomes_education ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_education_coef[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "education", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_education, 
+      design = survey_design_cc_model
+    )
+  }
+}
+
+# extract proportion ratios and 95% CI for each model across exposures
+results_cc_education_pr_poisson <- extract_results_pr( results_cc_education_coef, "poisson", identities, "education" )
+results_cc_education_pr_log_binomial <- extract_results_pr( results_cc_education_coef, "log_binomial", identities, "education" )
+results_cc_education_pr_logistic <- extract_results_pr( results_cc_education_coef, "logistic", identities, "education" )
+
+
+##### exposure of interest: income #####
+
+exposures_income <- c( "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_exp(3,500, 4,500]" )
+outcomes_income <- c( "fml_sexual_minority_income", "fml_homosexual_income", "fml_bisexual_income", "fml_other_income" )
+
+# extract coefficients and 95% CI
+results_cc_income_coef <- list()
+
+for ( outcome in outcomes_income ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_income_coef[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "income", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_income, 
+      design = survey_design_cc_model
+    )
+  }
+}
+
+# extract proportion ratios and 95% CI for each model across exposures
+results_cc_income_pr_poisson <- extract_results_pr( results_cc_income_coef, "poisson", identities, "income" )
+results_cc_income_pr_log_binomial <- extract_results_pr( results_cc_income_coef, "log_binomial", identities, "income" )
+results_cc_income_pr_logistic <- extract_results_pr( results_cc_income_coef, "logistic", identities, "income" )
+
+
+##### exposure of interest: marital status #####
+
+exposures_marital_status <- c( "marital_status_expNever married", "marital_status_expOther" )
+outcomes_marital_status <- c( "fml_sexual_minority_marital_status", "fml_homosexual_marital_status", "fml_bisexual_marital_status", "fml_other_marital_status" )
+
+# extract coefficients and 95% CI
+results_cc_marital_status_coef <- list()
+
+for ( outcome in outcomes_marital_status ) {
+  for ( mod in models ) {
+    key <- paste( outcome, mod, sep = "_" )
+    results_cc_marital_status_coef[[ key ]] <- extract_results_coef(
+      all_models_list = all_models_cc, 
+      exposure = "marital_status", 
+      outcome = outcome, 
+      model_type = mod,
+      variables = exposures_marital_status, 
+      design = survey_design_cc_model
+    )
+  }
+}
+
+# extract proportion ratios and 95% CI for each model across exposures
+results_cc_marital_status_pr_poisson <- extract_results_pr( results_cc_marital_status_coef, "poisson", identities, "marital_status" )
+results_cc_marital_status_pr_log_binomial <- extract_results_pr( results_cc_marital_status_coef, "log_binomial", identities, "marital_status" )
+results_cc_marital_status_pr_logistic <- extract_results_pr( results_cc_marital_status_coef, "logistic", identities, "marital_status" )
+
+
+##### combine results #####
+
+```
+
 
 ```{r}
 # fit the substantive model to each of the imputed data sets
