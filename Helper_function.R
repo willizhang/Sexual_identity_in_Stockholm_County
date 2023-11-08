@@ -64,7 +64,7 @@ extract_results_coef <- function( all_models_list, exposure, outcome, model_type
 extract_results_pr <- function( model_base, model_type, identities, exposure ) {
   results_list <- list()
   
-  for (identity in identities) {
+  for ( identity in identities ) {
 
     model_name <- paste0( "fml_", identity, "_", exposure, "_", model_type )
     model <- model_base[[ model_name ]]
@@ -83,7 +83,9 @@ extract_results_pr <- function( model_base, model_type, identities, exposure ) {
   
   names( results_list ) <- NULL
   
-  combined_df <- do.call( cbind, results_list )
+  combined_df <- tibble::rownames_to_column(
+    do.call( cbind, results_list ),
+    var = "Exposure" )
   
   return( combined_df )
 }
