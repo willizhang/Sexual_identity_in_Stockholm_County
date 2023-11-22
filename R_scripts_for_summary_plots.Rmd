@@ -17,7 +17,7 @@ library(tidyr)
 library(tibble)
 library(ggplot2)
 library(ggbreak)
-library(knitr)
+library(naniar)
 ```
 
 ### 2. Plots for Response Rates
@@ -4076,12 +4076,105 @@ ggplot( long_data[ long_data$Age_Group == "pr", ],
 ```
 
 ##### 4.1.8. Compare across models
+###### 4.1.8.1. SPHC-B 2010
 ```{r}
 results_cc_pr_all_models_2010 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_cc_pr_all_models_2010.xlsx")
-results_cc_pr_all_models_2014 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_cc_pr_all_models_2014.xlsx")
-results_cc_pr_all_models_2021 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_cc_pr_all_models_2021.xlsx")
 
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "sex_expFemale" ] <- "Sex: Female"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp18-29" ] <- "Age: 18–29 yrs"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp30-44" ] <- "Age: 30–44 yrs"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp>=60" ] <- "Age: \u2265 60 yrs"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp18-29_Male" ] <- "Age: 18–29 yrs (among males)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp30-44_Male" ] <- "Age: 30–44 yrs (among males)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp>=60_Male" ] <- "Age: \u2265 60 yrs (among males)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp18-29_Female" ] <- "Age: 18–29 yrs (among females)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp30-44_Female" ] <- "Age: 30–44 yrs (among females)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp>=60_Female" ] <- "Age: \u2265 60 yrs (among females)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "country_of_birth_expEurope" ] <- "Country of birth: Europeᵃ"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "country_of_birth_expOutside Europe" ] <- "Country of birth: Outside Europe"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "education_exp<=9 years" ] <- "Education: \u2264 9 yrs"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "education_exp10-12 years" ] <- "Education: 10–12 yrs"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "income_exp<=2,500" ] <- "Incomeᵇ: \u2264 2,500"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "income_exp(2,500, 3,500]" ] <- "Incomeᵇ: (2,500, 3,500]"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "income_exp(3,500, 4,500]" ] <- "Incomeᵇ: (3,500, 4,500]"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "marital_status_expNever married" ] <- "Marital status: Never married"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "marital_status_expOther" ] <- "Marital status: Otherᶜ"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "living_status_expyes" ] <- "Living alone: Yes"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "personal_support_expno" ] <- "Personal support: No"
 
+desired_order <- c( "Sex: Female", "Age: 18–29 yrs", "Age: 30–44 yrs", "Age: ≥ 60 yrs", "Age: 18–29 yrs (among males)", "Age: 30–44 yrs (among males)", "Age: ≥ 60 yrs (among males)", "Age: 18–29 yrs (among females)", "Age: 30–44 yrs (among females)", "Age: ≥ 60 yrs (among females)", "Country of birth: Europeᵃ", "Country of birth: Outside Europe", "Education: ≤ 9 yrs", "Education: 10–12 yrs", "Incomeᵇ: ≤ 2,500", "Incomeᵇ: (2,500, 3,500]", "Incomeᵇ: (3,500, 4,500]", "Marital status: Never married", "Marital status: Otherᶜ", "Living alone: Yes", "Personal support: No" )
+                    
+results_cc_pr_all_models_2010 <- results_cc_pr_all_models_2010 %>%
+  mutate( Exposure = factor( Exposure, levels = desired_order ) ) %>%
+  arrange( Exposure )
 
+long_data_2010 <- results_cc_pr_all_models_2010 %>%
+  pivot_longer(
+    cols = !Exposure, 
+    names_to = "Identity_Statistic_Model", 
+    values_to = "Value"
+    )
+
+long_data_2010 <- long_data_2010 %>%
+  extract(
+    col = Identity_Statistic_Model, 
+    into = c( "Identity", "Statistic", "Model" ),
+    regex = "^(.+?)_(lower_ci|upper_ci|point_estimate)_(\\w+)$",
+    remove = TRUE
+  )
+
+long_data_2010 <- long_data_2010 %>%
+  pivot_wider(
+    names_from = Statistic, 
+    values_from = Value
+    )
+
+long_data_2010$Identity <- factor( 
+  
+  ifelse(
+    long_data_2010$Identity == "sexual_minority", "Sexual minorities",
+    ifelse( long_data_2010$Identity == "homosexual", "Homosexual",
+            ifelse( long_data_2010$Identity == "bisexual", "Bisexual", "Other" ) ) 
+    ),
+  
+  levels = c( "Sexual minorities", "Homosexual", "Bisexual", "Other" )
+  )
+
+long_data_2010$Model <- factor(
+  ifelse( long_data_2010$Model == "poisson", "Poisson",
+          ifelse( long_data_2010$Model == "log_binomial", "Log-binomial", "Logistic" ) 
+          ),
+  levels = c( "Poisson", "Log-binomial", "Logistic" )
+  )
+
+ggplot( long_data_2010, 
+        aes( x = Identity, y = point_estimate, color = Identity, shape = Model ) ) +
+  
+  geom_point( position = position_dodge( width = 0.5 ) ) +
+  geom_errorbar( aes( ymin = lower_ci, ymax = upper_ci ), 
+                 position = position_dodge( width = 0.5 ), width = 0.2 ) +
+  
+  facet_wrap( ~ Exposure, scales = "free_y" ) +
+  
+  theme_minimal() +
+  
+  labs( x = NULL, y = "Point Estimate (95% CI)", color = "Sexual Identity", shape = "Model" ) +
+  
+  theme( axis.text.x = element_blank(),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.title = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         strip.text = element_text( family = "Arial", size = 9 )
+         )
 ```
 
+###### 4.1.8.2. SPHC-B 2014
+```{r}
+results_cc_pr_all_models_2014 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_cc_pr_all_models_2014.xlsx")
+results_cc_pr_all_models_2021 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_cc_pr_all_models_2021.xlsx")
+```
+
+###### 4.1.8.3. SPHC-B 2021
+```{r}
+
+```
