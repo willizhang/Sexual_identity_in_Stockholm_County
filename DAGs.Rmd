@@ -1,0 +1,124 @@
+---
+title: "Causal directed acyclic graphs"
+author: Guoqiang Zhang
+email: guoqiang.zhang@ki.se
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+### 1. Load Packages
+```{r}
+library(ggdag)
+library(ggplot2)
+
+# set theme
+theme_set( theme_dag() + theme( strip.text = element_blank() ) )
+```
+
+### 2. Age and Sexual Identity
+```{r}
+coords <- tibble::tribble(
+  ~ name,                          ~ x,     ~ y,
+  "pre_birth_social_culture",        0,       0.5,
+  "family_planning",                 0,       0,
+  "age",                             1,       0,
+  "sexual_identity",                 2,       0,
+  "expatriation",                    3,       0, 
+  "post_birth_social_culture",       1.5,     0.5
+  )
+
+
+age_sexual_identity_dag <- dagify(
+  
+  sexual_identity ~ age,
+  family_planning ~ pre_birth_social_culture,
+  age ~ family_planning,
+  post_birth_social_culture ~ age,
+  sexual_identity ~ post_birth_social_culture,
+  post_birth_social_culture ~ pre_birth_social_culture,
+  expatriation ~ post_birth_social_culture,
+  expatriation ~ sexual_identity,
+  
+  exposure = "age",
+  outcome = "sexual_identity",
+  latent = "family_planning",
+  
+  labels = c(
+    "age" = "Age",
+    "sexual_identity" = "Sexual\nIdentity",
+    "pre_birth_social_culture" = "Pre-Birth\nSociocultural\nContext",
+    "family_planning" = "Family\nPlanning",
+    "post_birth_social_culture" = "Post-Birth\nSociocultural\nContext",
+    "expatriation" = "Expatriation"
+    ),
+  
+  coords = coords
+  
+  )
+
+ggdag_adjustment_set( age_sexual_identity_dag,
+                      effect = "total",
+                      text = FALSE, 
+                      use_labels = "label", 
+                      shadow = TRUE
+                      )
+
+ggdag_adjust( age_sexual_identity_dag,
+              "expatriation",
+                      text = FALSE, 
+                      use_labels = "label"
+                      )
+
+ggdag_dseparated( age_sexual_identity_dag,
+                  controlling_for = "expatriation",
+                  collider_lines = TRUE,
+                  text = FALSE, 
+                  use_labels = "label"
+                  )
+
+```
+
+### 3. Income and Sexual Identity
+```{r}
+coords <- tibble::tribble(
+  ~ name,                          ~ x,     ~ y,
+  "sexual_identity",                 1,       0,
+  "income",                          2,       0,
+  "age",                             0.5,     -0.1,
+  "sex",                             0.5,     0.1,
+  "education",                       0.5,     0.2,
+  "parental_ses",                    -0.5,    0.2
+  )
+
+
+income_sexual_identity_dag <- dagify(
+  
+  sexual_identity ~ age + sex + education,
+  income ~ age + sex + education + parental_ses + sexual_identity,
+  education ~ parental_ses,
+  
+  exposure = "sexual_identity",
+  outcome = "income",
+
+  labels = c(
+    "sexual_identity" = "Sexual\nIdentity",
+    "income" = "Income",
+    "age" = "Age",
+    "sex" = "Sex",
+    "education" = "Education",
+    "parental_ses" = "Parental\nSES"
+    ),
+  
+  coords = coords
+  
+  )
+
+ggdag_adjustment_set( income_sexual_identity_dag,
+                      effect = "total",
+                      text = FALSE, 
+                      use_labels = "label", 
+                      shadow = TRUE
+                      )
+```
+
