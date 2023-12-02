@@ -1,5 +1,5 @@
 ---
-title: "Self-reported sexual identity in Stockholm County in 2014"
+title: "Self-reported sexual identity in Stockholm County in 2010"
 author: Guoqiang Zhang
 email: guoqiang.zhang@ki.se
 output: html_notebook
@@ -33,122 +33,140 @@ library(tidyr)
 library(dplyr)
 library(finalfit)
 library(survey)
+library(readxl)
 library(svyVGAM)
 source("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/Helper_function.R") # helper function
 ```
 
 ### 2. Import and Visualise Data
 ```{r}
-load("/Volumes/LGBT Project data/d_2014.RData")
+load("/Volumes/LGBT Project data/d_2010.RData")
 
 # sampling strata
-n_miss( d_2014$stratum )
-d_2014$sampling_strata <- as.factor( d_2014$stratum )
-length( unique( d_2014$sampling_strata ) ) # 39 strata
+n_miss( d_2010$stratum )
+d_2010$sampling_strata <- as.factor( d_2010$stratum )
+length( unique( d_2010$sampling_strata ) ) # 39 strata
 
-d_2014 <- d_2014 %>%
+d_2010 <- d_2010 %>%
   mutate( sampling_strata_region = recode( sampling_strata, 
-                                           `3101` = "Upplands Väsby",
-                                           `3102` = "Vallentuna",
-                                           `3103` = "Österåker",
-                                           `3104` = "Värmdö",
-                                           `3105` = "Järfälla",
-                                           `3106` = "Ekerö",
-                                           `3107` = "Huddinge",
-                                           `3108` = "Botkyrka",
-                                           `3109` = "Salem",
-                                           `3110` = "Haninge",
-                                           `3111` = "Tyresö",
-                                           `3112` = "Upplands-Bro",
-                                           `3113` = "Nykvarn",
-                                           `3114` = "Täby",
-                                           `3115` = "Danderyd",
-                                           `3116` = "Sollentuna",
-                                           `3117` = "Södertälje",
-                                           `3118` = "Nacka",
-                                           `3119` = "Sundbyberg",
-                                           `3120` = "Solna",
-                                           `3121` = "Lidingö",
-                                           `3122` = "Vaxholm",
-                                           `3123` = "Norrtälje",
-                                           `3124` = "Sigtuna",
-                                           `3125` = "Nynäshamn",
-                                           `3201` = "Rinkeby-Kista",
-                                           `3202` = "Spånga-Tensta",
-                                           `3203` = "Hässelby-Vällingby",
-                                           `3204` = "Bromma",
-                                           `3205` = "Kungsholmen",
-                                           `3206` = "Norrmalm",
-                                           `3207` = "Östermalm",
-                                           `3208` = "Södermalm",
-                                           `3209` = "Enskede, Årsta-Vantör",
-                                           `3210` = "Skarpnäck",
-                                           `3211` = "Farsta",
-                                           `3212` = "Älvsjö",
-                                           `3213` = "Hägersten-Liljeholmen",
-                                           `3214` = "Skärholmen"
+                                           `2101` = "Upplands Väsby",
+                                           `2102` = "Vallentuna",
+                                           `2103` = "Österåker",
+                                           `2104` = "Värmdö",
+                                           `2105` = "Järfälla",
+                                           `2106` = "Ekerö",
+                                           `2107` = "Huddinge",
+                                           `2108` = "Botkyrka",
+                                           `2109` = "Salem",
+                                           `2110` = "Haninge",
+                                           `2111` = "Tyresö",
+                                           `2112` = "Upplands-Bro",
+                                           `2113` = "Nykvarn",
+                                           `2114` = "Täby",
+                                           `2115` = "Danderyd",
+                                           `2116` = "Sollentuna",
+                                           `2117` = "Södertälje",
+                                           `2118` = "Nacka",
+                                           `2119` = "Sundbyberg",
+                                           `2120` = "Solna",
+                                           `2121` = "Lidingö",
+                                           `2122` = "Vaxholm",
+                                           `2123` = "Norrtälje",
+                                           `2124` = "Sigtuna",
+                                           `2125` = "Nynäshamn",
+                                           `2201` = "Rinkeby-Kista",
+                                           `2202` = "Spånga-Tensta",
+                                           `2203` = "Hässelby-Vällingby",
+                                           `2204` = "Bromma",
+                                           `2205` = "Kungsholmen",
+                                           `2206` = "Norrmalm",
+                                           `2207` = "Östermalm",
+                                           `2208` = "Södermalm",
+                                           `2209` = "Enskede, Årsta-Vantör",
+                                           `2210` = "Skarpnäck",
+                                           `2211` = "Farsta",
+                                           `2212` = "Älvsjö",
+                                           `2213` = "Hägersten-Liljeholmen",
+                                           `2214` = "Skärholmen"
                                            ) )
 
-# sexual identity
-table( d_2014$F14U90G82, useNA = "always" )
-d_2014$sexual_identity <- factor( ifelse( d_2014$F14U90G82 == 1, "Heterosexual", 
-                                          ifelse( d_2014$F14U90G82 == 2, "Homosexual",
-                                                  ifelse( d_2014$F14U90G82 == 3, "Bisexual", "None of the above" ) ) ),
-                                  levels = c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" ) )
-table( d_2014$sexual_identity, useNA = "always" )
+# sexual identity in 2010
+table( d_2010$F10U87G78, useNA = "always" )
+d_2010$F10U87G78[ d_2010$F10U87G78 == 9 ] <- NA
+d_2010$sexual_identity_2010 <- factor( ifelse( d_2010$F10U87G78 == 1, "Heterosexual",
+                                                  ifelse( d_2010$F10U87G78 == 2, "Homosexual",
+                                                          ifelse( d_2010$F10U87G78 == 3, "Bisexual", "Uncertain" ) ) ),
+                                          levels = c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" ) )
+table( d_2010$sexual_identity_2010, useNA = "always" )
+
+# sexual identity in 2014
+table( d_2010$F14F103, useNA = "always" )
+d_2010$sexual_identity_2014 <- factor( ifelse( d_2010$F14F103 == 1, "Heterosexual",
+                                                  ifelse( d_2010$F14F103 == 2, "Homosexual",
+                                                          ifelse( d_2010$F14F103 == 3, "Bisexual", "None of the above" ) ) ),
+                                          levels = c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" ) )
+table( d_2010$sexual_identity_2014, useNA = "always" )
+
+# sexual identity in 2021
+table( d_2010$F21F91, useNA = "always" )
+d_2010$sexual_identity_2021 <- factor( ifelse( d_2010$F21F91 == 1, "Heterosexual",
+                                                  ifelse( d_2010$F21F91 == 2, "Homosexual",
+                                                          ifelse( d_2010$F21F91 == 3, "Bisexual", "None of the above" ) ) ),
+                                          levels = c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" ) )
+table( d_2010$sexual_identity_2021, useNA = "always" )
 
 # sex
-table( d_2014$kon, useNA = "always" )
-d_2014$sex <- factor( ifelse( d_2014$kon == 1, "Male", "Female" ),
+table( d_2010$kon, useNA = "always" )
+d_2010$sex <- factor( ifelse( d_2010$kon == 1, "Male", "Female" ),
                       levels = c( "Male", "Female" ) )
-table( d_2014$sex, useNA = "always" )
+table( d_2010$sex, useNA = "always" )
 
 # age
-summary( d_2014$F14alder )
-d_2014$age <- d_2014$F14alder
-d_2014$age_cat <- factor( ifelse( d_2014$age <= 29, "16-29", 
-                                  ifelse( d_2014$age >=30 & d_2014$age <= 44, "30-44",
-                                          ifelse( d_2014$age >= 45 & d_2014$age <= 59, "45-59", ">=60" ) ) ),
-                          levels = c( "16-29", "30-44", "45-59", ">=60" ) )
-table( d_2014$age_cat, useNA = "always" )
+summary( d_2010$F10alder )
+d_2010$age <- d_2010$F10alder
+d_2010$age_cat <- factor( ifelse( d_2010$age <= 29, "18-29", 
+                                  ifelse( d_2010$age >=30 & d_2010$age <= 44, "30-44",
+                                          ifelse( d_2010$age >= 45 & d_2010$age <= 59, "45-59", ">=60" ) ) ),
+                          levels = c( "18-29", "30-44", "45-59", ">=60" ) )
+table( d_2010$age_cat, useNA = "always" )
 
 # interaction term between age and sex
-d_2014$age_sex <- interaction( d_2014$age_cat, d_2014$sex )
+d_2010$age_sex <- interaction( d_2010$age_cat, d_2010$sex )
 
 # country of birth
-table( d_2014$fodelseland, useNA = "always" )
-d_2014$country_of_birth <- factor( ifelse( d_2014$fodelseland == "Afrika", "Africa",
-                                           ifelse( d_2014$fodelseland == "Asien", "Asia",
-                                                   ifelse( d_2014$fodelseland == "Europa", "Europe",
-                                                           ifelse( d_2014$fodelseland == "Sverige", "Sweden", "Americas" ) ) ) ),
+table( d_2010$fodelseland, useNA = "always" )
+d_2010$country_of_birth <- factor( ifelse( d_2010$fodelseland == "Afrika", "Africa",
+                                           ifelse( d_2010$fodelseland == "Asien", "Asia",
+                                                   ifelse( d_2010$fodelseland == "Europa", "Europe",
+                                                           ifelse( d_2010$fodelseland == "Sverige", "Sweden", "Americas" ) ) ) ),
                                    levels = c( "Africa", "Americas", "Asia", "Europe", "Sweden" ) )
-table( d_2014$country_of_birth, useNA = "always" )
+table( d_2010$country_of_birth, useNA = "always" )
 
 # education
-table( d_2014$utbniva2014, useNA = "always" )
-d_2014$education <- factor( ifelse( d_2014$utbniva2014 <= 2, "<=9 years",
-                                    ifelse( d_2014$utbniva2014 <= 4, "10-12 years", ">=13 years" ) ),
+table( d_2010$utbniva2010, useNA = "always" )
+d_2010$education <- factor( ifelse( d_2010$utbniva2010 <= 2, "<=9 years",
+                                    ifelse( d_2010$utbniva2010 <= 4, "10-12 years", ">=13 years" ) ), 
                             levels = c( "<=9 years", "10-12 years", ">=13 years" ) )
-table( d_2014$education, useNA = "always" )
+table( d_2010$education, useNA = "always" )
 
 # occupation
-table( d_2014$SSYK_kl, useNA = "always" )
-d_2014$occupation <- factor(
+table( d_2010$SSYK_kl, useNA = "always" )
+d_2010$occupation <- factor(
   ifelse(
-    d_2014$SSYK_kl == "Yrken inom byggverksamhet och tillverkning" |
-      d_2014$SSYK_kl == "Yrken inom lantbruk, trädgård, skogsbruk och fiske" |
-      d_2014$SSYK_kl == "Yrken inom maskinell tillverkning och transport m.m.",
+    d_2010$SSYK_kl == "Yrken inom byggverksamhet och tillverkning" |
+      d_2010$SSYK_kl == "Yrken inom lantbruk, trädgård, skogsbruk och fiske" |
+      d_2010$SSYK_kl == "Yrken inom maskinell tillverkning och transport m.m.",
     "Manual and field trades",
     ifelse(
-      d_2014$SSYK_kl == "Service-, omsorgs- och försäljningsyrken" |
-        d_2014$SSYK_kl == "Yrken inom administration och kundtjänst" |
-        d_2014$SSYK_kl == "Yrken med krav på kortare utbildning eller introduktion",
+      d_2010$SSYK_kl == "Service-, omsorgs- och försäljningsyrken" |
+        d_2010$SSYK_kl == "Yrken inom administration och kundtjänst" |
+        d_2010$SSYK_kl == "Yrken med krav på kortare utbildning eller introduktion",
       "Service and support",
       ifelse(
-        d_2014$SSYK_kl == "Yrken med krav på fördjupad högskolekompetens" |
-          d_2014$SSYK_kl == "Yrken med krav på högskolekompetens eller motsvarande" |
-          d_2014$SSYK_kl == "Chefsyrken" |
-          d_2014$SSYK_kl == "Militära yrken",
+        d_2010$SSYK_kl == "Yrken med krav på fördjupad högskolekompetens" |
+          d_2010$SSYK_kl == "Yrken med krav på högskolekompetens eller motsvarande" |
+          d_2010$SSYK_kl == "Chefsyrken" |
+          d_2010$SSYK_kl == "Militära yrken",
         "Expertise and leadership",
         NA
       )
@@ -160,44 +178,46 @@ d_2014$occupation <- factor(
     "Expertise and leadership"
   )
 )
-table( d_2014$occupation, useNA = "always" )
+table( d_2010$occupation, useNA = "always" )
 
 # disposable income
-summary( d_2014$dispink2014, useNA = "always" )
-d_2014$dispink2014[ d_2014$dispink2014 < 0 ] <- NA
-d_2014$income <- factor( ifelse( d_2014$dispink2014 <= 2500, "<=2,500",
-                                 ifelse( d_2014$dispink2014 > 2500 & d_2014$dispink2014 <= 3500, "(2,500, 3,500]",
-                                         ifelse( d_2014$dispink2014 > 3500 & d_2014$dispink2014 <= 4500, "(3,500, 4,500]", ">4,500" ) ) ),
+summary( d_2010$dispink2010, useNA = "always" )
+d_2010$income <- factor( ifelse( d_2010$dispink2010 <= 2500, "<=2,500",
+                                 ifelse( d_2010$dispink2010 > 2500 & d_2010$dispink2010 <= 3500, "(2,500, 3,500]",
+                                         ifelse( d_2010$dispink2010 > 3500 & d_2010$dispink2010 <= 4500, "(3,500, 4,500]", ">4,500" ) ) ),
                          levels = c( "<=2,500", "(2,500, 3,500]", "(3,500, 4,500]", ">4,500" ) )
-table( d_2014$income, useNA = "always" )
+table( d_2010$income, useNA = "always" )
 
 # marital status
-table( d_2014$civil2014, useNA = "always" )
-d_2014$marital_status <- factor( ifelse( d_2014$civil2014 == "G" | d_2014$civil2014 == "RP", "Currently married",
-                                         ifelse( d_2014$civil2014 == "OG", "Never married", "Other" ) ),
+table( d_2010$civil2010, useNA = "always" )
+d_2010$marital_status <- factor( ifelse( d_2010$civil2010 == "G" | d_2010$civil2010 == "RP", "Currently married",
+                                         ifelse( d_2010$civil2010 == "OG", "Never married", "Other" ) ), 
                                  levels = c( "Never married", "Currently married", "Other" ) )
-table( d_2014$marital_status, useNA = "always" )
+table( d_2010$marital_status, useNA = "always" )
 
 # living alone
-table( d_2014$F14U52aG58a, useNA = "always" )
-d_2014$living_alone <- factor( ifelse( d_2014$F14U52aG58a == 1, "no", "yes" ), 
+table( d_2010$F10U53aG57a, useNA = "always" )
+d_2010$F10U53aG57a[ d_2010$F10U53aG57a == 9 ] <- NA
+d_2010$living_alone <- factor( ifelse( d_2010$F10U53aG57a == 1, "no", "yes" ), 
                                levels = c( "yes", "no" ) )
-table( d_2014$living_alone, useNA = "always" )
+table( d_2010$living_alone, useNA = "always" )
 
 # personal support
-table( d_2014$F14U56G66, useNA = "always" )
-d_2014$personal_support <- factor( ifelse( d_2014$F14U56G66 <= 2, "yes", "no" ), 
+table( d_2010$F10U57G62, useNA = "always" )
+d_2010$F10U57G62[ d_2010$F10U57G62 == 9 ] <- NA
+d_2010$personal_support <- factor( ifelse( d_2010$F10U57G62 <= 2, "yes", "no" ), 
                                    levels = c( "yes", "no" ) )
-table( d_2014$personal_support, useNA = "always" )
+table( d_2010$personal_support, useNA = "always" )
 
 
 ##### demographic characteristics #####
 
-# among respondents (n = 22,250)
+# among respondents (n = 30,767)
 # make characteristics table by sexual identity
 explanatory =  c( "sex", "age_cat", "country_of_birth", "education", "occupation", "income", "marital_status", "living_alone", "personal_support" )
-dependent = "sexual_identity"
-d_2014_table <- d_2014 %>% 
+dependent = "sexual_identity_2010"
+
+d_2010_table <- d_2010 %>% 
   summary_factorlist( dependent,
                       explanatory, 
                       na_include = TRUE,
@@ -206,55 +226,55 @@ d_2014_table <- d_2014 %>%
                       add_col_totals = TRUE )
 
 # Fisher's test
-x1 <- table( d_2014$sex, d_2014$sexual_identity )
+x1 <- table( d_2010$sex, d_2010$sexual_identity_2010 )
 x1
 format( round( fisher.test( x1[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x1[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x1[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
 
-x2 <- table( d_2014$age_cat, d_2014$sexual_identity )
+x2 <- table( d_2010$age_cat, d_2010$sexual_identity_2010 )
 x2
 format( round( fisher.test( x2[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x2[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
-format( round( fisher.test( x2[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x2[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
 
-x3 <- table( d_2014$country_of_birth, d_2014$sexual_identity )
+x3 <- table( d_2010$country_of_birth, d_2010$sexual_identity_2010 )
 x3
-format( round( fisher.test( x3[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
-format( round( fisher.test( x3[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x3[, c( 1, 2 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x3[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x3[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 
-x4 <- table( d_2014$education, d_2014$sexual_identity )
+x4 <- table( d_2010$education, d_2010$sexual_identity_2010 )
 x4
 format( round( fisher.test( x4[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x4[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
-format( round( fisher.test( x4[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+format( round( fisher.test( x4[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
 
-x5 <- table( d_2014$income, d_2014$sexual_identity )
+x5 <- table( d_2010$income, d_2010$sexual_identity_2010 )
 x5
 format( round( fisher.test( x5[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x5[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x5[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 
-x6 <- table( d_2014$marital_status, d_2014$sexual_identity )
+x6 <- table( d_2010$marital_status, d_2010$sexual_identity_2010 )
 x6
 format( round( fisher.test( x6[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x6[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x6[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 
-x7 <- table( d_2014$living_alone, d_2014$sexual_identity )
+x7 <- table( d_2010$living_alone, d_2010$sexual_identity_2010 )
 x7
 format( round( fisher.test( x7[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x7[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x7[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
 
-x8 <- table( d_2014$personal_support, d_2014$sexual_identity )
+x8 <- table( d_2010$personal_support, d_2010$sexual_identity_2010 )
 x8
 format( round( fisher.test( x8[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x8[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x8[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
 
-x9 <- table( d_2014$occupation, d_2014$sexual_identity )
+x9 <- table( d_2010$occupation, d_2010$sexual_identity_2010 )
 x9
 format( round( fisher.test( x9[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x9[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
@@ -263,74 +283,73 @@ format( round( fisher.test( x9[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
 
 ##### design weights #####
 
-summary( d_2014$F14dvikt )
-d_2014$design_weight <- d_2014$F14dvikt
+summary( d_2010$F10dvikt )
+d_2010$design_weight <- d_2010$F10dvikt
 
 
 ##### non-response #####
 
 # unit non-response
-d_2014$design_weight_unit_nonresponse <- d_2014$F14dbvikt # weights calculated assuming Missing Completely At Random (MCAR) within each stratum
-summary( d_2014$design_weight_unit_nonresponse )
-sum( d_2014$design_weight_unit_nonresponse ) # No. of source population = 1,764,671
+d_2010$design_weight_unit_nonresponse <- d_2010$F10dbvikt # weights calculated assuming Missing Completely At Random (MCAR) within each stratum
+summary( d_2010$design_weight_unit_nonresponse )
+sum( d_2010$design_weight_unit_nonresponse ) # No. of source population = 1,602,868
 
-unitresponse_prob <- d_2014 %>% 
+unitresponse_prob <- d_2010 %>% 
   group_by( sampling_strata_region ) %>% 
   summarise( unitresponse_prob = unique( design_weight ) / unique( design_weight_unit_nonresponse ),
              no.of.population = sum( design_weight_unit_nonresponse ),
              sample_size = unique( no.of.population )/unique( design_weight ) ) # calculate overall unit response rate, and no. of population and sample size within each stratum
-
-d_2014 <- d_2014 %>% 
+d_2010 <- d_2010 %>% 
   left_join( unitresponse_prob, by = "sampling_strata_region" )
 
 # item non-response
-itemresponse_prob <- d_2014 %>% 
+itemresponse_prob <- d_2010 %>% 
   group_by( sampling_strata_region ) %>% 
-  summarise( itemresponse_prob = sum( !is.na( sexual_identity ) ) / n() ) # calculate item response rate
+  summarise( itemresponse_prob = sum( !is.na( sexual_identity_2010 ) ) / n() ) # calculate item response rate
 
-d_2014 <- d_2014 %>% 
+d_2010 <- d_2010 %>% 
   left_join( itemresponse_prob, by = "sampling_strata_region" ) %>% 
-  mutate( itemresponse_prob = ifelse( is.na( sexual_identity ), 0, itemresponse_prob ) )
+  mutate( itemresponse_prob = ifelse( is.na( sexual_identity_2010 ), 0, itemresponse_prob ) )
 
 
 ##### summary of stratified sampling #####
 
-sampling_frame_2014 <- as.data.frame( d_2014 %>% 
+sampling_frame_2010 <- as.data.frame( d_2010 %>% 
                                    group_by( sampling_strata_region ) %>% 
                                    reframe( no.of.population = unique( no.of.population ), 
                                             sample_size = unique( no.of.population/design_weight ),
                                             unitresponse = n(),
                                             itemresponse = sum( itemresponse_prob != 0 ) ) )
 
-sampling_frame_2014$unitresponse_rate <- sampling_frame_2014$unitresponse/sampling_frame_2014$sample_size
-sampling_frame_2014$itemresponse_rate <- sampling_frame_2014$itemresponse/sampling_frame_2014$unitresponse
-sampling_frame_2014$overallresponse_rate <- sampling_frame_2014$itemresponse/sampling_frame_2014$sample_size
+sampling_frame_2010$unitresponse_rate <- sampling_frame_2010$unitresponse/sampling_frame_2010$sample_size
+sampling_frame_2010$itemresponse_rate <- sampling_frame_2010$itemresponse/sampling_frame_2010$unitresponse
+sampling_frame_2010$overallresponse_rate <- sampling_frame_2010$itemresponse/sampling_frame_2010$sample_size
 
-sampling_frame_2014$unitresponse_label <- paste0( sampling_frame_2014$unitresponse, " (", 
-                                             sprintf( "%.1f", sampling_frame_2014$unitresponse_rate*100 ), "%)" )
-sampling_frame_2014$overallresponse_label <- paste0( sampling_frame_2014$itemresponse, " (", 
-                                                sprintf( "%.1f", sampling_frame_2014$overallresponse_rate*100 ), "%)" )
+sampling_frame_2010$unitresponse_label <- paste0( sampling_frame_2010$unitresponse, " (", 
+                                             sprintf( "%.1f", sampling_frame_2010$unitresponse_rate*100 ), "%)" )
+sampling_frame_2010$overallresponse_label <- paste0( sampling_frame_2010$itemresponse, " (", 
+                                                sprintf( "%.1f", sampling_frame_2010$overallresponse_rate*100 ), "%)" )
 
-round( weighted.mean( sampling_frame_2014$unitresponse_rate, sampling_frame_2014$no.of.population ), 3 ) # overall unit response rate
-round( weighted.mean( sampling_frame_2014$itemresponse_rate, sampling_frame_2014$no.of.population ), 3 ) # overall item response rate
-round( weighted.mean( sampling_frame_2014$overallresponse_rate, sampling_frame_2014$no.of.population ), 3 ) # overall response rate
+round( weighted.mean( sampling_frame_2010$unitresponse_rate, sampling_frame_2010$no.of.population ), 3 ) # overall unit response rate
+round( weighted.mean( sampling_frame_2010$itemresponse_rate, sampling_frame_2010$no.of.population ), 3 ) # overall item response rate
+round( weighted.mean( sampling_frame_2010$overallresponse_rate, sampling_frame_2010$no.of.population ), 3 ) # overall response rate
 
-writexl::write_xlsx( sampling_frame_2014, "sampling_frame_2014.xlsx" )
+writexl::write_xlsx( sampling_frame_2010, "sampling_frame_2010.xlsx" )
 
 
 ##### calibrated weights #####
 
-d_2014$calibrated_weight <- d_2014$F14kalvikt
+d_2010$calibrated_weight <- d_2010$F10kalvikt
 
 # visualize calibrated weights across sampling strata
-ggplot( d_2014 %>% 
+ggplot( d_2010 %>% 
           group_by( sampling_strata_region ) %>% 
           summarise( mean_weight = mean( calibrated_weight ), sd_weight = sd( calibrated_weight ) ),
         aes( y = reorder( sampling_strata_region, -mean_weight ), x = mean_weight ) ) +
   geom_line( aes( group = 1 ) ) +
   geom_point() +
   geom_errorbarh( aes( xmin = mean_weight - sd_weight, xmax = mean_weight + sd_weight ), height = 0.4, alpha = 0.5 ) +
-  scale_x_continuous( limits = c( 0, 260 ), breaks = c( 0, 50, 100, 150, 200, 250 ), expand = c( 0, 0 ) ) +
+  scale_x_continuous( limits = c( 0, 210 ), breaks = c( 0, 50, 100, 150, 200 ), expand = c( 0, 0 ) ) +
   labs( y = NULL, x = "Mean and Standard Deviation of Calibrated Weights" ) +
   theme_classic() +
   theme( axis.text.y = element_text( family = "Arial", size = 11 ),
@@ -340,22 +359,22 @@ ggplot( d_2014 %>%
 
 ##### replicating non-respondent rows for sampling design #####
 
-# because d_2014 includes data only for respondents (unit response), we need to duplicate rows for non-respondents
+# because d_2010 includes data only for respondents (unit response), we need to duplicate rows for non-respondents
 # so that the final dataset represents the sampling process
-rows_to_add <- d_2014 %>%
+rows_to_add <- d_2010 %>%
   group_by( sampling_strata_region ) %>%
   summarise( to_add = unique( sample_size ) - n(),
              no.of.population = unique( no.of.population ),
              sample_size = unique( sample_size ),
              design_weight = unique( design_weight ) )
 
-sum( rows_to_add$to_add ) # 30,787 non-respondents
+rows_to_add$to_add <- round( rows_to_add$to_add )
 
-rows_to_add$to_add <- round( rows_to_add$to_add ) # to resolve floating-point precision issues
+sum( rows_to_add$to_add ) # 24,573 non-respondents
 
 replicated_rows <- rows_to_add[ rep( row.names( rows_to_add ), rows_to_add$to_add ), c( 1, 3:5 ) ]
 
-d_2014_complete <- bind_rows( d_2014, replicated_rows ) # 53,037 individuals in the original sample
+d_2010_complete <- bind_rows( d_2010, replicated_rows ) # 55,340 individuals in the original sample
 ```
 
 ### 3. Estimation of Proportions of Sexual Identities
@@ -363,22 +382,22 @@ d_2014_complete <- bind_rows( d_2014, replicated_rows ) # 53,037 individuals in 
 ##### 3.1.1. Define survey design
 ```{r}
 # prepare dataset
-d_2014_complete_cc <- d_2014_complete
+d_2010_complete_cc <- d_2010_complete
 
-d_2014_complete_cc$country_of_birth <- factor( 
-  ifelse( d_2014_complete_cc$country_of_birth == "Sweden", "Sweden",
-          ifelse( d_2014_complete_cc$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
+d_2010_complete_cc$country_of_birth <- factor( 
+  ifelse( d_2010_complete_cc$country_of_birth == "Sweden", "Sweden",
+          ifelse( d_2010_complete_cc$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
   levels = c( "Sweden", "Europe", "Outside Europe" )
   )
 
-d_2014_complete_cc$living_alone <- as.factor(
-  ifelse( d_2014_complete_cc$living_alone == "yes", 
+d_2010_complete_cc$living_alone <- as.factor(
+  ifelse( d_2010_complete_cc$living_alone == "yes", 
           "living_alone_yes",
           "living_alone_no" )
   )
 
-d_2014_complete_cc$personal_support <- as.factor(
-  ifelse( d_2014_complete_cc$personal_support == "yes", 
+d_2010_complete_cc$personal_support <- as.factor(
+  ifelse( d_2010_complete_cc$personal_support == "yes", 
           "personal_support_yes",
           "personal_support_no" ) 
   )
@@ -388,9 +407,9 @@ survey_design_cc <- svydesign( ids = ~ 1,
                                strata = ~ sampling_strata_region,
                                weights = ~ design_weight,
                                fpc = ~ no.of.population,
-                               data = d_2014_complete_cc )
+                               data = d_2010_complete_cc )
 
-categories <- c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" )
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" )
 
 # the following analyses assume MCAR
 ``` 
@@ -400,30 +419,29 @@ categories <- c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" )
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2010 == '", cat, "' )" ) ),
                         by = ~ sex,
-                        design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( sex ) ),
+                        design = subset( survey_design_cc, !is.na( sexual_identity_2010 ) & !is.na( sex ) ),
                         FUN = svyciprop,
                         vartype = "ci",
                         method = "beta" )
   
-  colnames( prop_cc_sex ) <- c( "subgroup", paste0( cat, "_point_estimate_2014" ), paste0( cat, "_lower_ci_2014" ), paste0( cat, "_upper_ci_2014" ) )
+  colnames( prop_cc_sex ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
   
   list_of_df[[cat]] <- prop_cc_sex
 }
 
 prop_cc_sex <- Reduce( function( df1, df2 ) { 
   merge( df1, df2, by = "subgroup" )
-}, 
-list_of_df )
+  }, 
+  list_of_df )
 
 prop_cc_sex <- left_join( prop_cc_sex,
-                          d_2014_complete_cc[ !is.na( d_2014_complete_cc$sexual_identity ) &
-                                             !is.na( d_2014_complete_cc$sex ), ] %>% 
+                          d_2010_complete_cc[ !is.na( d_2010_complete_cc$sexual_identity_2010 ) & !is.na( d_2010_complete_cc$sex ), ] %>% 
                             group_by( subgroup = sex ) %>% 
-                            summarise( sample_size_2014 = n() ),
+                            summarise( sample_size_2010 = n() ),
                           by = "subgroup" ) %>%
-  mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
 ##### 3.1.3. By age group
@@ -432,62 +450,61 @@ prop_cc_sex <- left_join( prop_cc_sex,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_age <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_age <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2010 == '", cat, "' )" ) ),
                         by = ~ age_cat,
-                        design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( age_cat ) ),
+                        design = subset( survey_design_cc, !is.na( sexual_identity_2010 ) & !is.na( age_cat ) ),
                         FUN = svyciprop,
                         vartype = "ci",
                         method = "beta" )
   
-  colnames( prop_cc_age ) <- c( "subgroup", paste0( cat, "_point_estimate_2014" ), paste0( cat, "_lower_ci_2014" ), paste0( cat, "_upper_ci_2014" ) )
+  colnames( prop_cc_age ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
   
   list_of_df[[cat]] <- prop_cc_age
 }
 
 prop_cc_age <- Reduce( function( df1, df2 ) { 
   merge( df1, df2, by = "subgroup" )
-}, 
-list_of_df )
+  }, 
+  list_of_df )
 
 prop_cc_age <- left_join( prop_cc_age,
-                          d_2014_complete_cc[ !is.na( d_2014_complete_cc$sexual_identity ) &
-                                             !is.na( d_2014_complete_cc$age_cat ), ] %>% 
+                          d_2010_complete_cc[ !is.na( d_2010_complete_cc$sexual_identity_2010 ) & !is.na( d_2010_complete_cc$age_cat ), ] %>% 
                             group_by( subgroup = age_cat ) %>% 
-                            summarise( sample_size_2014 = n() ),
+                            summarise( sample_size_2010 = n() ),
                           by = "subgroup" ) %>%
-  mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
 ###### 3.1.3.2. Calculate proportion and proportion ratio by varying age cut-offs
 ```{r}
-d_2014_iteration_age <- d_2014_complete
+d_2010_iteration_age <- d_2010_complete
 
-min_age <- min( d_2014_iteration_age$age, na.rm = TRUE )
+min_age <- min( d_2010_iteration_age$age, na.rm = TRUE )
 
 results_df <- data.frame()
 
 for ( cut_off in ( min_age ):100 ) {
-  d_2014_iteration_age$age_iteration <- ifelse( d_2014_iteration_age$age <= cut_off, "young", "old" )
+  d_2010_iteration_age$age_iteration <- ifelse( d_2010_iteration_age$age <= cut_off, "young", "old" )
   
   survey_design_iteration_age <- svydesign( ids = ~ 1, 
                                             strata = ~ sampling_strata_region,
                                             weights = ~ design_weight,
                                             fpc = ~ no.of.population,
-                                            data = d_2014_iteration_age )
+                                            data = d_2010_iteration_age )
   
   list_of_df <- list()
   
   for ( cat in categories ) {
     prop_cc_age_iteration <- svyby(
-      formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+      formula = as.formula( paste0( "~ I( sexual_identity_2010 == '", cat, "' )" ) ),
       by = ~ age_iteration,
-      design = subset( survey_design_iteration_age, !is.na( sexual_identity ) & !is.na( age ) ),
+      design = subset( survey_design_iteration_age, !is.na( sexual_identity_2010 ) & !is.na( age ) ),
       FUN = svyciprop,
       method = "beta" )
     
     colnames( prop_cc_age_iteration ) <- c( "subgroup", 
-                                            paste0( cat, "_point_estimate_2014" ), 
-                                            paste0( cat, "_se_2014" ) )
+                                            paste0( cat, "_point_estimate_2010" ), 
+                                            paste0( cat, "_se_2010" ) )
     
     list_of_df[[cat]] <- prop_cc_age_iteration
   }
@@ -504,27 +521,27 @@ for ( cut_off in ( min_age ):100 ) {
   }
 
 results_wide <- results_df %>%
-  select( -ends_with( "_se_2014" ) ) %>%
+  select( -ends_with( "_se_2010" ) ) %>%
   pivot_wider( names_from = subgroup, 
-               values_from = c( Heterosexual_point_estimate_2014, 
-                                Homosexual_point_estimate_2014, 
-                                Bisexual_point_estimate_2014, 
-                                `None of the above_point_estimate_2014` ) 
+               values_from = c( Heterosexual_point_estimate_2010, 
+                                Homosexual_point_estimate_2010, 
+                                Bisexual_point_estimate_2010, 
+                                Uncertain_point_estimate_2010 ) 
                )
 
-colnames( results_wide ) <- gsub( "_point_estimate_2014", "", colnames( results_wide ) )
+colnames( results_wide ) <- gsub( "_point_estimate_2010", "", colnames( results_wide ) )
 
-results_wide$Heterosexual_pr_2014 <- results_wide$Heterosexual_young/results_wide$Heterosexual_old
-results_wide$Homosexual_pr_2014 <- results_wide$Homosexual_young/results_wide$Homosexual_old
-results_wide$Bisexual_pr_2014 <- results_wide$Bisexual_young/results_wide$Bisexual_old
-results_wide$`None of the above_pr_2014` <- results_wide$`None of the above_young`/results_wide$`None of the above_old`
+results_wide$Heterosexual_pr_2010 <- results_wide$Heterosexual_young/results_wide$Heterosexual_old
+results_wide$Homosexual_pr_2010 <- results_wide$Homosexual_young/results_wide$Homosexual_old
+results_wide$Bisexual_pr_2010 <- results_wide$Bisexual_young/results_wide$Bisexual_old
+results_wide$Uncertain_pr_2010 <- results_wide$Uncertain_young/results_wide$Uncertain_old
 
-results_wide$Heterosexual_pr_2014[ is.infinite( results_wide$Heterosexual_pr_2014 ) ] <- NA
-results_wide$Homosexual_pr_2014[ is.infinite( results_wide$Homosexual_pr_2014 ) ] <- NA
-results_wide$Bisexual_pr_2014[ is.infinite( results_wide$Bisexual_pr_2014 ) ] <- NA
-results_wide$`None of the above_pr_2014`[ is.infinite( results_wide$`None of the above_pr_2014` ) ] <- NA
+results_wide$Heterosexual_pr_2010[ is.infinite( results_wide$Heterosexual_pr_2010 ) ] <- NA
+results_wide$Homosexual_pr_2010[ is.infinite( results_wide$Homosexual_pr_2010 ) ] <- NA
+results_wide$Bisexual_pr_2010[ is.infinite( results_wide$Bisexual_pr_2010 ) ] <- NA
+results_wide$Uncertain_pr_2010[ is.infinite( results_wide$Uncertain_pr_2010 ) ] <- NA
 
-writexl::write_xlsx( results_wide, "prop_cc_age_iteration_2014.xlsx" )
+writexl::write_xlsx( results_wide, "prop_cc_age_iteration_2010.xlsx" )
 ```
 
 ##### 3.1.4. By sex*age group
@@ -532,14 +549,14 @@ writexl::write_xlsx( results_wide, "prop_cc_age_iteration_2014.xlsx" )
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_age_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_age_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2010 == '", cat, "' )" ) ),
                             by = ~ age_sex,
-                            design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( age_sex ) ),
+                            design = subset( survey_design_cc, !is.na( sexual_identity_2010 ) & !is.na( age_sex ) ),
                             FUN = svyciprop,
                             vartype = "ci",
                             method = "beta" )
   
-  colnames( prop_cc_age_sex ) <- c( "subgroup", paste0( cat, "_point_estimate_2014" ), paste0( cat, "_lower_ci_2014" ), paste0( cat, "_upper_ci_2014" ) )
+  colnames( prop_cc_age_sex ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
   
   list_of_df[[cat]] <- prop_cc_age_sex
 }
@@ -550,12 +567,11 @@ prop_cc_age_sex <- Reduce( function( df1, df2 ) {
 list_of_df )
 
 prop_cc_age_sex <- left_join( prop_cc_age_sex,
-                              d_2014_complete_cc[ !is.na( d_2014_complete_cc$sexual_identity ) &
-                                             !is.na( d_2014_complete_cc$age_sex ), ] %>% 
+                              d_2010_complete_cc[ !is.na( d_2010_complete_cc$sexual_identity_2010 ) & !is.na( d_2010_complete_cc$age_sex ), ] %>% 
                                 group_by( subgroup = age_sex ) %>% 
-                                summarise( sample_size_2014 = n() ),
+                                summarise( sample_size_2010 = n() ),
                               by = "subgroup" ) %>%
-  mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
 ##### 3.1.5. By education
@@ -563,30 +579,29 @@ prop_cc_age_sex <- left_join( prop_cc_age_sex,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_education <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_education <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2010 == '", cat, "' )" ) ),
                               by = ~ education,
-                              design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( education ) ),
+                              design = subset( survey_design_cc, !is.na( sexual_identity_2010 ) & !is.na( education ) ),
                               FUN = svyciprop,
                               vartype = "ci",
                               method = "beta" )
   
-  colnames( prop_cc_education ) <- c( "subgroup", paste0( cat, "_point_estimate_2014" ), paste0( cat, "_lower_ci_2014" ), paste0( cat, "_upper_ci_2014" ) )
+  colnames( prop_cc_education ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
   
   list_of_df[[cat]] <- prop_cc_education
 }
 
 prop_cc_education <- Reduce( function( df1, df2 ) { 
   merge( df1, df2, by = "subgroup" )
-}, 
-list_of_df )
+  }, 
+  list_of_df )
 
 prop_cc_education <- left_join( prop_cc_education,
-                                d_2014_complete_cc[ !is.na( d_2014_complete_cc$sexual_identity ) &
-                                             !is.na( d_2014_complete_cc$education ), ] %>% 
+                                d_2010_complete_cc[ !is.na( d_2010_complete_cc$sexual_identity_2010 ) & !is.na( d_2010_complete_cc$education ), ] %>% 
                                   group_by( subgroup = education ) %>% 
-                                  summarise( sample_size_2014 = n() ),
+                                  summarise( sample_size_2010 = n() ),
                                 by = "subgroup" ) %>%
-  mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
 ##### 3.1.6. By occupation
@@ -594,14 +609,14 @@ prop_cc_education <- left_join( prop_cc_education,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_occupation <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_occupation <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2010 == '", cat, "' )" ) ),
                               by = ~ occupation,
-                              design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( occupation ) ),
+                              design = subset( survey_design_cc, !is.na( sexual_identity_2010 ) & !is.na( occupation ) ),
                               FUN = svyciprop,
                               vartype = "ci",
                               method = "beta" )
   
-  colnames( prop_cc_occupation ) <- c( "subgroup", paste0( cat, "_point_estimate_2014" ), paste0( cat, "_lower_ci_2014" ), paste0( cat, "_upper_ci_2014" ) )
+  colnames( prop_cc_occupation ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
   
   list_of_df[[cat]] <- prop_cc_occupation
 }
@@ -612,12 +627,11 @@ prop_cc_occupation <- Reduce( function( df1, df2 ) {
 list_of_df )
 
 prop_cc_occupation <- left_join( prop_cc_occupation,
-                                d_2014_complete_cc[ !is.na( d_2014_complete_cc$sexual_identity ) &
-                                                      !is.na( d_2014_complete_cc$occupation ), ] %>% 
+                                d_2010_complete_cc[ !is.na( d_2010_complete_cc$sexual_identity_2010 ) & !is.na( d_2010_complete_cc$occupation ), ] %>% 
                                   group_by( subgroup = occupation ) %>% 
-                                  summarise( sample_size_2014 = n() ),
+                                  summarise( sample_size_2010 = n() ),
                                 by = "subgroup" ) %>%
-  mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
 ##### 3.1.7. By income
@@ -625,30 +639,29 @@ prop_cc_occupation <- left_join( prop_cc_occupation,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_income <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_income <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2010 == '", cat, "' )" ) ),
                            by = ~ income,
-                           design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( income ) ),
+                           design = subset( survey_design_cc, !is.na( sexual_identity_2010 ) & !is.na( income ) ),
                            FUN = svyciprop,
                            vartype = "ci",
                            method = "beta" )
   
-  colnames( prop_cc_income ) <- c( "subgroup", paste0( cat, "_point_estimate_2014" ), paste0( cat, "_lower_ci_2014" ), paste0( cat, "_upper_ci_2014" ) )
+  colnames( prop_cc_income ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
   
   list_of_df[[cat]] <- prop_cc_income
 }
 
 prop_cc_income <- Reduce( function( df1, df2 ) { 
   merge( df1, df2, by = "subgroup" )
-}, 
-list_of_df )
+  }, 
+  list_of_df )
 
 prop_cc_income <- left_join( prop_cc_income,
-                             d_2014_complete_cc[ !is.na( d_2014_complete_cc$sexual_identity ) &
-                                             !is.na( d_2014_complete_cc$income ), ] %>% 
+                             d_2010_complete_cc[ !is.na( d_2010_complete_cc$sexual_identity_2010 ) & !is.na( d_2010_complete_cc$income ), ] %>% 
                                group_by( subgroup = income ) %>% 
-                               summarise( sample_size_2014 = n() ),
+                               summarise( sample_size_2010 = n() ),
                              by = "subgroup" ) %>%
-  mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
 ##### 3.1.8. By country of birth
@@ -656,30 +669,30 @@ prop_cc_income <- left_join( prop_cc_income,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_country_of_birth <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_country_of_birth <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2010 == '", cat, "' )" ) ),
                                      by = ~ country_of_birth,
-                                     design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( country_of_birth ) ),
+                                     design = subset( survey_design_cc, !is.na( sexual_identity_2010 ) & !is.na( country_of_birth ) ),
                                      FUN = svyciprop,
                                      vartype = "ci",
                                      method = "beta" )
   
-  colnames( prop_cc_country_of_birth ) <- c( "subgroup", paste0( cat, "_point_estimate_2014" ), paste0( cat, "_lower_ci_2014" ), paste0( cat, "_upper_ci_2014" ) )
+  colnames( prop_cc_country_of_birth ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
   
   list_of_df[[cat]] <- prop_cc_country_of_birth
 }
 
 prop_cc_country_of_birth <- Reduce( function( df1, df2 ) { 
   merge( df1, df2, by = "subgroup" )
-}, 
-list_of_df )
+  }, 
+  list_of_df )
 
 prop_cc_country_of_birth <- left_join( prop_cc_country_of_birth,
-                                       d_2014_complete_cc[ !is.na( d_2014_complete_cc$sexual_identity ) &
-                                             !is.na( d_2014_complete_cc$country_of_birth ), ] %>% 
+                                       d_2010_complete_cc[ !is.na( d_2010_complete_cc$sexual_identity_2010 ) & 
+                                                             !is.na( d_2010_complete_cc$country_of_birth ), ] %>% 
                                          group_by( subgroup = country_of_birth ) %>% 
-                                         summarise( sample_size_2014 = n() ),
+                                         summarise( sample_size_2010 = n() ),
                                        by = "subgroup" ) %>%
-  mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
 ##### 3.1.9. By marital status
@@ -687,30 +700,30 @@ prop_cc_country_of_birth <- left_join( prop_cc_country_of_birth,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_marital_status <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_marital_status <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2010 == '", cat, "' )" ) ),
                                    by = ~ marital_status,
-                                   design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( marital_status ) ),
+                                   design = subset( survey_design_cc, !is.na( sexual_identity_2010 ) & !is.na( marital_status ) ),
                                    FUN = svyciprop,
                                    vartype = "ci",
                                    method = "beta" )
   
-  colnames( prop_cc_marital_status ) <- c( "subgroup", paste0( cat, "_point_estimate_2014" ), paste0( cat, "_lower_ci_2014" ), paste0( cat, "_upper_ci_2014" ) )
+  colnames( prop_cc_marital_status ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
   
   list_of_df[[cat]] <- prop_cc_marital_status
 }
 
 prop_cc_marital_status <- Reduce( function( df1, df2 ) { 
   merge( df1, df2, by = "subgroup" )
-}, 
-list_of_df )
+  }, 
+  list_of_df )
 
 prop_cc_marital_status <- left_join( prop_cc_marital_status,
-                                     d_2014_complete_cc[ !is.na( d_2014_complete_cc$sexual_identity ) &
-                                             !is.na( d_2014_complete_cc$marital_status ), ] %>% 
+                                     d_2010_complete_cc[ !is.na( d_2010_complete_cc$sexual_identity_2010 ) & 
+                                                           !is.na( d_2010_complete_cc$marital_status ), ] %>% 
                                        group_by( subgroup = marital_status ) %>% 
-                                       summarise( sample_size_2014 = n() ),
+                                       summarise( sample_size_2010 = n() ),
                                      by = "subgroup" ) %>%
-  mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
 ##### 3.1.10. By living status
@@ -718,30 +731,30 @@ prop_cc_marital_status <- left_join( prop_cc_marital_status,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_living_alone <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_living_alone <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2010 == '", cat, "' )" ) ),
                                  by = ~ living_alone,
-                                 design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( living_alone ) ),
+                                 design = subset( survey_design_cc, !is.na( sexual_identity_2010 ) & !is.na( living_alone ) ),
                                  FUN = svyciprop,
                                  vartype = "ci",
                                  method = "beta" )
   
-  colnames( prop_cc_living_alone ) <- c( "subgroup", paste0( cat, "_point_estimate_2014" ), paste0( cat, "_lower_ci_2014" ), paste0( cat, "_upper_ci_2014" ) )
+  colnames( prop_cc_living_alone ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
   
   list_of_df[[cat]] <- prop_cc_living_alone
 }
 
 prop_cc_living_alone <- Reduce( function( df1, df2 ) { 
   merge( df1, df2, by = "subgroup" )
-}, 
-list_of_df )
+  }, 
+  list_of_df )
 
 prop_cc_living_alone <- left_join( prop_cc_living_alone,
-                                   d_2014_complete_cc[ !is.na( d_2014_complete_cc$sexual_identity ) &
-                                             !is.na( d_2014_complete_cc$living_alone ), ] %>% 
+                                   d_2010_complete_cc[ !is.na( d_2010_complete_cc$sexual_identity_2010 ) & 
+                                                         !is.na( d_2010_complete_cc$living_alone ), ] %>% 
                                      group_by( subgroup = living_alone ) %>% 
-                                     summarise( sample_size_2014 = n() ),
+                                     summarise( sample_size_2010 = n() ),
                                    by = "subgroup" ) %>%
-  mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
 ##### 3.1.11. By personal support
@@ -749,31 +762,30 @@ prop_cc_living_alone <- left_join( prop_cc_living_alone,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_personal_support <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_personal_support <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2010 == '", cat, "' )" ) ),
                                      by = ~ personal_support,
-                                     design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( personal_support ) ),
+                                     design = subset( survey_design_cc, !is.na( sexual_identity_2010 ) & !is.na( personal_support ) ),
                                      FUN = svyciprop,
                                      vartype = "ci",
                                      method = "beta" )
   
-  colnames( prop_cc_personal_support ) <- c( "subgroup", paste0( cat, "_point_estimate_2014" ), paste0( cat, "_lower_ci_2014" ), paste0( cat, "_upper_ci_2014" ) )
+  colnames( prop_cc_personal_support ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
   
   list_of_df[[cat]] <- prop_cc_personal_support
 }
 
 prop_cc_personal_support <- Reduce( function( df1, df2 ) { 
   merge( df1, df2, by = "subgroup" )
-}, 
-list_of_df )
+  }, 
+  list_of_df )
 
 prop_cc_personal_support <- left_join( prop_cc_personal_support,
-                                       d_2014_complete_cc[ !is.na( d_2014_complete_cc$sexual_identity ) &
-                                             !is.na( d_2014_complete_cc$personal_support ), ] %>% 
+                                       d_2010_complete_cc[ !is.na( d_2010_complete_cc$sexual_identity_2010 ) & 
+                                                             !is.na( d_2010_complete_cc$personal_support ), ] %>% 
                                          group_by( subgroup = personal_support ) %>% 
-                                         summarise( sample_size_2014 = n() ),
+                                         summarise( sample_size_2010 = n() ),
                                        by = "subgroup" ) %>%
-  mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
-
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
 ##### 3.1.12. Overall proportions of sexual identities in Stockholm County
@@ -781,36 +793,36 @@ prop_cc_personal_support <- left_join( prop_cc_personal_support,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_overall <- svyciprop( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
-                                design = subset( survey_design_cc, !is.na( sexual_identity ) ),
+  prop_cc_overall <- svyciprop( formula = as.formula( paste0( "~ I( sexual_identity_2010 == '", cat, "' )" ) ),
+                                design = subset( survey_design_cc, !is.na( sexual_identity_2010 ) ),
                                 vartype = "ci",
                                 method = "beta" )
   
   prop_cc_overall <- data.frame( prop_cc_overall[ 1 ], confint( prop_cc_overall )[ 1 ], confint( prop_cc_overall )[ 2 ] )
   
-  colnames( prop_cc_overall ) <- c( paste0( cat, "_point_estimate_2014" ), paste0( cat, "_lower_ci_2014" ), paste0( cat, "_upper_ci_2014" ) )
+  colnames( prop_cc_overall ) <- c( paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
   
   list_of_df[[cat]] <- prop_cc_overall
 }
 
 prop_cc_overall <- Reduce( function( df1, df2 ) {
   cbind( df1, df2 )
-}, 
-list_of_df ) %>% 
+  }, 
+  list_of_df ) %>% 
   as.data.frame() %>%
   rownames_to_column( var = "subgroup" )
 
 prop_cc_overall[ 1, 1 ] <- "Stockholm County"
 
 prop_cc_overall <- bind_cols( prop_cc_overall,
-                              d_2014_complete_cc[ !is.na( d_2014_complete_cc$sexual_identity ), ] %>% 
-                                summarise( sample_size_2014 = n() ) ) %>%
-  mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
+                              d_2010_complete_cc[ !is.na( d_2010_complete_cc$sexual_identity_2010 ), ] %>% 
+                                summarise( sample_size_2010 = n() ) ) %>%
+  mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
 ##### 3.1.13. Merge datasets
 ```{r}
-prop_cc_summary_2014 <- rbind( prop_cc_sex, 
+prop_cc_summary_2010 <- rbind( prop_cc_sex, 
                                prop_cc_age,
                                prop_cc_age_sex,
                                prop_cc_education,
@@ -821,9 +833,9 @@ prop_cc_summary_2014 <- rbind( prop_cc_sex,
                                prop_cc_living_alone,
                                prop_cc_personal_support,
                                prop_cc_overall 
-)
+                               )
 
-writexl::write_xlsx( prop_cc_summary_2014, "prop_cc_summary_2014.xlsx" )
+writexl::write_xlsx( prop_cc_summary_2010, "prop_cc_summary_2010.xlsx" )
 ```
 
 #### 3.2. Multiple impuation and inverse probability weighting
@@ -837,55 +849,55 @@ writexl::write_xlsx( prop_cc_summary_2014, "prop_cc_summary_2014.xlsx" )
 ```{r}
 ##### prepare dataset #####
 
-d_2014_cc_model <- d_2014_complete
+d_2010_cc_model <- d_2010_complete
 
 # exposures of interest, including age, sex, country of birth, education, income, marital status, living status, and personal support
-d_2014_cc_model$age_exp <- relevel( d_2014_cc_model$age_cat, ref = "45-59" )
+d_2010_cc_model$age_exp <- relevel( d_2010_cc_model$age_cat, ref = "45-59" )
 
-d_2014_cc_model$sex_exp <- relevel( d_2014_cc_model$sex, ref = "Male" )
+d_2010_cc_model$sex_exp <- relevel( d_2010_cc_model$sex, ref = "Male" )
 
-d_2014_cc_model$country_of_birth_exp <- factor( 
-  ifelse( d_2014_cc_model$country_of_birth == "Sweden", "Sweden",
-          ifelse( d_2014_cc_model$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
+d_2010_cc_model$country_of_birth_exp <- factor( 
+  ifelse( d_2010_cc_model$country_of_birth == "Sweden", "Sweden",
+          ifelse( d_2010_cc_model$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
   levels = c( "Sweden", "Europe", "Outside Europe" )
   )
 
-d_2014_cc_model$education_exp <- relevel( d_2014_cc_model$education, ref = ">=13 years" )
+d_2010_cc_model$education_exp <- relevel( d_2010_cc_model$education, ref = ">=13 years" )
 
-d_2014_cc_model$income_exp <- relevel( d_2014_cc_model$income, ref = ">4,500" )
+d_2010_cc_model$income_exp <- relevel( d_2010_cc_model$income, ref = ">4,500" )
 
-d_2014_cc_model$marital_status_exp <- relevel( d_2014_cc_model$marital_status, ref = "Currently married" )
+d_2010_cc_model$marital_status_exp <- relevel( d_2010_cc_model$marital_status, ref = "Currently married" )
 
-d_2014_cc_model$living_status_exp <- relevel( d_2014_cc_model$living_alone, ref = "no" )
+d_2010_cc_model$living_status_exp <- relevel( d_2010_cc_model$living_alone, ref = "no" )
 
-d_2014_cc_model$personal_support_exp <- relevel( d_2014_cc_model$personal_support, ref = "yes" )
+d_2010_cc_model$personal_support_exp <- relevel( d_2010_cc_model$personal_support, ref = "yes" )
 
 
 # outcomes of interest, including sexual minority, homosexual, bisexual, and other
-d_2014_cc_model$sexual_minority <- ifelse( d_2014_cc_model$sexual_identity == "Heterosexual", 0, 1 )
+d_2010_cc_model$sexual_minority <- ifelse( d_2010_cc_model$sexual_identity_2010 == "Heterosexual", 0, 1 )
 
-d_2014_cc_model$homosexual <- ifelse( d_2014_cc_model$sexual_identity == "Homosexual", 1, 0 )
+d_2010_cc_model$homosexual <- ifelse( d_2010_cc_model$sexual_identity_2010 == "Homosexual", 1, 0 )
 
-d_2014_cc_model$bisexual <- ifelse( d_2014_cc_model$sexual_identity == "Bisexual", 1, 0 )
+d_2010_cc_model$bisexual <- ifelse( d_2010_cc_model$sexual_identity_2010 == "Bisexual", 1, 0 )
 
-d_2014_cc_model$other <- ifelse( d_2014_cc_model$sexual_identity == "None of the above", 1, 0 )
+d_2010_cc_model$other <- ifelse( d_2010_cc_model$sexual_identity_2010 == "Uncertain", 1, 0 )
 
 
 # confounding variables, including age, sex, country of birth, education, income, marital status, 
 # and place of residence (i.e., sampling strata)
-d_2014_cc_model$age_conf <- d_2014_cc_model$age # age
+d_2010_cc_model$age_conf <- d_2010_cc_model$age # age
 
-d_2014_cc_model$sex_conf <- d_2014_cc_model$sex # sex
+d_2010_cc_model$sex_conf <- d_2010_cc_model$sex # sex
 
-d_2014_cc_model$country_of_birth_conf <- d_2014_cc_model$country_of_birth # country of birth (grouped into five categories due to sparse data)
+d_2010_cc_model$country_of_birth_conf <- d_2010_cc_model$country_of_birth # country of birth (grouped into five categories due to sparse data)
 
-d_2014_cc_model$education_conf <- as.factor( d_2014_cc_model$utbniva2014 ) # education
+d_2010_cc_model$education_conf <- as.factor( d_2010_cc_model$utbniva2010 ) # education
 
-d_2014_cc_model$income_conf <- d_2014_cc_model$dispink2014 # disposable income
+d_2010_cc_model$income_conf <- d_2010_cc_model$dispink2010 # disposable income
 
-d_2014_cc_model$marital_status_conf <- d_2014_cc_model$marital_status # marital status (grouped into three categories due to sparse data)
+d_2010_cc_model$marital_status_conf <- d_2010_cc_model$marital_status # marital status (grouped into three categories due to sparse data)
 
-d_2014_cc_model$place_of_residence_conf <- d_2014_cc_model$sampling_strata_region # place of residence
+d_2010_cc_model$place_of_residence_conf <- d_2010_cc_model$sampling_strata_region # place of residence
 
 
 ##### create survey design #####
@@ -893,7 +905,7 @@ survey_design_cc_model <- svydesign( ids = ~ 1,
                                      strata = ~ sampling_strata_region,
                                      weights = ~ design_weight,
                                      fpc = ~ no.of.population,
-                                     data = d_2014_cc_model )
+                                     data = d_2010_cc_model )
 
 # the following analyses assume MCAR
 ```
@@ -1051,16 +1063,16 @@ fml_list_personal_support_crude <- list(
 ##### exposure of interest: age #####
 
 # sexual minority
-fml_sexual_minority_age <- sexual_minority ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_age <- sexual_minority ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # homosexual
-fml_homosexual_age <- homosexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_age <- homosexual ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # bisexual
-fml_bisexual_age <- bisexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_age <- bisexual ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # other
-fml_other_age <- other ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_age <- other ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_age <- list(
@@ -1091,7 +1103,7 @@ fml_list_age_by_sex <- list(
   fml_homosexual_age_by_sex = fml_homosexual_age_by_sex,
   fml_bisexual_age_by_sex = fml_bisexual_age_by_sex,
   fml_other_age_by_sex = fml_other_age_by_sex
-)
+  )
 
 
 ##### exposure of interest: sex #####
@@ -1275,13 +1287,13 @@ for ( exposure in exposures ) {
 
 # refit the model for age by sex, using female as the reference group
 # to extract results for age among females
-d_2014_cc_model$sex_exp <- relevel( d_2014_cc_model$sex, ref = "Female" )
+d_2010_cc_model$sex_exp <- relevel( d_2010_cc_model$sex, ref = "Female" )
 
 survey_design_cc_model_refit <- svydesign( ids = ~ 1,
                                            strata = ~ sampling_strata_region,
                                            weights = ~ design_weight,
                                            fpc = ~ no.of.population,
-                                           data = d_2014_cc_model )
+                                           data = d_2010_cc_model )
 
 refit_model_cc_age_by_sex_crude <- list()
 
@@ -1307,7 +1319,7 @@ for ( exposure in exposures ) {
   }
 }
 
-# refit the three models for age, using female as the reference group
+# refit the three models for age by sex, using female as the reference group
 # to extract results for age among females
 refit_model_cc_age_by_sex <- list()
 
@@ -1319,14 +1331,14 @@ for ( name in names( fml_list_age_by_sex ) ) {
 
 ##### 4.1.5. Extract results
 ```{r}
-models <- c( "poisson", "log_binomial", "logistic" )
 identities <- c( "sexual_minority", "homosexual", "bisexual", "other" )
+models <- c( "poisson", "log_binomial", "logistic" )
 
 ########## Crude analyses ##########
 
 ##### exposure of interest: age #####
 
-exposures_age <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60" )
+exposures_age <- c( "age_exp18-29", "age_exp30-44", "age_exp>=60"  )
 outcomes_age <- c( "fml_sexual_minority_age", "fml_homosexual_age", "fml_bisexual_age", "fml_other_age" )
 
 # extract coefficients and 95% CI
@@ -1347,8 +1359,8 @@ results_cc_age_pr_crude <- extract_results_pr_crude( results_cc_age_coef_crude, 
 
 ##### exposure of interest: age by sex #####
 
-exposures_age_male <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29:sex_expFemale", "age_exp30-44:sex_expFemale", "age_exp>=60:sex_expFemale" )
-exposures_age_female <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29:sex_expMale", "age_exp30-44:sex_expMale", "age_exp>=60:sex_expMale" )
+exposures_age_male <- c( "age_exp18-29", "age_exp30-44", "age_exp>=60", "age_exp18-29:sex_expFemale", "age_exp30-44:sex_expFemale", "age_exp>=60:sex_expFemale" )
+exposures_age_female <- c( "age_exp18-29", "age_exp30-44", "age_exp>=60", "age_exp18-29:sex_expMale", "age_exp30-44:sex_expMale", "age_exp>=60:sex_expMale" )
 outcomes_age_by_sex <- c( "fml_sexual_minority_age_by_sex", "fml_homosexual_age_by_sex", "fml_bisexual_age_by_sex", "fml_other_age_by_sex" )
 
 # extract coefficients and 95% CI among males
@@ -1577,8 +1589,6 @@ for ( outcome in outcomes_age_by_sex ) {
 }
 
 # extract coefficients and 95% CI among females
-exposures_age_female <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29:sex_expMale", "age_exp30-44:sex_expMale", "age_exp>=60:sex_expMale"  )
-
 results_cc_age_coef_female <- list()
 
 for ( outcome in outcomes_age_by_sex ) {
@@ -1604,7 +1614,7 @@ results_cc_age_pr_poisson_female <- extract_results_pr( results_cc_age_coef_fema
                                paste0( Exposure, "_Female" ), Exposure ) )
 
 results_cc_age_by_sex_pr_poisson <- rbind( results_cc_age_pr_poisson_male[ c( 1:3 ), ], 
-                                    results_cc_age_pr_poisson_female[ c( 1:3 ), ] )
+                                           results_cc_age_pr_poisson_female[ c( 1:3 ), ] )
 
 # results from log binomial regression
 results_cc_age_pr_log_binomial_male <- extract_results_pr( results_cc_age_coef_male, "log_binomial", identities, "age_by_sex" ) %>%
@@ -1800,6 +1810,7 @@ results_cc_personal_support_pr_logistic <- extract_results_pr( results_cc_person
 
 
 ##### combine results #####
+
 results_cc_pr_crude <- rbind( results_cc_age_pr_crude,
                               results_cc_age_by_sex_pr_crude,
                               results_cc_sex_pr_crude,
@@ -1823,7 +1834,7 @@ results_cc_pr_poisson <- rbind( results_cc_age_pr_poisson,
                                 )
 
 writexl::write_xlsx( merge( results_cc_pr_crude, results_cc_pr_poisson, by = "Exposure" ),
-                     "results_cc_pr_poisson_2014.xlsx" )
+                     "results_cc_pr_poisson_2010.xlsx" )
 
 results_cc_pr_log_binomial <- rbind( results_cc_age_pr_log_binomial,
                                      results_cc_age_by_sex_pr_log_binomial,
@@ -1851,9 +1862,9 @@ colnames( results_cc_pr_poisson )[-1] <- paste0( colnames( results_cc_pr_poisson
 colnames( results_cc_pr_log_binomial )[-1] <- paste0( colnames( results_cc_pr_log_binomial )[-1], "_log_binomial")
 colnames( results_cc_pr_logistic )[-1] <- paste0( colnames( results_cc_pr_logistic )[-1], "_logistic")
 
-results_cc_pr_all_models_2014 <- results_cc_pr_poisson %>%
+results_cc_pr_all_models_2010 <- results_cc_pr_poisson %>%
   full_join( results_cc_pr_log_binomial, by = "Exposure" ) %>%
   full_join( results_cc_pr_logistic, by = "Exposure" )
 
-writexl::write_xlsx( results_cc_pr_all_models_2014, "results_cc_pr_all_models_2014.xlsx" )
+writexl::write_xlsx( results_cc_pr_all_models_2010, "results_cc_pr_all_models_2010.xlsx" )
 ```
