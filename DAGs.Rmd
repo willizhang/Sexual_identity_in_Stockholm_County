@@ -12,6 +12,7 @@ editor_options:
 library(ggdag)
 library(ggplot2)
 
+
 # set theme
 theme_set( theme_dag() + theme( strip.text = element_blank() ) )
 ```
