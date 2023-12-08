@@ -1,6 +1,6 @@
 ### This repository contains files for:
 
-[Author list]. Trends and fluidity of self-reported sexual identity in Stockholm County, 2010 to 2021. 2024. In Preparation.
+[Author list]. **Trends and fluidity of self-reported sexual identity in Stockholm County, 2010 to 2021.** 2024. _In Preparation._
 
 The R scripts include:
 * SPHC-B_2010.Rmd: analyses of sexual identity in 2010.
