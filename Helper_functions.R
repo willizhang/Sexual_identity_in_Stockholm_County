@@ -90,7 +90,7 @@ extract_results_coef <- function( all_models_list, exposure, outcome, model_type
     } else {
     return( NULL )
     }
-  }
+}
 
 
 ##### Function to Extract Proportion Ratios and Confidence Intervals for Each Model Across Exposures #####
@@ -145,6 +145,37 @@ extract_results_pr <- function( model_base, model_type, identities, exposure ) {
       
       results_list[[ identity ]] <- temp_df
     }
+  }
+  
+  names( results_list ) <- NULL
+  
+  combined_df <- tibble::rownames_to_column(
+    do.call( cbind, results_list ),
+    var = "Exposure" )
+  
+  return( combined_df )
+}
+
+
+### extract risk ratio with 95% CI ###
+
+extract_rr <- function( model_results ) {
+  
+  results_list <- list()
+  
+  for ( model_name in names( model_results ) ) {
+    
+    exp_results <- exp( model_results[[ model_name ]] )
+    
+    temp_df <- as.data.frame( exp_results )
+    
+    type <- ifelse( grepl( "crude", model_name ), "crude", "adjusted" )
+    
+    colnames( temp_df ) <- c( paste0( "point_estimate_", type ),
+                              paste0( "lower_ci_", type ),
+                              paste0( "upper_ci_", type ) )
+    
+    results_list[[ model_name ]] <- temp_df
   }
   
   names( results_list ) <- NULL

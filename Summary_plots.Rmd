@@ -23,9 +23,9 @@ library(naniar)
 ### 2. Plots for Response Rates
 ```{r}
 # datasets for response rates
-sampling_frame_2010 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Prevalence and Fluidity of Sexual Identity/Sexual_Identity_R/sampling_frame_2010.xlsx")
-sampling_frame_2014 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Prevalence and Fluidity of Sexual Identity/Sexual_Identity_R/sampling_frame_2014.xlsx")
-sampling_frame_2021 <- read_excel("/Users/guoqiang.zhang/Library/CloudStorage/OneDrive-KarolinskaInstitutet/Karolinska Institutet/Research Projects/Prevalence and Fluidity of Sexual Identity/Sexual_Identity_R/sampling_frame_2021.xlsx")
+sampling_frame_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2010.xlsx")
+sampling_frame_2014 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2014.xlsx")
+sampling_frame_2021 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2021.xlsx")
 
 combined_response_rate <- sampling_frame_2010[, c( 1, 6:8 ) ] %>% 
     full_join( sampling_frame_2014[, c( 1, 6:8 ) ], by = "sampling_strata_region" ) %>%
@@ -43,93 +43,61 @@ colnames( combined_response_rate ) <- c( "Municipality",
                                          "overallresponse_rate_2021"
                                          )
 
-str( combined_response_rate )
+ordered_levels <- combined_response_rate$Municipality[ order( combined_response_rate$overallresponse_rate_2010, 
+                                                              decreasing = TRUE ) ]
+ordered_levels <- as.character( ordered_levels[ ordered_levels != "Älvsjö" & 
+                                                  ordered_levels != "Hägersten-Liljeholmen" &
+                                                  ordered_levels != "Hägersten-Älvsjö" ] )
+ordered_levels <- c( "Hägersten-Älvsjö", ordered_levels, "Älvsjö", "Hägersten-Liljeholmen" )
 
-# Reshape to long format and extract the year
-long_data <- combined_response_rate %>%
-  tidyr::gather("Response rate", "Value", 
-                starts_with("unitresponse_rate"), 
-                starts_with("itemresponse_rate"), 
-                starts_with("overallresponse_rate")) %>%
-  tidyr::extract("Response rate", into = c("type", "year"), regex = "(.*)response_rate_(\\d{4})")
+combined_response_rate$Municipality <- factor( combined_response_rate$Municipality, 
+                                               levels = ordered_levels )
 
-# Create the plot
-# The rest of the data wrangling steps remain unchanged
+df_long <- combined_response_rate %>%
+  pivot_longer(
+    cols = -Municipality,
+    names_to = c(".value", "year"),
+    names_pattern = "(.*)_(\\d+)"
+    ) %>%
+  gather( key = "response_type", value = "response_rate", unitresponse_rate, itemresponse_rate, overallresponse_rate )
 
-# Adjust the plot creation
-ggplot(long_data, aes(x = reorder(Municipality, -Value), 
-                      y = Value, 
-                      group = interaction(type, year), 
-                      color = type, 
-                      linetype = year)) +
-  geom_line() +
-  geom_point(aes(shape = year)) +
-  coord_flip() +
-  scale_y_continuous(limits = c(0.1, 1), breaks = c(0.3, 0.5, 0.7)) +
-  scale_color_hue(labels = c("Item Response", "Overall Response", "Unit Response")) +
-  labs(x = NULL, y = "Response Rate") +
+df_long$response_type <- factor( df_long$response_type, 
+                                 levels = c( "unitresponse_rate", "itemresponse_rate", "overallresponse_rate" ) )
+
+
+# plot
+year_labels <- c( `2010` = "SPHC-B 2010", `2014` = "SPHC-B 2014", `2021` = "SPHC-B 2021" )
+
+ggplot( df_long, 
+        aes( x = Municipality, y = response_rate, group = interaction( year, response_type ) ) ) +
+  
+  geom_line( aes( color = year, linetype = response_type ) ) +
+  
+  scale_linetype_manual( values = c( "unitresponse_rate" = "dashed", 
+                                     "itemresponse_rate" = "dotdash", 
+                                     "overallresponse_rate" = "solid" ),
+                         labels = c( "Unit response rate", "Item response rate", "Overall response rate" ),
+                         name = "Response type" ) +
+  
+  scale_color_discrete( labels = year_labels,
+                        name = "Year" ) +
+  
+  scale_y_continuous( labels = scales::percent ) +
+
   theme_minimal() +
-  theme(axis.title.x = element_text(family = "Arial", size = 11),
-        axis.text.x = element_text(family = "Arial", size = 11), 
-        axis.text.y = element_text(family = "Arial", size = 11),
-        legend.title = element_text(family = "Arial", size = 11),
-        legend.text = element_text(family = "Arial", size = 10)) +
-  guides(shape = guide_legend(override.aes = list(linetype = 0)))  # to remove linetype from shape legend
-
-
-
-
-# visualize unit and overall response rate across sampling strata
-ggplot( tidyr::gather( combined_response_rate, "Response rate", "Value", unitresponse_rate, overallresponse_rate ), 
-        aes( x = reorder( sampling_strata_region, Value ), y = Value, group = `Response rate`, color = `Response rate` ) ) +
-  geom_line() +
-  geom_point() +
-  coord_flip() +
-  scale_y_continuous( limits = c( 0.3, 0.7 ), breaks = c( 0.3, 0.5, 0.7 ) ) +
-  scale_color_hue( labels = c( "Unit & item response", "Unit response" ) ) +
-  labs( x = NULL, y = "Response Rate" ) +
-  theme_minimal() +
-  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
-         axis.text.x = element_text( family = "Arial", size = 11 ), 
-         axis.text.y = element_text( family = "Arial", size = 11 ),
+  
+  labs( x = NULL, y = "Response Rate (%)" ) +
+  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 12 ),
+         axis.text.x = element_text( angle = 45, hjust = 1, family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.position = "right",
          legend.title = element_text( family = "Arial", size = 11 ),
-         legend.text = element_text( family = "Arial", size = 10 ) )
-
-
-# visualize unit and overall response rate across sampling strata
-ggplot( tidyr::gather( sampling_frame_2014, "Response rate", "Value", unitresponse_rate, overallresponse_rate ), 
-        aes( x = reorder( sampling_strata_region, Value ), y = Value, group = `Response rate`, color = `Response rate` ) ) +
-  geom_line() +
-  geom_point() +
-  coord_flip() +
-  scale_y_continuous( limits = c( 0.2, 0.6 ), breaks = c( 0.2, 0.4, 0.6 ) ) +
-  scale_color_hue( labels = c( "Unit & item response", "Unit response" ) ) +
-  labs( x = NULL, y = "Response Rate" ) +
-  theme_minimal() +
-  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
-         axis.text.x = element_text( family = "Arial", size = 11 ), 
-         axis.text.y = element_text( family = "Arial", size = 11 ),
-         legend.title = element_text( family = "Arial", size = 11 ),
-         legend.text = element_text( family = "Arial", size = 10 ) )
-
-# visualize unit and overall response rate across sampling strata
-ggplot( tidyr::gather( sampling_frame_2021, "Response rate", "Value", unitresponse_rate, overallresponse_rate ), 
-        aes( x = reorder( sampling_strata_region, Value ), y = Value, group = `Response rate`, color = `Response rate` ) ) +
-  geom_line() +
-  geom_point() +
-  coord_flip() +
-  scale_y_continuous( limits = c( 0.2, 0.6 ), breaks = c( 0.2, 0.4, 0.6 ) ) +
-  scale_color_hue( labels = c( "Unit & item response", "Unit response" ) ) +
-  labs( x = NULL, y = "Response Rate" ) +
-  theme_minimal() +
-  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
-         axis.text.x = element_text( family = "Arial", size = 11 ), 
-         axis.text.y = element_text( family = "Arial", size = 11 ),
-         legend.title = element_text( family = "Arial", size = 11 ),
-         legend.text = element_text( family = "Arial", size = 10 ) )
+         plot.margin = margin( 0.1, 0.1, 0.1, 0.5, "cm" )
+         )
 ```
 
-### 3. Forest Plots for Proportion of Sexual Identity
+### 3. Plots for Proportion of Sexual Identity
 #### 3.1. Complete-case analysis
 ##### 3.1.1. Prepare dataset for plotting
 ```{r}
@@ -1764,7 +1732,7 @@ p_cc_age_sex <- add_border(
 plot( p_cc_age_sex )
 ```
 
-### 4. Forest Plots for Relation between Sexual Identity and Demographic Factors
+### 4. Plots for Relation between Sexual Identity and Demographic Factors
 #### 4.1. Complete-case analysis
 ##### 4.1.1. Prepare dataset for plotting
 ```{r}
@@ -4160,6 +4128,9 @@ ggplot( long_data_2010,
   geom_errorbar( aes( ymin = lower_ci, ymax = upper_ci ), 
                  position = position_dodge( width = 0.5 ), width = 0.2 ) +
   
+  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D" ),
+                      breaks = c( "Sexual minorities", "Homosexual", "Bisexual", "Uncertain" )  ) +
+  
   facet_wrap( ~ Exposure, scales = "free_y" ) +
   
   theme_minimal() +
@@ -4167,7 +4138,7 @@ ggplot( long_data_2010,
   labs( x = NULL, y = "Point Estimate (95% CI)", color = "Sexual Identity", shape = "Model" ) +
   
   theme( axis.text.x = element_blank(),
-         axis.title.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11, margin = margin( r = 10, unit = "pt" ) ),
          legend.title = element_text( family = "Arial", size = 11 ),
          legend.text = element_text( family = "Arial", size = 10 ),
          strip.text = element_text( family = "Arial", size = 9 )
@@ -4258,6 +4229,9 @@ ggplot( long_data_2014,
   geom_errorbar( aes( ymin = lower_ci, ymax = upper_ci ), 
                  position = position_dodge( width = 0.5 ), width = 0.2 ) +
   
+  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D" ),
+                      breaks = c( "Sexual minorities", "Homosexual", "Bisexual", "None of the above" )  ) +
+  
   facet_wrap( ~ Exposure, scales = "free_y" ) +
   
   theme_minimal() +
@@ -4265,7 +4239,7 @@ ggplot( long_data_2014,
   labs( x = NULL, y = "Point Estimate (95% CI)", color = "Sexual Identity", shape = "Model" ) +
   
   theme( axis.text.x = element_blank(),
-         axis.title.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11, margin = margin( r = 10, unit = "pt" ) ),
          legend.title = element_text( family = "Arial", size = 11 ),
          legend.text = element_text( family = "Arial", size = 10 ),
          strip.text = element_text( family = "Arial", size = 9 )
@@ -4354,6 +4328,9 @@ ggplot( long_data_2021,
   geom_errorbar( aes( ymin = lower_ci, ymax = upper_ci ), 
                  position = position_dodge( width = 0.5 ), width = 0.2 ) +
   
+  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D" ),
+                      breaks = c( "Sexual minorities", "Homosexual", "Bisexual", "None of the above" )  ) +
+  
   facet_wrap( ~ Exposure, scales = "free_y" ) +
   
   theme_minimal() +
@@ -4361,9 +4338,625 @@ ggplot( long_data_2021,
   labs( x = NULL, y = "Point Estimate (95% CI)", color = "Sexual Identity", shape = "Model" ) +
   
   theme( axis.text.x = element_blank(),
-         axis.title.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11, margin = margin( r = 10, unit = "pt" ) ),
          legend.title = element_text( family = "Arial", size = 11 ),
          legend.text = element_text( family = "Arial", size = 10 ),
          strip.text = element_text( family = "Arial", size = 9 )
   )
+```
+### 5. Plots for Relation between Changes of Sexual Identity and Demographic Factors
+#### 5.1. Complete-case analysis
+##### 5.1.1. Prepare dataset for plotting
+```{r}
+fluidity_cc_rr_2010 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_cc_rr_2010.xlsx")
+fluidity_cc_rr_2014 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_cc_rr_2014.xlsx")
+
+colnames(fluidity_cc_rr_2010)[-1] <- paste0(colnames(fluidity_cc_rr_2010)[-1], "_2010")
+colnames(fluidity_cc_rr_2014)[-1] <- paste0(colnames(fluidity_cc_rr_2014)[-1], "_2014")
+
+# to make it easier to combine across datasets
+# a note on these changes will be added on the graph later
+fluidity_cc_rr_2010$Exposure[ fluidity_cc_rr_2010$Exposure == "age_exp18-29" ] <- "age_exp16-29"
+fluidity_cc_rr_2010$Exposure[ fluidity_cc_rr_2010$Exposure == "age_exp18-29_Male" ] <- "age_exp16-29_Male"
+fluidity_cc_rr_2010$Exposure[ fluidity_cc_rr_2010$Exposure == "age_exp18-29_Female" ] <- "age_exp16-29_Female"
+
+# merge datasets
+fluidity_cc_rr <- full_join( fluidity_cc_rr_2010, fluidity_cc_rr_2014, by = "Exposure" )
+
+# modify table format
+desired_order <- c( "sex_expFemale", "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29_Male", "age_exp30-44_Male", "age_exp>=60_Male", "age_exp16-29_Female", "age_exp30-44_Female", "age_exp>=60_Female", "country_of_birth_expEurope", "country_of_birth_expOutside Europe", "education_exp<=9 years", "education_exp10-12 years", "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_exp(3,500, 4,500]", "marital_status_expNever married", "marital_status_expOther", "living_status_expyes", "personal_support_expno" )
+
+fluidity_cc_rr <- fluidity_cc_rr %>%
+  mutate( Exposure = factor( Exposure, levels = desired_order ) ) %>%
+  arrange( Exposure )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = "Sex", .before = 1 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = "Age group", .before = 3 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = "Country of birth", .before = 13 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = "Education years", .before = 16 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = "Income (100 kr/yr)ᵉ", .before = 19 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = "Marital statusᶠ", .before = 23 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = "Living alone", .before = 26 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = "Personal support", .before = 28 )
+
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "sex_expFemale" ] <- paste0( "   ", "Female\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp16-29" ] <- paste0( "   ", "16–29 yrsᶜ\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp30-44" ] <- paste0( "   ", "30–44 yrs\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp>=60" ] <- paste0( "   ", "\u2265 60 yrs\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "country_of_birth_expEurope" ] <- paste0( "   ", "Europeᵈ\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "country_of_birth_expOutside Europe" ] <- paste0( "   ", "Outside Europe\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "education_exp<=9 years" ] <- paste0( "   ", "\u2264 9 yrs\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "education_exp10-12 years" ] <- paste0( "   ", "10–12 yrs\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "income_exp<=2,500" ] <- paste0( "   ", "\u2264 2,500\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "income_exp(2,500, 3,500]" ] <- paste0( "   ", "(2,500, 3,500]\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "income_exp(3,500, 4,500]" ] <- paste0( "   ", "(3,500, 4,500]\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "marital_status_expNever married" ] <- paste0( "   ", "Never married\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "marital_status_expOther" ] <- paste0( "   ", "Other\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "living_status_expyes" ] <- paste0( "   ", "Yes\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "personal_support_expno" ] <- paste0( "   ", "No\n" )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( "Sexual_fluidity_2010_crude" = paste0(
+    sprintf( "%.2f", fluidity_cc_rr$point_estimate_crude_2010 ), " (", 
+    sprintf( "%.2f", fluidity_cc_rr$lower_ci_crude_2010 ), ", ", 
+    sprintf( "%.2f", fluidity_cc_rr$upper_ci_crude_2010 ), ")" ),
+    .before = 2 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( "Sexual_fluidity_2010_adjusted" = paste0(
+    sprintf( "%.2f", fluidity_cc_rr$point_estimate_adjusted_2010 ), " (", 
+    sprintf( "%.2f", fluidity_cc_rr$lower_ci_adjusted_2010 ), ", ", 
+    sprintf( "%.2f", fluidity_cc_rr$upper_ci_adjusted_2010 ), ")" ),
+    .before = 6 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( "Sexual_fluidity_2014_crude" = paste0(
+    sprintf( "%.2f", fluidity_cc_rr$point_estimate_crude_2014 ), " (", 
+    sprintf( "%.2f", fluidity_cc_rr$lower_ci_crude_2014 ), ", ", 
+    sprintf( "%.2f", fluidity_cc_rr$upper_ci_crude_2014 ), ")" ),
+    .before = 10 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( "Sexual_fluidity_2014_adjusted" = paste0(
+    sprintf( "%.2f", fluidity_cc_rr$point_estimate_adjusted_2014 ), " (", 
+    sprintf( "%.2f", fluidity_cc_rr$lower_ci_adjusted_2014 ), ", ", 
+    sprintf( "%.2f", fluidity_cc_rr$upper_ci_adjusted_2014 ), ")" ),
+    .before = 14 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( "Sexual_fluidity_2010" = paste( fluidity_cc_rr$Sexual_fluidity_2010_crude,
+                                              fluidity_cc_rr$Sexual_fluidity_2010_adjusted,
+                                              sep = "\n" ),
+              .before = 2 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( "Sexual_fluidity_2014" = paste( fluidity_cc_rr$Sexual_fluidity_2014_crude,
+                                              fluidity_cc_rr$Sexual_fluidity_2014_adjusted,
+                                              sep = "\n" ),
+              .before = 3 )
+
+fluidity_cc_rr$Sexual_fluidity_2010 <- ifelse( is.na( fluidity_cc_rr$point_estimate_crude_2010 ), "",
+                                                      fluidity_cc_rr$Sexual_fluidity_2010 )
+
+fluidity_cc_rr$Sexual_fluidity_2014 <- ifelse( is.na( fluidity_cc_rr$point_estimate_crude_2010 ), "",
+                                                      fluidity_cc_rr$Sexual_fluidity_2014 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = paste0( "   ", "Male" ), 
+           Sexual_fluidity_2010 = "Reference",
+           Sexual_fluidity_2014 = "Reference",
+           .before = 2 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = paste0( "   ", "45–59 yrs" ), 
+           Sexual_fluidity_2010 = "Reference",
+           Sexual_fluidity_2014 = "Reference",
+           .before = 7 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = paste0( "   ", "Sweden" ), 
+           Sexual_fluidity_2010 = "Reference",
+           Sexual_fluidity_2014 = "Reference",
+           .before = 16 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = paste0( "   ", "\u2265 13 yrs" ), 
+           Sexual_fluidity_2010 = "Reference",
+           Sexual_fluidity_2014 = "Reference",
+           .before = 22 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = paste0( "   ", "> 4,500" ), 
+           Sexual_fluidity_2010 = "Reference",
+           Sexual_fluidity_2014 = "Reference",
+           .before = 27 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = paste0( "   ", "Currently married" ), 
+           Sexual_fluidity_2010 = "Reference",
+           Sexual_fluidity_2014 = "Reference",
+           .before = 29 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = paste0( "   ", "No" ), 
+           Sexual_fluidity_2010 = "Reference",
+           Sexual_fluidity_2014 = "Reference",
+           .before = 34 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = paste0( "   ", "Yes" ), 
+           Sexual_fluidity_2010 = "Reference",
+           Sexual_fluidity_2014 = "Reference",
+           .before = 36 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>%
+  add_column( temp1 = " ", .before = 2 ) %>%
+  add_column( temp2 = " ", .before = 5 )
+
+colnames( fluidity_cc_rr )[1] <- "Demographic Factor"
+
+names( fluidity_cc_rr )[ names( fluidity_cc_rr ) %in% c( "temp1", "temp2", "Sexual_fluidity_2010", "Sexual_fluidity_2014" ) ] <- ""
+```
+
+##### 5.1.2. Plotting
+###### 5.1.2.1. Part 1
+```{r}
+tm <- forest_theme(
+  base_size = 10,
+  colhead = list( fg_params = list( fontsize = 10 ) ),
+  legend_value = c( "Crude", "Adjusted" ),
+  legend_name = NULL,
+  legend_position = "bottom",
+  base_family = "Arial",
+  refline_lty = "dashed",
+  refline_lwd = 1,
+  refline_col = "grey20"
+  )
+
+fluidity_cc_rr_part_1 <- fluidity_cc_rr[ -c( 9:14, 32:37 ), c( 1:7, 9:11, 13:15, 17:19, 21:23 ) ]
+  
+p_cc_fluidity_rr <- forest(
+  fluidity_cc_rr_part_1[ , c( 1:7 ) ],
+  
+  est = list( fluidity_cc_rr_part_1$point_estimate_crude_2010,
+              fluidity_cc_rr_part_1$point_estimate_crude_2014,
+              fluidity_cc_rr_part_1$point_estimate_adjusted_2010,
+              fluidity_cc_rr_part_1$point_estimate_adjusted_2014
+              ),
+  
+  lower = list( fluidity_cc_rr_part_1$lower_ci_crude_2010,
+                fluidity_cc_rr_part_1$lower_ci_crude_2014,
+                fluidity_cc_rr_part_1$lower_ci_adjusted_2010,
+                fluidity_cc_rr_part_1$lower_ci_adjusted_2014
+                ),
+  
+  upper = list( fluidity_cc_rr_part_1$upper_ci_crude_2010,
+                fluidity_cc_rr_part_1$upper_ci_crude_2014,
+                fluidity_cc_rr_part_1$upper_ci_adjusted_2010,
+                fluidity_cc_rr_part_1$upper_ci_adjusted_2014
+                ),
+  
+  ci_column = c( 3, 6 ),
+  sizes = 0.4,
+  
+  ref_line = 1,
+  
+  xlim = c( 0, 4 ),
+  ticks_at = c( 0, 1, 2, 3, 4 ),
+  
+  xlab = "Risk Ratio (95% CI)",
+  nudge_y = 0.4,
+  theme = tm
+)
+
+p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
+                                              row = c( 1, 4, 9, 13, 17, 22 ),
+                                              col = 1,
+                                              gp = gpar( fontface = "bold" ) 
+)
+
+p_cc_fluidity_rr <- add_text(
+  p_cc_fluidity_rr,
+  text = "Risk Ratio (95% CI)",
+  col = c( 3:4 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_fluidity_rr <- add_text(
+  p_cc_fluidity_rr,
+  text = "Risk Ratio (95% CI)",
+  col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
+                                              row = c( 1, 4, 9, 13, 17, 22 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "white" )
+)
+
+p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
+                                              row = c( 2, 3, 5:8, 10:12, 14:16, 18:21, 23:25 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "#eff3f2" )
+)
+
+p_cc_fluidity_rr <- add_border(
+  p_cc_fluidity_rr,
+  part = "header",
+  row = 1,
+  col = c( 3:4, 6:7 ),
+  where = "top",
+  gp = gpar(lwd = 1)
+)
+
+p_cc_fluidity_rr <- insert_text(
+  p_cc_fluidity_rr,
+  text = "SPHC-B 2010 with SPHC-F 2014–2021ᵃ",
+  col = 3:4,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_fluidity_rr <- add_text(
+  p_cc_fluidity_rr,
+  text = "SPHC-B 2014 with SPHC-F 2021ᵇ",
+  col = 6:7,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+plot( p_cc_fluidity_rr )
+```
+
+###### 5.1.2.2. Part 2
+```{r}
+tm <- forest_theme(
+  base_size = 10,
+  colhead = list( fg_params = list( fontsize = 10 ) ),
+  legend_value = c( "Crude", "Adjusted" ),
+  legend_name = NULL,
+  legend_position = "bottom",
+  base_family = "Arial",
+  refline_lty = "dashed",
+  refline_lwd = 1,
+  refline_col = "grey20"
+  )
+
+fluidity_cc_rr_part_2 <- fluidity_cc_rr[ -c( 9:14, 1:31 ), c( 1:7, 9:11, 13:15, 17:19, 21:23 ) ]
+  
+p_cc_fluidity_rr <- forest(
+  fluidity_cc_rr_part_2[ , c( 1:7 ) ],
+  
+  est = list( fluidity_cc_rr_part_2$point_estimate_crude_2010,
+              fluidity_cc_rr_part_2$point_estimate_crude_2014,
+              fluidity_cc_rr_part_2$point_estimate_adjusted_2010,
+              fluidity_cc_rr_part_2$point_estimate_adjusted_2014
+              ),
+  
+  lower = list( fluidity_cc_rr_part_2$lower_ci_crude_2010,
+                fluidity_cc_rr_part_2$lower_ci_crude_2014,
+                fluidity_cc_rr_part_2$lower_ci_adjusted_2010,
+                fluidity_cc_rr_part_2$lower_ci_adjusted_2014
+                ),
+  
+  upper = list( fluidity_cc_rr_part_2$upper_ci_crude_2010,
+                fluidity_cc_rr_part_2$upper_ci_crude_2014,
+                fluidity_cc_rr_part_2$upper_ci_adjusted_2010,
+                fluidity_cc_rr_part_2$upper_ci_adjusted_2014
+                ),
+  
+  ci_column = c( 3, 6 ),
+  sizes = 0.4,
+  
+  ref_line = 1,
+  
+  xlim = c( 0, 4 ),
+  ticks_at = c( 0, 1, 2, 3, 4 ),
+  
+  xlab = "Risk Ratio (95% CI)",
+  nudge_y = 0.4,
+  theme = tm
+)
+
+p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
+                                              row = c( 1, 4 ),
+                                              col = 1,
+                                              gp = gpar( fontface = "bold" ) 
+)
+
+p_cc_fluidity_rr <- add_text(
+  p_cc_fluidity_rr,
+  text = "Risk Ratio (95% CI)",
+  col = c( 3:4 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_fluidity_rr <- add_text(
+  p_cc_fluidity_rr,
+  text = "Risk Ratio (95% CI)",
+  col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
+                                              row = c( 1, 4 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "white" )
+)
+
+p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
+                                              row = c( 2, 3, 5, 6 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "#eff3f2" )
+)
+
+p_cc_fluidity_rr <- add_border(
+  p_cc_fluidity_rr,
+  part = "header",
+  row = 1,
+  col = c( 3:4, 6:7 ),
+  where = "top",
+  gp = gpar(lwd = 1)
+)
+
+p_cc_fluidity_rr <- insert_text(
+  p_cc_fluidity_rr,
+  text = "SPHC-B 2010 with SPHC-F 2014–2021ᵃ",
+  col = 3:4,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_fluidity_rr <- add_text(
+  p_cc_fluidity_rr,
+  text = "SPHC-B 2014 with SPHC-F 2021ᵇ",
+  col = 6:7,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+plot( p_cc_fluidity_rr )
+```
+
+###### 5.1.2.3. Part 3 (age by sex)
+```{r}
+fluidity_cc_rr_part_3 <- fluidity_cc_rr[ c( 9:14 ), c( 1:7, 9:11, 13:15, 17:19, 21:23 ) ]
+
+colnames( fluidity_cc_rr_part_3 )[ 2:7 ] <- c( "temp1", "temp2", "temp3", "temp4", "temp5", "temp6" )
+
+fluidity_cc_rr_part_3 <- fluidity_cc_rr_part_3 %>% 
+  add_row( `Demographic Factor` = "Male", .before = 1 )
+
+fluidity_cc_rr_part_3 <- fluidity_cc_rr_part_3 %>% 
+  add_row( `Demographic Factor` = "Female", .before = 5 )
+
+fluidity_cc_rr_part_3$`Demographic Factor`[ fluidity_cc_rr_part_3$`Demographic Factor` == "age_exp16-29_Male" ] <- paste0( "   ", "16–29 yrsᶜ\n" )
+fluidity_cc_rr_part_3$`Demographic Factor`[ fluidity_cc_rr_part_3$`Demographic Factor` == "age_exp30-44_Male" ] <- paste0( "   ", "30–44 yrs\n" )
+fluidity_cc_rr_part_3$`Demographic Factor`[ fluidity_cc_rr_part_3$`Demographic Factor` == "age_exp>=60_Male" ] <- paste0( "   ", "\u2265 60 yrs\n" )
+
+fluidity_cc_rr_part_3$`Demographic Factor`[ fluidity_cc_rr_part_3$`Demographic Factor` == "age_exp16-29_Female" ] <- paste0( "   ", "16–29 yrsᶜ\n" )
+fluidity_cc_rr_part_3$`Demographic Factor`[ fluidity_cc_rr_part_3$`Demographic Factor` == "age_exp30-44_Female" ] <- paste0( "   ", "30–44 yrs\n" )
+fluidity_cc_rr_part_3$`Demographic Factor`[ fluidity_cc_rr_part_3$`Demographic Factor` == "age_exp>=60_Female" ] <- paste0( "   ", "\u2265 60 yrs\n" )
+
+fluidity_cc_rr_part_3 <- fluidity_cc_rr_part_3 %>% 
+  add_row( `Demographic Factor` = paste0( "   ", "45–59 yrs" ), 
+           temp3 = "Reference",
+           temp6 = "Reference",
+           .before = 4 )
+
+fluidity_cc_rr_part_3 <- fluidity_cc_rr_part_3 %>% 
+  add_row( `Demographic Factor` = paste0( "   ", "45–59 yrs" ), 
+           temp3 = "Reference",
+           temp6 = "Reference",
+           .before = 9 )
+
+fluidity_cc_rr_part_3$temp3 <- ifelse( is.na(fluidity_cc_rr_part_3$temp3), "",
+                                       fluidity_cc_rr_part_3$temp3 )
+
+fluidity_cc_rr_part_3$temp6 <- ifelse( is.na(fluidity_cc_rr_part_3$temp6), "",
+                                       fluidity_cc_rr_part_3$temp6 )
+
+fluidity_cc_rr_part_3_updated <- fluidity_cc_rr_part_3[ , -c( 2, 3, 5, 6 ) ]
+
+fluidity_cc_rr_part_3_updated <- fluidity_cc_rr_part_3_updated %>% 
+  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
+
+fluidity_cc_rr_part_3_updated <- fluidity_cc_rr_part_3_updated %>% 
+  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
+
+fluidity_cc_rr_part_3_updated <- fluidity_cc_rr_part_3_updated %>%
+  add_column( temp1 = " ", .before = 2 ) %>%
+  add_column( temp2 = " ", .before = 5 )
+
+names( fluidity_cc_rr_part_3_updated )[ names( fluidity_cc_rr_part_3_updated ) %in% c( "temp1", "temp2", "temp3", "temp6" ) ] <- ""
+
+tm <- forest_theme(
+  base_size = 10,
+  colhead = list( fg_params = list( fontsize = 10 ) ),
+  legend_value = c( "Crude", "Adjusted" ),
+  legend_name = NULL,
+  legend_position = "bottom",
+  base_family = "Arial",
+  refline_lty = "dashed",
+  refline_lwd = 1,
+  refline_col = "grey20"
+  )
+
+p_cc_fluidity_rr <- forest(
+  fluidity_cc_rr_part_3_updated[ , c( 1:7 ) ],
+  
+  est = list( fluidity_cc_rr_part_3_updated$point_estimate_crude_2010,
+              fluidity_cc_rr_part_3_updated$point_estimate_crude_2014,
+              fluidity_cc_rr_part_3_updated$point_estimate_adjusted_2010,
+              fluidity_cc_rr_part_3_updated$point_estimate_adjusted_2014
+              ),
+  
+  lower = list( fluidity_cc_rr_part_3_updated$lower_ci_crude_2010,
+                fluidity_cc_rr_part_3_updated$lower_ci_crude_2014,
+                fluidity_cc_rr_part_3_updated$lower_ci_adjusted_2010,
+                fluidity_cc_rr_part_3_updated$lower_ci_adjusted_2014
+                ),
+  
+  upper = list( fluidity_cc_rr_part_3_updated$upper_ci_crude_2010,
+                fluidity_cc_rr_part_3_updated$upper_ci_crude_2014,
+                fluidity_cc_rr_part_3_updated$upper_ci_adjusted_2010,
+                fluidity_cc_rr_part_3_updated$upper_ci_adjusted_2014
+                ),
+  
+  ci_column = c( 3, 6 ),
+  sizes = 0.4,
+  
+  ref_line = 1,
+  
+  xlim = c( 0, 4 ),
+  ticks_at = c( 0, 1, 2, 3, 4 ),
+  
+  xlab = "Risk Ratio (95% CI)",
+  nudge_y = 0.4,
+  theme = tm
+)
+
+p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
+                               row = c( 1, 6 ),
+                               col = 1,
+                               gp = gpar( fontface = "bold" ) )
+
+p_cc_fluidity_rr <- add_text(
+  p_cc_fluidity_rr,
+  text = "Risk Ratio (95% CI)",
+  col = c( 3:4 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_fluidity_rr <- add_text(
+  p_cc_fluidity_rr,
+  text = "Risk Ratio (95% CI)",
+  col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
+                               row = c( 1, 6 ), 
+                               which = "background",
+                               gp = gpar( fill = "white" ) )
+
+p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
+                               row = c( 2:5, 7:10 ), 
+                               which = "background",
+                               gp = gpar( fill = "#eff3f2" ) )
+
+p_cc_fluidity_rr <- add_border(
+  p_cc_fluidity_rr,
+  part = "header",
+  row = 1,
+  col = c( 3:4, 6:7 ),
+  where = "top",
+  gp = gpar(lwd = 1)
+)
+
+p_cc_fluidity_rr <- insert_text(
+  p_cc_fluidity_rr,
+  text = "SPHC-B 2010 with SPHC-F 2014–2021ᵃ",
+  col = 3:4,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_fluidity_rr <- add_text(
+  p_cc_fluidity_rr,
+  text = "SPHC-B 2014 with SPHC-F 2021ᵇ",
+  col = 6:7,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+plot( p_cc_fluidity_rr )
 ```

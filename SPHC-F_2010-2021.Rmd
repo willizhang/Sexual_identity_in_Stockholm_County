@@ -8,11 +8,11 @@ editor_options:
 
 Notes: 'SPHC-B + year' refers to the baseline survey in the Stockholm Public Health Cohort (SPHC), and 'SPHC-F + year' refers to the follow-up survey. For example, SPHC-B 2010 represents the baseline survey in 2010, and SPHC-F 2014 represents the follow-up survey in 2014.
 
-This document presents the analyses among individuals who provided data on sexual identity in the follow-up surveys (SPHC-F 2010, 2014, and 2021) following their participation in the baseline surveys (SPHC-B 2002, 2006, and 2010). The analyses include:
+This R Notebook presents the analyses among individuals who provided data on sexual identity in the follow-up surveys (SPHC-F 2010, 2014, and 2021) following their participation in the baseline surveys (SPHC-B 2002, 2006, and 2010). The analyses include:
 - Visual representation of changes in sexual identity over time
-- Relationship between changes in sexual identity and demographic factors 
+- Relationship between changes in sexual identity and demographic factors
 
-The analyses examining the relationship between changes in sexual identity and demographic factors in SPHC-B 2010 and 2014 are available, respectively, in the R scripts "SPHC-B_2010" and "SPHC-B_2014".
+The analyses examining the relationship between changes in sexual identity and demographic factors in SPHC-B 2010 and 2014 are available, respectively, in the R Notebooks "SPHC-B_2010" and "SPHC-B_2014".
 
 ### 1. Load Packages
 ```{r}
@@ -118,6 +118,67 @@ d_2006$age_2010_cat <- factor( ifelse( d_2006$age_2010 <= 29, "16-29",
                                                ifelse( d_2006$age_2010 >= 45 & d_2006$age_2010 <= 59, "45-59", ">=60" ) ) ),
                                levels = c( "16-29", "30-44", "45-59", ">=60" ) )
 table( d_2006$age_2010_cat, useNA = "always" )
+
+# sampling strata
+n_miss( d_2006$stratum )
+d_2006$sampling_strata <- as.factor( d_2006$stratum )
+length( unique( d_2006$sampling_strata ) ) # 43 strata
+
+
+##### design weights #####
+
+summary( d_2006$F6dvikt )
+d_2006$design_weight <- d_2006$F6dvikt
+
+
+##### non-response #####
+
+# unit non-response
+d_2006$design_weight_unit_nonresponse <- d_2006$F6dbvikt # weights calculated assuming Missing Completely At Random (MCAR) within each stratum
+summary( d_2006$design_weight_unit_nonresponse )
+sum( d_2006$design_weight_unit_nonresponse ) # No. of source population = 1,450,501
+
+unitresponse_prob <- d_2006 %>% 
+  group_by( sampling_strata ) %>% 
+  summarise( unitresponse_prob = unique( design_weight ) / unique( design_weight_unit_nonresponse ),
+             no.of.population = sum( design_weight_unit_nonresponse ),
+             sample_size = unique( no.of.population )/unique( design_weight ) ) # calculate overall unit response rate, and no. of population and sample size within each stratum
+d_2006 <- d_2006 %>% 
+  left_join( unitresponse_prob, by = "sampling_strata" )
+
+# item non-response
+itemresponse_prob <- d_2006 %>% 
+  group_by( sampling_strata ) %>% 
+  summarise( itemresponse_prob = sum( !is.na( sexual_identity_2010 ) ) / n() ) # calculate item response rate
+
+d_2006 <- d_2006 %>% 
+  left_join( itemresponse_prob, by = "sampling_strata" ) %>% 
+  mutate( itemresponse_prob = ifelse( is.na( sexual_identity_2010 ), 0, itemresponse_prob ) )
+
+
+##### summary of stratified sampling #####
+
+sampling_frame_2006 <- as.data.frame( d_2006 %>% 
+                                        group_by( sampling_strata ) %>% 
+                                        reframe( no.of.population = unique( no.of.population ), 
+                                                 sample_size = unique( no.of.population/design_weight ),
+                                                 unitresponse = n(),
+                                                 itemresponse = sum( itemresponse_prob != 0 ) ) )
+
+sampling_frame_2006$unitresponse_rate <- sampling_frame_2006$unitresponse/sampling_frame_2006$sample_size
+sampling_frame_2006$itemresponse_rate <- sampling_frame_2006$itemresponse/sampling_frame_2006$unitresponse
+sampling_frame_2006$overallresponse_rate <- sampling_frame_2006$itemresponse/sampling_frame_2006$sample_size
+
+sampling_frame_2006$unitresponse_label <- paste0( sampling_frame_2006$unitresponse, " (", 
+                                                  sprintf( "%.1f", sampling_frame_2006$unitresponse_rate*100 ), "%)" )
+sampling_frame_2006$overallresponse_label <- paste0( sampling_frame_2006$itemresponse, " (", 
+                                                     sprintf( "%.1f", sampling_frame_2006$overallresponse_rate*100 ), "%)" )
+
+round( sum( sampling_frame_2006$unitresponse )/( sum( sampling_frame_2006$sample_size ) ), 3 ) # overall unit response rate
+round( sum( sampling_frame_2006$itemresponse )/( sum( sampling_frame_2006$unitresponse ) ), 3 ) # overall item response rate
+round( sum( sampling_frame_2006$itemresponse )/( sum( sampling_frame_2006$sample_size ) ), 3 ) # overall response rate
+
+writexl::write_xlsx( sampling_frame_2006, "sampling_frame_2006.xlsx" )
 ```
 
 #### 2.3. SPHC-B 2010 with SPHC-F 2014-2021
@@ -486,15 +547,15 @@ ggplot( m123_all_long,
 ###### 3.2.1.2. Sexual identity in 2021 based on 2010 and 2014
 ```{r}
 all_colors <- c( "#00BFC4", "#7CAE00", "#FFA500", "#F8766D", 
-                 "#FFFF00", "#0072B2", "#0000FF", "#4B0082", 
-                 "#00FF00", "#DEB887", "#00A86B", "#FF0000", 
-                 "#800020", "#E6E6FA", "#87CEEB", "#C77CFF" )
+                 "yellow2", "#0092FF", "#00FF00", "#4B0082", 
+                 "#0000FF", "#DEB887", "#00A86B", "#FF0000", 
+                 "#FF00DB", "#E6E6FA", "#87CEEB", "#C77CFF" )
 
 legend_labels <- setNames(
-  c( "Homosexual to homosexual", "Bisexual to bisexual", "Heterosexual to bisexual", "Uncertain to other",
-     "Homosexual to heterosexual", "Bisexual to heterosexual", "Uncertain to heterosexual", "Bisexual to other",
-     "Heterosexual to homosexual", "Uncertain to bisexual", "Bisexual to homosexual", "Homosexual to bisexual",
-     "Homosexual to other", "Uncertain to homosexual", "Heterosexual to other", "Heterosexual to heterosexual"),
+  c( "Homo to Homo", "Bisexual to bisexual", "Hetero to bisexual", "Uncertain to other",
+     "Homo to Hetero", "Bisexual to Hetero", "Uncertain to Hetero", "Bisexual to other",
+     "Hetero to Homo", "Uncertain to bisexual", "Bisexual to Homo", "Homo to bisexual",
+     "Homo to other", "Uncertain to Homo", "Hetero to other", "Hetero to Hetero"),
   ordered_levels )
 
 ggplot( x123_all_long,
@@ -537,8 +598,7 @@ ggplot( x123_all_long,
   ) +
   geom_text_repel( stat = "alluvium",
                    aes( x = as.integer( year ) + 0.15,
-                        color = factor( sexual_identity_2010_2014, 
-                                        levels = ordered_levels ),
+                        color = sexual_identity_2010_2014,
                         label = ifelse( year == "sexual_identity_2021" & 
                                           ( percent_for_label >= 0.05 & number >= 25 ), label, NA ) ),
                    size = 4.5,
@@ -551,7 +611,9 @@ ggplot( x123_all_long,
                    point.padding = 0,
                    show.legend = FALSE,
                    seed = 123
-  )
+  ) +
+  scale_color_manual( values = all_colors,
+                      breaks = ordered_levels )
 ```
 
 ##### 3.2.2. By sex

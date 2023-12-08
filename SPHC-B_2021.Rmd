@@ -27,7 +27,7 @@ library(dplyr)
 library(finalfit)
 library(survey)
 library(svyVGAM)
-source("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/Helper_function.R") # helper function
+source("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/Helper_functions.R") # helper function
 ```
 
 ### 2. Import and Visualise Data
@@ -279,9 +279,9 @@ sampling_frame_2021$unitresponse_label <- paste0( sampling_frame_2021$unitrespon
 sampling_frame_2021$overallresponse_label <- paste0( sampling_frame_2021$itemresponse, " (", 
                                                 sprintf( "%.1f", sampling_frame_2021$overallresponse_rate*100 ), "%)" )
 
-round( weighted.mean( sampling_frame_2021$unitresponse_rate, sampling_frame_2021$no.of.population ), 3 ) # overall unit response rate
-round( weighted.mean( sampling_frame_2021$itemresponse_rate, sampling_frame_2021$no.of.population ), 3 ) # overall item response rate
-round( weighted.mean( sampling_frame_2021$overallresponse_rate, sampling_frame_2021$no.of.population ), 3 ) # overall response rate
+round( sum( sampling_frame_2021$unitresponse )/( sum( sampling_frame_2021$sample_size ) ), 3 ) # overall unit response rate
+round( sum( sampling_frame_2021$itemresponse )/( sum( sampling_frame_2021$unitresponse ) ), 3 ) # overall item response rate
+round( sum( sampling_frame_2021$itemresponse )/( sum( sampling_frame_2021$sample_size ) ), 3 ) # overall response rate
 
 writexl::write_xlsx( sampling_frame_2021, "sampling_frame_2021.xlsx" )
 
@@ -1264,13 +1264,13 @@ fml_list_marital_status <- list(
   fml_bisexual_marital_status = fml_bisexual_marital_status,
   fml_other_marital_status = fml_other_marital_status
   )
+
+exposures <- c( "age", "age_by_sex", "sex", "country_of_birth", "education", "income", "marital_status" )
 ```
 
 ##### 4.1.3. Unadjusted analyses
 ```{r}
 # fit Poisson regression model for each exposure and each outcome
-exposures <- c( "age", "age_by_sex", "sex", "country_of_birth", "education", "income", "marital_status" )
-
 all_models_cc_crude <- list()
 
 for ( exposure in exposures ) {
@@ -1340,7 +1340,7 @@ identities <- c( "sexual_minority", "homosexual", "bisexual", "other" )
 exposures_age <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60" )
 outcomes_age <- c( "fml_sexual_minority_age", "fml_homosexual_age", "fml_bisexual_age", "fml_other_age" )
 
-# extract coefficients and 95% CI
+# extract coefficient and 95% CI
 results_cc_age_coef_crude <- list()
 
 for ( outcome in paste0( outcomes_age, "_crude" ) ) {
@@ -1352,7 +1352,7 @@ for ( outcome in paste0( outcomes_age, "_crude" ) ) {
     )
   }
 
-# extract proportion ratios and 95% CI
+# extract proportion ratio and 95% CI
 results_cc_age_pr_crude <- extract_results_pr_crude( results_cc_age_coef_crude, identities, "age" )
 
 
@@ -1362,7 +1362,7 @@ exposures_age_male <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp
 exposures_age_female <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29:sex_expMale", "age_exp30-44:sex_expMale", "age_exp>=60:sex_expMale" )
 outcomes_age_by_sex <- c( "fml_sexual_minority_age_by_sex", "fml_homosexual_age_by_sex", "fml_bisexual_age_by_sex", "fml_other_age_by_sex" )
 
-# extract coefficients and 95% CI among males
+# extract coefficient and 95% CI among males
 results_cc_age_by_sex_coef_crude_male <- list()
 
 for ( outcome in paste0( outcomes_age_by_sex, "_crude" ) ) {
@@ -1374,7 +1374,7 @@ for ( outcome in paste0( outcomes_age_by_sex, "_crude" ) ) {
     )
 }
 
-# extract coefficients and 95% CI among females
+# extract coefficient and 95% CI among females
 results_cc_age_by_sex_coef_crude_female <- list()
 
 for ( outcome in paste0( outcomes_age_by_sex, "_crude" ) ) {
@@ -1383,7 +1383,7 @@ for ( outcome in paste0( outcomes_age_by_sex, "_crude" ) ) {
                                                                  confint( model, ddf = degf( model$survey.design ) )[ exposures_age_female, , drop = FALSE ] )
   }
 
-# extract proportion ratios and 95% CI
+# extract proportion ratio and 95% CI
 results_cc_age_by_sex_pr_crude_male <- extract_results_pr_crude( results_cc_age_by_sex_coef_crude_male, identities, "age_by_sex" ) %>%
   mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Female", Exposure ), 
                                paste0( Exposure, "_Male" ), Exposure ) )
@@ -1401,7 +1401,7 @@ results_cc_age_by_sex_pr_crude <- rbind( results_cc_age_by_sex_pr_crude_male[ c(
 exposures_sex <- c( "sex_expFemale" )
 outcomes_sex <- c( "fml_sexual_minority_sex", "fml_homosexual_sex", "fml_bisexual_sex", "fml_other_sex" )
 
-# extract coefficients and 95% CI
+# extract coefficient and 95% CI
 results_cc_sex_coef_crude <- list()
 
 for ( outcome in paste0( outcomes_sex, "_crude" ) ) {
@@ -1413,7 +1413,7 @@ for ( outcome in paste0( outcomes_sex, "_crude" ) ) {
   )
 }
 
-# extract proportion ratios and 95% CI
+# extract proportion ratio and 95% CI
 results_cc_sex_pr_crude <- extract_results_pr_crude( results_cc_sex_coef_crude, identities, "sex" )
 
 
@@ -1422,7 +1422,7 @@ results_cc_sex_pr_crude <- extract_results_pr_crude( results_cc_sex_coef_crude, 
 exposures_country_of_birth <- c( "country_of_birth_expEurope", "country_of_birth_expOutside Europe" )
 outcomes_country_of_birth <- c( "fml_sexual_minority_country_of_birth", "fml_homosexual_country_of_birth", "fml_bisexual_country_of_birth", "fml_other_country_of_birth" )
 
-# extract coefficients and 95% CI
+# extract coefficient and 95% CI
 results_cc_country_of_birth_coef_crude <- list()
 
 for ( outcome in paste0( outcomes_country_of_birth, "_crude" ) ) {
@@ -1434,7 +1434,7 @@ for ( outcome in paste0( outcomes_country_of_birth, "_crude" ) ) {
   )
 }
 
-# extract proportion ratios and 95% CI
+# extract proportion ratio and 95% CI
 results_cc_country_of_birth_pr_crude <- extract_results_pr_crude( results_cc_country_of_birth_coef_crude, identities, "country_of_birth" )
 
 
@@ -1443,7 +1443,7 @@ results_cc_country_of_birth_pr_crude <- extract_results_pr_crude( results_cc_cou
 exposures_education <- c( "education_exp<=9 years", "education_exp10-12 years" )
 outcomes_education <- c( "fml_sexual_minority_education", "fml_homosexual_education", "fml_bisexual_education", "fml_other_education" )
 
-# extract coefficients and 95% CI
+# extract coefficient and 95% CI
 results_cc_education_coef_crude <- list()
 
 for ( outcome in paste0( outcomes_education, "_crude" ) ) {
@@ -1455,7 +1455,7 @@ for ( outcome in paste0( outcomes_education, "_crude" ) ) {
   )
 }
 
-# extract proportion ratios and 95% CI
+# extract proportion ratio and 95% CI
 results_cc_education_pr_crude <- extract_results_pr_crude( results_cc_education_coef_crude, identities, "education" )
 
 
@@ -1464,7 +1464,7 @@ results_cc_education_pr_crude <- extract_results_pr_crude( results_cc_education_
 exposures_income <- c( "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_exp(3,500, 4,500]" )
 outcomes_income <- c( "fml_sexual_minority_income", "fml_homosexual_income", "fml_bisexual_income", "fml_other_income" )
 
-# extract coefficients and 95% CI
+# extract coefficient and 95% CI
 results_cc_income_coef_crude <- list()
 
 for ( outcome in paste0( outcomes_income, "_crude" ) ) {
@@ -1476,7 +1476,7 @@ for ( outcome in paste0( outcomes_income, "_crude" ) ) {
   )
 }
 
-# extract proportion ratios and 95% CI
+# extract proportion ratio and 95% CI
 results_cc_income_pr_crude <- extract_results_pr_crude( results_cc_income_coef_crude, identities, "income" )
 
 
@@ -1485,7 +1485,7 @@ results_cc_income_pr_crude <- extract_results_pr_crude( results_cc_income_coef_c
 exposures_marital_status <- c( "marital_status_expNever married", "marital_status_expOther" )
 outcomes_marital_status <- c( "fml_sexual_minority_marital_status", "fml_homosexual_marital_status", "fml_bisexual_marital_status", "fml_other_marital_status" )
 
-# extract coefficients and 95% CI
+# extract coefficient and 95% CI
 results_cc_marital_status_coef_crude <- list()
 
 for ( outcome in paste0( outcomes_marital_status, "_crude" ) ) {
@@ -1497,7 +1497,7 @@ for ( outcome in paste0( outcomes_marital_status, "_crude" ) ) {
   )
 }
 
-# extract proportion ratios and 95% CI
+# extract proportion ratio and 95% CI
 results_cc_marital_status_pr_crude <- extract_results_pr_crude( results_cc_marital_status_coef_crude, identities, "marital_status" )
 
 
@@ -1505,7 +1505,7 @@ results_cc_marital_status_pr_crude <- extract_results_pr_crude( results_cc_marit
 
 ##### exposure of interest: age #####
 
-# extract coefficients and 95% CI among males
+# extract coefficient and 95% CI among males
 results_cc_age_coef <- list()
 
 for ( outcome in outcomes_age ) {
@@ -1521,7 +1521,7 @@ for ( outcome in outcomes_age ) {
   }
 }
 
-# extract proportion ratios and 95% CI from each model across outcomes
+# extract proportion ratio and 95% CI from each model across outcomes
 results_cc_age_pr_poisson <- extract_results_pr( results_cc_age_coef, "poisson", identities, "age" )
 results_cc_age_pr_log_binomial <- extract_results_pr( results_cc_age_coef, "log_binomial", identities, "age" )
 results_cc_age_pr_logistic <- extract_results_pr( results_cc_age_coef, "logistic", identities, "age" )
@@ -1529,7 +1529,7 @@ results_cc_age_pr_logistic <- extract_results_pr( results_cc_age_coef, "logistic
 
 ##### exposure of interest: age by sex #####
 
-# extract coefficients and 95% CI among males
+# extract coefficient and 95% CI among males
 results_cc_age_coef_male <- list()
 
 for ( outcome in outcomes_age_by_sex ) {
@@ -1545,7 +1545,7 @@ for ( outcome in outcomes_age_by_sex ) {
   }
 }
 
-# extract coefficients and 95% CI among females
+# extract coefficient and 95% CI among females
 results_cc_age_coef_female <- list()
 
 for ( outcome in outcomes_age_by_sex ) {
@@ -1560,7 +1560,7 @@ for ( outcome in outcomes_age_by_sex ) {
   }
 }
 
-# extract proportion ratios and 95% CI from each model across outcomes
+# extract proportion ratio and 95% CI from each model across outcomes
 # results from poisson regression
 results_cc_age_pr_poisson_male <- extract_results_pr( results_cc_age_coef_male, "poisson", identities, "age_by_sex" ) %>%
     mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Female", Exposure ), 
@@ -1600,7 +1600,7 @@ results_cc_age_by_sex_pr_logistic <- rbind( results_cc_age_pr_logistic_male[ c( 
 
 ##### exposure of interest: sex #####
 
-# extract coefficients and 95% CI
+# extract coefficient and 95% CI
 results_cc_sex_coef <- list()
 
 for ( outcome in outcomes_sex ) {
@@ -1616,7 +1616,7 @@ for ( outcome in outcomes_sex ) {
   }
 }
 
-# extract proportion ratios and 95% CI from each model across outcomes
+# extract proportion ratio and 95% CI from each model across outcomes
 results_cc_sex_pr_poisson <- extract_results_pr( results_cc_sex_coef, "poisson", identities, "sex" )
 results_cc_sex_pr_log_binomial <- extract_results_pr( results_cc_sex_coef, "log_binomial", identities, "sex" )
 results_cc_sex_pr_logistic <- extract_results_pr( results_cc_sex_coef, "logistic", identities, "sex" )
@@ -1624,7 +1624,7 @@ results_cc_sex_pr_logistic <- extract_results_pr( results_cc_sex_coef, "logistic
 
 ##### exposure of interest: country of birth #####
 
-# extract coefficients and 95% CI
+# extract coefficient and 95% CI
 results_cc_country_of_birth_coef <- list()
 
 for ( outcome in outcomes_country_of_birth ) {
@@ -1640,7 +1640,7 @@ for ( outcome in outcomes_country_of_birth ) {
   }
 }
 
-# extract proportion ratios and 95% CI from each model across outcomes
+# extract proportion ratio and 95% CI from each model across outcomes
 results_cc_country_of_birth_pr_poisson <- extract_results_pr( results_cc_country_of_birth_coef, "poisson", identities, "country_of_birth" )
 results_cc_country_of_birth_pr_log_binomial <- extract_results_pr( results_cc_country_of_birth_coef, "log_binomial", identities, "country_of_birth" )
 results_cc_country_of_birth_pr_logistic <- extract_results_pr( results_cc_country_of_birth_coef, "logistic", identities, "country_of_birth" )
@@ -1648,7 +1648,7 @@ results_cc_country_of_birth_pr_logistic <- extract_results_pr( results_cc_countr
 
 ##### exposure of interest: education #####
 
-# extract coefficients and 95% CI
+# extract coefficient and 95% CI
 results_cc_education_coef <- list()
 
 for ( outcome in outcomes_education ) {
@@ -1664,7 +1664,7 @@ for ( outcome in outcomes_education ) {
   }
 }
 
-# extract proportion ratios and 95% CI from each model across outcomes
+# extract proportion ratio and 95% CI from each model across outcomes
 results_cc_education_pr_poisson <- extract_results_pr( results_cc_education_coef, "poisson", identities, "education" )
 results_cc_education_pr_log_binomial <- extract_results_pr( results_cc_education_coef, "log_binomial", identities, "education" )
 results_cc_education_pr_logistic <- extract_results_pr( results_cc_education_coef, "logistic", identities, "education" )
@@ -1672,7 +1672,7 @@ results_cc_education_pr_logistic <- extract_results_pr( results_cc_education_coe
 
 ##### exposure of interest: income #####
 
-# extract coefficients and 95% CI
+# extract coefficient and 95% CI
 results_cc_income_coef <- list()
 
 for ( outcome in outcomes_income ) {
@@ -1688,7 +1688,7 @@ for ( outcome in outcomes_income ) {
   }
 }
 
-# extract proportion ratios and 95% CI from each model across outcomes
+# extract proportion ratio and 95% CI from each model across outcomes
 results_cc_income_pr_poisson <- extract_results_pr( results_cc_income_coef, "poisson", identities, "income" )
 results_cc_income_pr_log_binomial <- extract_results_pr( results_cc_income_coef, "log_binomial", identities, "income" )
 results_cc_income_pr_logistic <- extract_results_pr( results_cc_income_coef, "logistic", identities, "income" )
@@ -1696,7 +1696,7 @@ results_cc_income_pr_logistic <- extract_results_pr( results_cc_income_coef, "lo
 
 ##### exposure of interest: marital status #####
 
-# extract coefficients and 95% CI
+# extract coefficient and 95% CI
 results_cc_marital_status_coef <- list()
 
 for ( outcome in outcomes_marital_status ) {
@@ -1712,7 +1712,7 @@ for ( outcome in outcomes_marital_status ) {
   }
 }
 
-# extract proportion ratios and 95% CI from each model across outcomes
+# extract proportion ratio and 95% CI from each model across outcomes
 results_cc_marital_status_pr_poisson <- extract_results_pr( results_cc_marital_status_coef, "poisson", identities, "marital_status" )
 results_cc_marital_status_pr_log_binomial <- extract_results_pr( results_cc_marital_status_coef, "log_binomial", identities, "marital_status" )
 results_cc_marital_status_pr_logistic <- extract_results_pr( results_cc_marital_status_coef, "logistic", identities, "marital_status" )
