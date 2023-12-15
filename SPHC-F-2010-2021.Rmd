@@ -6,13 +6,13 @@ editor_options:
   chunk_output_type: console
 ---
 
-Notes: 'SPHC-B + year' refers to the baseline survey in the Stockholm Public Health Cohort (SPHC), and 'SPHC-F + year' refers to the follow-up survey. For example, SPHC-B 2010 represents the baseline survey in 2010, and SPHC-F 2014 represents the follow-up survey in 2014.
+Notes:
 
-This R Notebook presents the analyses among individuals who provided data on sexual identity in the follow-up surveys (SPHC-F 2010, 2014, and 2021) following their participation in the baseline surveys (SPHC-B 2002, 2006, and 2010). The analyses include:
-- Visual representation of changes in sexual identity over time
-- Relationship between changes in sexual identity and demographic factors
+This R Notebook presents the analyses among participants in SPHC-B 2002, 2006, and 2010 who provided data on sexual identity in at least two of the three follow-up surveys (SPHC-F 2010, 2014, and 2021). The analyses include:
+- Visual presentation of changes in sexual identity in 2010-2021.
+- Relationship between changes in sexual identity and key demographic factors.
 
-The analyses examining the relationship between changes in sexual identity and demographic factors in SPHC-B 2010 and 2014 are available, respectively, in the R Notebooks "SPHC-B_2010" and "SPHC-B_2014".
+The analyses examining the relationship between changes in sexual identity and key demographic factors in SPHC 2010 and 2014 are available, respectively, in the R Notebooks "SPHC-2010" and "SPHC-2014".
 
 ### 1. Load Packages
 ```{r}
@@ -25,6 +25,7 @@ library(ggalluvial)
 library(ggbreak)
 library(ggrepel)
 library(grDevices)
+library(finalfit)
 ```
 
 ### 2. The Stockholm Public Health Cohort
@@ -72,6 +73,138 @@ d_2002$age_2010_cat <- factor( ifelse( d_2002$age_2010 <= 29, "16-29",
                                                ifelse( d_2002$age_2010 >= 45 & d_2002$age_2010 <= 59, "45-59", ">=60" ) ) ),
                                levels = c( "16-29", "30-44", "45-59", ">=60" ) )
 table( d_2002$age_2010_cat, useNA = "always" )
+
+# country of birth
+table( d_2002$fodelseland, useNA = "always" )
+d_2002$fodelseland[ d_2002$fodelseland == "" ] <- NA
+d_2002$country_of_birth <- factor( ifelse( d_2002$fodelseland == "Afrika", "Africa",
+                                           ifelse( d_2002$fodelseland == "Asien", "Asia",
+                                                   ifelse( d_2002$fodelseland == "Europa", "Europe",
+                                                           ifelse( d_2002$fodelseland == "Sverige", "Sweden", "Americas" ) ) ) ),
+                                   levels = c( "Africa", "Americas", "Asia", "Europe", "Sweden" ) )
+table( d_2002$country_of_birth, useNA = "always" )
+
+# sampling strata
+n_miss( d_2002$stratum )
+d_2002$sampling_strata <- as.factor( d_2002$stratum )
+length( unique( d_2002$sampling_strata ) )
+
+strata_region_name <- readxl::read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/SPHC/Data for LGB projects/Stratum.xlsx")
+
+strata_region_name$region_2002 <- as.factor( strata_region_name$region_2002 )
+
+d_2002 <- d_2002 %>% 
+  left_join( strata_region_name[ , c( 1, 5 ) ], by = c( "sampling_strata" = "region_2002" ) )
+
+d_2002$sampling_strata_region <- d_2002$sdk_2002
+
+d_2002$sampling_strata_region <- ifelse( d_2002$sampling_strata == "998" | d_2002$sampling_strata == "999", "Unknown",
+                                         d_2002$sampling_strata_region )
+
+
+##### design weights #####
+
+summary( d_2002$F2dvikt )
+d_2002$design_weight <- d_2002$F2dvikt
+
+
+##### non-response #####
+
+# unit non-response
+d_2002$design_weight_unit_nonresponse <- d_2002$F2dbvikt # weights calculated assuming Missing Completely At Random (MCAR) within each stratum
+summary( d_2002$design_weight_unit_nonresponse )
+sum( d_2002$design_weight_unit_nonresponse ) # No. of source population = 1,402,160
+
+
+##### summary of stratified sampling #####
+
+# because stratified random sampling was done by region and sex,
+# the following analyses were conducted separately for males and females
+
+# among males
+d_2002_males <- d_2002 %>% filter( sex == "Male" )
+
+unitresponse_prob <- d_2002_males %>% 
+  group_by( sampling_strata_region ) %>% 
+  summarise( unitresponse_prob = unique( design_weight ) / unique( design_weight_unit_nonresponse ),
+             no.of.population = sum( design_weight_unit_nonresponse ),
+             sample_size = unique( no.of.population )/unique( design_weight ) ) # calculate overall unit response rate, and no. of population and sample size within each stratum
+
+d_2002_males <- d_2002_males %>% 
+  left_join( unitresponse_prob, by = "sampling_strata_region" )
+
+itemresponse_prob <- d_2002_males %>% 
+  group_by( sampling_strata_region ) %>% 
+  summarise( itemresponse_prob = sum( !is.na( sexual_identity_2010 ) ) / n() ) # calculate item response rate
+
+d_2002_males <- d_2002_males %>% 
+  left_join( itemresponse_prob, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob = ifelse( is.na( sexual_identity_2010 ), 0, itemresponse_prob ) )
+
+sampling_frame_2002_males <- as.data.frame( d_2002_males %>% 
+                                        group_by( sampling_strata_region ) %>% 
+                                        reframe( no.of.population = unique( no.of.population ), 
+                                                 sample_size = unique( no.of.population/design_weight ),
+                                                 unitresponse = n(),
+                                                 itemresponse = sum( itemresponse_prob != 0 ) ) )
+
+sampling_frame_2002_males$unitresponse_rate <- sampling_frame_2002_males$unitresponse/sampling_frame_2002_males$sample_size
+sampling_frame_2002_males$itemresponse_rate <- sampling_frame_2002_males$itemresponse/sampling_frame_2002_males$unitresponse
+sampling_frame_2002_males$overallresponse_rate <- sampling_frame_2002_males$itemresponse/sampling_frame_2002_males$sample_size
+
+sampling_frame_2002_males$unitresponse_label <- paste0( sampling_frame_2002_males$unitresponse, " (", 
+                                                  sprintf( "%.1f", sampling_frame_2002_males$unitresponse_rate*100 ), "%)" )
+sampling_frame_2002_males$overallresponse_label <- paste0( sampling_frame_2002_males$itemresponse, " (", 
+                                                     sprintf( "%.1f", sampling_frame_2002_males$overallresponse_rate*100 ), "%)" )
+
+round( sum( sampling_frame_2002_males$unitresponse )/( sum( sampling_frame_2002_males$sample_size ) ), 3 ) # overall unit response rate
+round( sum( sampling_frame_2002_males$itemresponse )/( sum( sampling_frame_2002_males$unitresponse ) ), 3 ) # overall item response rate
+round( sum( sampling_frame_2002_males$itemresponse )/( sum( sampling_frame_2002_males$sample_size ) ), 3 ) # overall response rate
+
+writexl::write_xlsx( sampling_frame_2002_males, "sampling_frame_2002_males.xlsx" )
+
+
+# among females
+d_2002_females <- d_2002 %>% filter( sex == "Female" )
+
+unitresponse_prob <- d_2002_females %>% 
+  group_by( sampling_strata_region ) %>% 
+  summarise( unitresponse_prob = unique( design_weight ) / unique( design_weight_unit_nonresponse ),
+             no.of.population = sum( design_weight_unit_nonresponse ),
+             sample_size = unique( no.of.population )/unique( design_weight ) ) # calculate overall unit response rate, and no. of population and sample size within each stratum
+
+d_2002_females <- d_2002_females %>% 
+  left_join( unitresponse_prob, by = "sampling_strata_region" )
+
+itemresponse_prob <- d_2002_females %>% 
+  group_by( sampling_strata_region ) %>% 
+  summarise( itemresponse_prob = sum( !is.na( sexual_identity_2010 ) ) / n() ) # calculate item response rate
+
+d_2002_females <- d_2002_females %>% 
+  left_join( itemresponse_prob, by = "sampling_strata_region" ) %>% 
+  mutate( itemresponse_prob = ifelse( is.na( sexual_identity_2010 ), 0, itemresponse_prob ) )
+
+sampling_frame_2002_females <- as.data.frame( d_2002_females %>% 
+                                        group_by( sampling_strata_region ) %>% 
+                                        reframe( no.of.population = unique( no.of.population ), 
+                                                 sample_size = unique( no.of.population/design_weight ),
+                                                 unitresponse = n(),
+                                                 itemresponse = sum( itemresponse_prob != 0 ) ) )
+
+sampling_frame_2002_females$unitresponse_rate <- sampling_frame_2002_females$unitresponse/sampling_frame_2002_females$sample_size
+sampling_frame_2002_females$itemresponse_rate <- sampling_frame_2002_females$itemresponse/sampling_frame_2002_females$unitresponse
+sampling_frame_2002_females$overallresponse_rate <- sampling_frame_2002_females$itemresponse/sampling_frame_2002_females$sample_size
+
+sampling_frame_2002_females$unitresponse_label <- paste0( sampling_frame_2002_females$unitresponse, " (", 
+                                                  sprintf( "%.1f", sampling_frame_2002_females$unitresponse_rate*100 ), "%)" )
+sampling_frame_2002_females$overallresponse_label <- paste0( sampling_frame_2002_females$itemresponse, " (", 
+                                                     sprintf( "%.1f", sampling_frame_2002_females$overallresponse_rate*100 ), "%)" )
+
+round( sum( sampling_frame_2002_females$unitresponse )/( sum( sampling_frame_2002_females$sample_size ) ), 3 ) # overall unit response rate
+round( sum( sampling_frame_2002_females$itemresponse )/( sum( sampling_frame_2002_females$unitresponse ) ), 3 ) # overall item response rate
+round( sum( sampling_frame_2002_females$itemresponse )/( sum( sampling_frame_2002_females$sample_size ) ), 3 ) # overall response rate
+
+writexl::write_xlsx( sampling_frame_2002_females, "sampling_frame_2002_females.xlsx" )
 ```
 
 #### 2.2. SPHC-B 2006 with SPHC-F 2010-2021
@@ -119,10 +252,28 @@ d_2006$age_2010_cat <- factor( ifelse( d_2006$age_2010 <= 29, "16-29",
                                levels = c( "16-29", "30-44", "45-59", ">=60" ) )
 table( d_2006$age_2010_cat, useNA = "always" )
 
+# country of birth
+table( d_2006$fodelseland, useNA = "always" )
+d_2006$country_of_birth <- factor( ifelse( d_2006$fodelseland == "Afrika", "Africa",
+                                           ifelse( d_2006$fodelseland == "Asien", "Asia",
+                                                   ifelse( d_2006$fodelseland == "Europa", "Europe",
+                                                           ifelse( d_2006$fodelseland == "Sverige", "Sweden", "Americas" ) ) ) ),
+                                   levels = c( "Africa", "Americas", "Asia", "Europe", "Sweden" ) )
+table( d_2006$country_of_birth, useNA = "always" )
+
 # sampling strata
 n_miss( d_2006$stratum )
 d_2006$sampling_strata <- as.factor( d_2006$stratum )
 length( unique( d_2006$sampling_strata ) ) # 43 strata
+
+strata_region_name <- readxl::read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/SPHC/Data for LGB projects/Stratum.xlsx")
+
+strata_region_name$region_2006 <- as.factor( strata_region_name$region_2006 )
+
+d_2006 <- d_2006 %>% 
+  left_join( strata_region_name[ , c( 2, 6 ) ], by = c( "sampling_strata" = "region_2006" ) )
+
+d_2006$sampling_strata_region <- d_2006$sdk_2006
 
 
 ##### design weights #####
@@ -139,31 +290,35 @@ summary( d_2006$design_weight_unit_nonresponse )
 sum( d_2006$design_weight_unit_nonresponse ) # No. of source population = 1,450,501
 
 unitresponse_prob <- d_2006 %>% 
-  group_by( sampling_strata ) %>% 
+  group_by( sampling_strata_region ) %>% 
   summarise( unitresponse_prob = unique( design_weight ) / unique( design_weight_unit_nonresponse ),
              no.of.population = sum( design_weight_unit_nonresponse ),
              sample_size = unique( no.of.population )/unique( design_weight ) ) # calculate overall unit response rate, and no. of population and sample size within each stratum
 d_2006 <- d_2006 %>% 
-  left_join( unitresponse_prob, by = "sampling_strata" )
+  left_join( unitresponse_prob, by = "sampling_strata_region" )
 
 # item non-response
 itemresponse_prob <- d_2006 %>% 
-  group_by( sampling_strata ) %>% 
+  group_by( sampling_strata_region ) %>% 
   summarise( itemresponse_prob = sum( !is.na( sexual_identity_2010 ) ) / n() ) # calculate item response rate
 
 d_2006 <- d_2006 %>% 
-  left_join( itemresponse_prob, by = "sampling_strata" ) %>% 
+  left_join( itemresponse_prob, by = "sampling_strata_region" ) %>% 
   mutate( itemresponse_prob = ifelse( is.na( sexual_identity_2010 ), 0, itemresponse_prob ) )
 
 
 ##### summary of stratified sampling #####
 
 sampling_frame_2006 <- as.data.frame( d_2006 %>% 
-                                        group_by( sampling_strata ) %>% 
+                                        group_by( sampling_strata_region ) %>% 
                                         reframe( no.of.population = unique( no.of.population ), 
                                                  sample_size = unique( no.of.population/design_weight ),
                                                  unitresponse = n(),
                                                  itemresponse = sum( itemresponse_prob != 0 ) ) )
+
+sampling_frame_2006 <- sampling_frame_2006 %>% 
+  left_join( strata_region_name[ , c( 2, 6 ) ], by = c( "sampling_strata_region" = "sdk_2006" ) ) %>%
+  arrange( region_2006 )
 
 sampling_frame_2006$unitresponse_rate <- sampling_frame_2006$unitresponse/sampling_frame_2006$sample_size
 sampling_frame_2006$itemresponse_rate <- sampling_frame_2006$itemresponse/sampling_frame_2006$unitresponse
@@ -274,31 +429,261 @@ table( d_2010$personal_support, useNA = "always" )
 n_miss( d_2010$stratum )
 d_2010$sampling_strata <- as.factor( d_2010$stratum )
 length( unique( d_2010$sampling_strata ) ) # 39 strata
+
+strata_region_name$region_2010 <- as.factor( strata_region_name$region_2010 )
+
+d_2010 <- d_2010 %>% 
+  left_join( strata_region_name[ , c( 3, 7 ) ], by = c( "sampling_strata" = "region_2010" ) )
+
+d_2010$sampling_strata_region <- d_2010$sdk_2010
 ```
 
 #### 2.4. Merge data across surveys
 ```{r}
-m1 <- d_2002[ !is.na( d_2002$sexual_identity_2010 ) & 
-                !is.na( d_2002$sexual_identity_2014 ) & 
-                !is.na( d_2002$sexual_identity_2021 ), 
-              c( "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "sex", "age_2010" ) ]
-m1$year <- rep( "SPHC 2002", nrow( m1 ) )
+##### obtain follow-up data in 2010-2021 for SPHC-B 2002 and 2006 #####
 
-m2 <- d_2006[ !is.na( d_2006$sexual_identity_2010 ) & 
-                !is.na( d_2006$sexual_identity_2014 ) & 
-                !is.na( d_2006$sexual_identity_2021 ), 
-              c( "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "sex", "age_2010" ) ]
-m2$year <- rep( "SPHC 2006", nrow( m2 ) )
+# there are 999 individuals who participated in both SPHC-B 2002 and 2006
+# their follow-up data are included only once
 
-m3 <- d_2010[ !is.na( d_2010$sexual_identity_2010 ) & 
-                !is.na( d_2010$sexual_identity_2014 ) & 
-                !is.na( d_2010$sexual_identity_2021 ),
-              c( "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "sex", "age_2010" ) ]
-m3$year <- rep( "SPHC 2010", nrow( m3 ) )
+# 114 of the 999 individuals changed place of residence between 2002 and 2006
+# their place of residence in 2006 is used for analysis
 
-m123 <- reduce( list( m1, m2, m3 ), 
-                full_join, 
-                by = c( "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "sex", "age_2010", "year" ) )
+variable_list <- c( "lopnr", "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "age_2010", "sex", "country_of_birth", "sampling_strata_region" )
+  
+m1 <- d_2002[ , variable_list ] %>%
+  mutate( year = rep( "SPHC 2002" ) )
+
+m2 <- d_2006[ , variable_list ] %>%
+  mutate( year = rep( "SPHC 2006" ) )
+
+m12 <- rbind( m1, m2 ) %>%
+  group_by( lopnr ) %>%
+  filter( !( year == "SPHC 2002" & any( year == "SPHC 2006" ) ) ) %>%
+  ungroup()
+
+sphcf10 <- read_sas( "/Volumes/LGBT Project data/sphc-f10.sas7bdat",
+                     col_select = c( "lopnr", "utbniva2010", "dispink2010", "civil2010", "F10F80a", "F10F84" ) )
+
+m12_updated <- sphcf10 %>%
+  left_join( m12, by = "lopnr" )
+
+# age
+summary( m12_updated$age_2010 )
+m12_updated$age_conf <- m12_updated$age_2010
+m12_updated$age_exp <- factor( ifelse( m12_updated$age_2010 <= 29, "<=29", 
+                                       ifelse( m12_updated$age_2010 >=30 & m12_updated$age_2010 <= 44, "30-44",
+                                               ifelse( m12_updated$age_2010 >= 45 & m12_updated$age_2010 <= 59, "45-59", ">=60" ) ) ),
+                               levels = c( "45-59", "<=29", "30-44", ">=60" ) )
+table( m12_updated$age_exp, useNA = "always" )
+
+# sex
+summary( m12_updated$sex )
+m12_updated$sex_exp <-relevel( m12_updated$sex, ref = "Male" )
+m12_updated$sex_conf <- m12_updated$sex
+
+# country of birth
+summary( m12_updated$country_of_birth )
+m12_updated$country_of_birth_conf <- m12_updated$country_of_birth
+m12_updated$country_of_birth_exp <- factor( ifelse( m12_updated$country_of_birth == "Sweden", "Sweden",
+                                                    ifelse( m12_updated$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
+                                            levels = c( "Sweden", "Europe", "Outside Europe" ) )
+table( m12_updated$country_of_birth_exp, useNA = "always" )
+
+# education
+table( m12_updated$utbniva2010, useNA = "always" )
+m12_updated$education_conf <- as.factor( m12_updated$utbniva2010 )
+m12_updated$education_exp <- factor( ifelse( m12_updated$utbniva2010 <= 2, "<=9 years",
+                                             ifelse( m12_updated$utbniva2010 <= 4, "10-12 years", ">=13 years" ) ), 
+                                     levels = c( ">=13 years", "<=9 years", "10-12 years" ) )
+table( m12_updated$education_exp, useNA = "always" )
+
+# disposable income
+summary( m12_updated$dispink2010, useNA = "always" )
+m12_updated$income_conf <- m12_updated$dispink2010
+m12_updated$income_exp <- factor( ifelse( m12_updated$dispink2010 <= 2500, "<=2,500",
+                                          ifelse( m12_updated$dispink2010 > 2500 & m12_updated$dispink2010 <= 3500, "(2,500, 3,500]",
+                                                  ifelse( m12_updated$dispink2010 > 3500 & m12_updated$dispink2010 <= 4500, "(3,500, 4,500]", ">4,500" ) ) ),
+                                  levels = c( ">4,500", "<=2,500", "(2,500, 3,500]", "(3,500, 4,500]" ) )
+table( m12_updated$income_exp, useNA = "always" )
+
+# marital status
+table( m12_updated$civil2010, useNA = "always" )
+m12_updated$civil2010[ m12_updated$civil2010 == "" ] <- NA
+m12_updated$marital_status_exp <- factor( ifelse( m12_updated$civil2010 == "G" | m12_updated$civil2010 == "RP", "Currently married",
+                                                  ifelse( m12_updated$civil2010 == "OG", "Never married", "Other" ) ), 
+                                          levels = c( "Currently married", "Never married", "Other" ) )
+m12_updated$marital_status_conf <- m12_updated$marital_status_exp
+table( m12_updated$marital_status_exp, useNA = "always" )
+
+# living alone
+table( m12_updated$F10F80a, useNA = "always" )
+m12_updated$living_status_conf <- as.factor( m12_updated$F10F80a )
+m12_updated$living_status_exp <- factor( ifelse( m12_updated$F10F80a == 1, "no", "yes" ), 
+                                         levels = c( "no", "yes" ) )
+table( m12_updated$living_status_exp, useNA = "always" )
+
+# personal support
+table( m12_updated$F10F84, useNA = "always" )
+m12_updated$personal_support_conf <- as.factor( m12_updated$F10F84 )
+m12_updated$personal_support_exp <- factor( ifelse( m12_updated$F10F84 <= 2, "yes", "no" ), 
+                                            levels = c( "yes", "no" ) )
+table( m12_updated$personal_support_exp, useNA = "always" )
+
+# place of residence
+m12_updated$place_of_residence_conf <- as.factor( m12_updated$sampling_strata_region )
+
+# year
+table( m12_updated$year, useNA = "always" )
+m12_updated$year_conf <- as.factor( m12_updated$year )
+m12_updated$year_exp <- factor( m12_updated$year, levels = c( "SPHC 2002", "SPHC 2006" ) )
+
+summary( m12_updated )
+d_2002_2006_follow_up <- m12_updated %>%
+  select( "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "age_exp", "age_conf", "sex_exp", "sex_conf", "country_of_birth_exp", "country_of_birth_conf", "education_exp", "education_conf", "income_exp", "income_conf", "marital_status_exp", "marital_status_conf", "living_status_exp", "living_status_conf", "personal_support_exp", "personal_support_conf", "place_of_residence_conf", "year_exp", "year_conf" )
+
+
+##### obtain follow-up data in 2010-2021 for SPHC-B 2010 #####
+
+d_2010 <- d_2010 %>% mutate( year = rep( "SPHC 2010" ) )
+
+# age
+summary( d_2010$age_2010 )
+d_2010$age_conf <- d_2010$age_2010
+d_2010$age_exp <- factor( ifelse( d_2010$age_2010 <= 29, "<=29", 
+                              ifelse( d_2010$age_2010 >=30 & d_2010$age_2010 <= 44, "30-44",
+                                      ifelse( d_2010$age_2010 >= 45 & d_2010$age_2010 <= 59, "45-59", ">=60" ) ) ),
+                      levels = c( "45-59", "<=29", "30-44", ">=60" ) )
+table( d_2010$age_exp, useNA = "always" )
+
+# sex
+summary( d_2010$sex )
+d_2010$sex_conf <- d_2010$sex
+d_2010$sex_exp <- relevel( d_2010$sex, ref = "Male" )
+
+# country of birth
+summary( d_2010$country_of_birth )
+d_2010$country_of_birth_conf <- d_2010$country_of_birth
+d_2010$country_of_birth_exp <- factor( ifelse( d_2010$country_of_birth == "Sweden", "Sweden",
+                                               ifelse( d_2010$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
+                                       levels = c( "Sweden", "Europe", "Outside Europe" ) )
+
+# education
+table( d_2010$utbniva2010, useNA = "always" )
+summary( d_2010$education )
+d_2010$education_conf <- as.factor( d_2010$utbniva2010 )
+d_2010$education_exp <- relevel( d_2010$education, ref = ">=13 years" )
+
+# disposable income
+summary( d_2010$dispink2010 )
+summary( d_2010$income )
+d_2010$income_conf <- d_2010$dispink2010
+d_2010$income_exp <- relevel( d_2010$income, ref = ">4,500" )
+
+# marital status
+summary( d_2010$marital_status )
+d_2010$marital_status_conf <- d_2010$marital_status
+d_2010$marital_status_exp <- relevel( d_2010$marital_status, ref = "Currently married" )
+
+# living alone
+table( d_2010$F10U53aG57a, useNA = "always" )
+d_2010$F10U53aG57a[ d_2010$F10U53aG57a == 9 ] <- NA
+summary( d_2010$living_alone )
+d_2010$living_status_conf <- as.factor( d_2010$F10U53aG57a )
+d_2010$living_status_exp <- relevel( d_2010$living_alone, ref = "no" )
+
+# personal support
+table( d_2010$F10U57G62, useNA = "always" )
+d_2010$F10U57G62[ d_2010$F10U57G62 == 9 ] <- NA
+summary( d_2010$personal_support )
+d_2010$personal_support_conf <- as.factor( d_2010$F10U57G62 )
+d_2010$personal_support_exp <- relevel( d_2010$personal_support, ref = "yes" )
+
+# place of residence
+d_2010$place_of_residence_conf <- as.factor( d_2010$sampling_strata_region )
+
+# year
+table( d_2010$year, useNA = "always" )
+d_2010$year_conf <- as.factor( d_2010$year )
+d_2010$year_exp <- as.factor( d_2010$year )
+
+summary( d_2010 )
+d_2010_follow_up <- d_2010 %>%
+  select( "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "age_exp", "age_conf", "sex_exp", "sex_conf", "country_of_birth_exp", "country_of_birth_conf", "education_exp", "education_conf", "income_exp", "income_conf", "marital_status_exp", "marital_status_conf", "living_status_exp", "living_status_conf", "personal_support_exp", "personal_support_conf", "place_of_residence_conf", "year_exp", "year_conf" )
+
+
+##### merge follow-up data in 2010-2021 for SPHC-B 2002, 2006, and 2010 #####
+
+d_2002_2006_2010_follow_up <- rbind( d_2002_2006_follow_up, d_2010_follow_up )
+
+# define outcome
+d_2002_2006_2010_follow_up$sexual_identity_fluidity <- ifelse(
+    d_2002_2006_2010_follow_up$sexual_identity_2010 != d_2002_2006_2010_follow_up$sexual_identity_2014 | 
+    d_2002_2006_2010_follow_up$sexual_identity_2010 != d_2002_2006_2010_follow_up$sexual_identity_2021 |
+    d_2002_2006_2010_follow_up$sexual_identity_2014 != d_2002_2006_2010_follow_up$sexual_identity_2021, 
+    1, 0 ) # any change of sexual identity in 2010-2021
+
+d_sexual_identity_fluidity <- d_2002_2006_2010_follow_up[ 
+  !is.na( d_2002_2006_2010_follow_up$sexual_identity_2010 ) &
+    !is.na( d_2002_2006_2010_follow_up$sexual_identity_2014 ) &
+    !is.na( d_2002_2006_2010_follow_up$sexual_identity_2021 ), ]
+nrow( d_sexual_identity_fluidity ) # 34,815 provided data on sexual identity in 2010-2021
+
+d_fluidity_model <- subset( d_2002_2006_2010_follow_up, 
+                            select = -c( sexual_identity_2010, sexual_identity_2014, sexual_identity_2021 ) ) %>%
+  filter( !is.na( sexual_identity_fluidity ) )
+miss_case_summary( d_fluidity_model ) # no cases had missing data on all variables
+nrow( d_fluidity_model ) # 36,398 participants with (incomplete) follow-up data on demographic variables
+
+
+# make characteristics table by changes of sexual identity
+explanatory =  c( "year_exp", "sex_exp", "age_exp", "country_of_birth_exp", "education_exp", "income_exp", "marital_status_exp", "living_status_exp", "personal_support_exp" )
+dependent = "sexual_identity_fluidity"
+
+d_follow_up_table <- d_fluidity_model %>% 
+  mutate( sexual_identity_fluidity = factor( sexual_identity_fluidity, levels = c( 0, 1 ), labels = c( "no change", "change" ) ) ) %>%
+  summary_factorlist( dependent,
+                      explanatory, 
+                      na_include = TRUE,
+                      total_col = TRUE,
+                      add_col_totals = TRUE,
+                      column = FALSE )
+
+# Fisher's test
+x1 <- table( d_fluidity_model$year_exp, d_fluidity_model$sexual_identity_fluidity )
+x1
+format( round( fisher.test( x1, simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x2 <- table( d_fluidity_model$sex_exp, d_fluidity_model$sexual_identity_fluidity )
+x2
+format( round( fisher.test( x2 )$p.value, 3 ), nsmall = 3 )
+
+x3 <- table( d_fluidity_model$age_exp, d_fluidity_model$sexual_identity_fluidity )
+x3
+format( round( fisher.test( x3, simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x4 <- table( d_fluidity_model$country_of_birth_exp, d_fluidity_model$sexual_identity_fluidity )
+x4
+format( round( fisher.test( x4, simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x5 <- table( d_fluidity_model$education_exp, d_fluidity_model$sexual_identity_fluidity )
+x5
+format( round( fisher.test( x5, simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x6 <- table( d_fluidity_model$income_exp, d_fluidity_model$sexual_identity_fluidity )
+x6
+format( round( fisher.test( x6, simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x7 <- table( d_fluidity_model$marital_status_exp, d_fluidity_model$sexual_identity_fluidity )
+x7
+format( round( fisher.test( x7, simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x8 <- table( d_fluidity_model$living_status_exp, d_fluidity_model$sexual_identity_fluidity )
+x8
+format( round( fisher.test( x8, simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x9 <- table( d_fluidity_model$personal_support_exp, d_fluidity_model$sexual_identity_fluidity )
+x9
+format( round( fisher.test( x9, simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 ```
 
 ### 3. Make Fluidity Plots
@@ -899,6 +1284,22 @@ ggplot( m123_age_60_long,
 ### 4. Relation between Changes of Sexual Identity and Demographic Factors
 #### 4.1. Prepare dataset
 ```{r}
+
+
+
+d_2002_fluidity <- d_2002[ , c( "lopnr", "age_2010", "sex", "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "sampling_strata_region" ) ]
+d_2002_fluidity$year <- rep( "SPHC 2002", nrow( d_2002_fluidity ) )
+
+
+d_2006_fluidity <- d_2006[ , c( "lopnr", "age_2010", "sex", "country_of_birth", "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "sampling_strata_region" ) ]
+d_2006_fluidity$year <- rep( "SPHC 2006", nrow( d_2006_fluidity ) )
+
+length( intersect(d_2002_fluidity$lopnr, d_2006_fluidity$lopnr) )
+
+
+
+
+
 # exposures of interest, including age, sex, country of birth, education, income, marital status, living status, and personal support
 d_2010$age_exp <- relevel( d_2010$age_cat, ref = "45-59" )
 

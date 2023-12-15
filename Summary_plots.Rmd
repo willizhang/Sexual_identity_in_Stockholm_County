@@ -23,15 +23,30 @@ library(naniar)
 ### 2. Plots for Response Rates
 ```{r}
 # datasets for response rates
+sampling_frame_2002_males <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2002_males.xlsx")
+sampling_frame_2002_females <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2002_females.xlsx")
+sampling_frame_2006 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2006.xlsx")
 sampling_frame_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2010.xlsx")
 sampling_frame_2014 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2014.xlsx")
 sampling_frame_2021 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2021.xlsx")
 
-combined_response_rate <- sampling_frame_2010[, c( 1, 6:8 ) ] %>% 
-    full_join( sampling_frame_2014[, c( 1, 6:8 ) ], by = "sampling_strata_region" ) %>%
-    full_join( sampling_frame_2021[, c( 1, 6:8 ) ], by = "sampling_strata_region" )
+combined_response_rate <- sampling_frame_2002_males[, c( 1, 6:8 ) ] %>%
+  full_join( sampling_frame_2002_females[, c( 1, 6:8 ) ], by = "sampling_strata_region" ) %>%
+  full_join( sampling_frame_2006[, c( 1, 7:9 ) ], by = "sampling_strata_region" ) %>%
+  full_join( sampling_frame_2010[, c( 1, 6:8 ) ], by = "sampling_strata_region" ) %>%
+  full_join( sampling_frame_2014[, c( 1, 6:8 ) ], by = "sampling_strata_region" ) %>%
+  full_join( sampling_frame_2021[, c( 1, 6:8 ) ], by = "sampling_strata_region" )
 
-colnames( combined_response_rate ) <- c( "Municipality", 
+colnames( combined_response_rate ) <- c( "Municipality",
+                                         "unitresponse_rate_2002_male",
+                                         "itemresponse_rate_2002_male",
+                                         "overallresponse_rate_2002_male",
+                                         "unitresponse_rate_2002_female",
+                                         "itemresponse_rate_2002_female",
+                                         "overallresponse_rate_2002_female",
+                                         "unitresponse_rate_2006",
+                                         "itemresponse_rate_2006",
+                                         "overallresponse_rate_2006",
                                          "unitresponse_rate_2010",
                                          "itemresponse_rate_2010",
                                          "overallresponse_rate_2010",
@@ -43,6 +58,19 @@ colnames( combined_response_rate ) <- c( "Municipality",
                                          "overallresponse_rate_2021"
                                          )
 
+combined_response_rate$Municipality[ combined_response_rate$Municipality == "Additional_stratum_male" ] <- "Unknown"
+combined_response_rate$Municipality[ combined_response_rate$Municipality == "Additional_stratum_female" ] <- "Unknown"
+
+combined_response_rate_merged <- combined_response_rate %>%
+  group_by( Municipality ) %>%
+  summarize( across( everything(), ~ ifelse( all (is.na(.) ), NA, na.omit(.) ) ) )
+
+combined_response_rate_merged <- combined_response_rate_merged %>%
+  mutate( missing_count = rowSums(is.na(select(., -Municipality)))) %>%
+  arrange(missing_count, Municipality)
+
+combined_response_rate_merged$Municipality <- factor(combined_response_rate_merged$Municipality, levels = unique(combined_response_rate_merged$Municipality))
+
 ordered_levels <- combined_response_rate$Municipality[ order( combined_response_rate$overallresponse_rate_2010, 
                                                               decreasing = TRUE ) ]
 ordered_levels <- as.character( ordered_levels[ ordered_levels != "Älvsjö" & 
@@ -53,11 +81,11 @@ ordered_levels <- c( "Hägersten-Älvsjö", ordered_levels, "Älvsjö", "Hägers
 combined_response_rate$Municipality <- factor( combined_response_rate$Municipality, 
                                                levels = ordered_levels )
 
-df_long <- combined_response_rate %>%
+df_long <- combined_response_rate_merged %>%
   pivot_longer(
     cols = -Municipality,
-    names_to = c(".value", "year"),
-    names_pattern = "(.*)_(\\d+)"
+    names_to = c( ".value", "year" ),
+    names_pattern = "(.*response_rate)_(\\d+.*$)"
     ) %>%
   gather( key = "response_type", value = "response_rate", unitresponse_rate, itemresponse_rate, overallresponse_rate )
 
@@ -66,7 +94,12 @@ df_long$response_type <- factor( df_long$response_type,
 
 
 # plot
-year_labels <- c( `2010` = "SPHC-B 2010", `2014` = "SPHC-B 2014", `2021` = "SPHC-B 2021" )
+year_labels <- c( `2002_male` = "SPHC-B 2002, Males",
+                  `2002_female` = "SPHC-B 2002, Females",
+                  `2006` = "SPHC-B 2006",
+                  `2010` = "SPHC-B 2010", 
+                  `2014` = "SPHC-B 2014", 
+                  `2021` = "SPHC-B 2021" )
 
 ggplot( df_long, 
         aes( x = Municipality, y = response_rate, group = interaction( year, response_type ) ) ) +

@@ -41,7 +41,7 @@ length( unique( d_2021$sampling_strata ) ) # 38 strata
 
 d_2021 <- d_2021 %>%
   mutate( sampling_strata_region = recode( sampling_strata, 
-                                           `114` = "Upplands Väsby",
+                                           `114` = "Upplands-Väsby",
                                            `115` = "Vallentuna",
                                            `117` = "Österåker",
                                            `120` = "Värmdö",
@@ -77,17 +77,17 @@ d_2021 <- d_2021 %>%
                                            `180124` = "Skärholmen",
                                            `180125` = "Rinkeby-Kista",
                                            `180127` = "Södermalm",
-                                           `180128` = "Enskede, Årsta-Vantör",
+                                           `180128` = "Enskede-Årsta-Vantör",
                                            `180129` = "Hägersten-Älvsjö"
                                            ) )
 
 # sexual identity
 table( d_2021$F21F45_Q57, useNA = "always" )
-d_2021$sexual_identity <- factor( ifelse( d_2021$F21F45_Q57 == 1, "Heterosexual", 
+d_2021$sexual_identity_2021 <- factor( ifelse( d_2021$F21F45_Q57 == 1, "Heterosexual", 
                                           ifelse( d_2021$F21F45_Q57 == 2, "Homosexual",
                                                   ifelse( d_2021$F21F45_Q57 == 3, "Bisexual", "None of the above" ) ) ),
                                   levels = c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" ) )
-table( d_2021$sexual_identity, useNA = "always" )
+table( d_2021$sexual_identity_2021, useNA = "always" )
 
 # sex
 table( d_2021$kon, useNA = "always" )
@@ -175,7 +175,7 @@ table( d_2021$occupation, useNA = "always" )
 # among respondents (n = 23,066)
 # make characteristics table by sexual identity
 explanatory =  c( "sex", "age_cat", "country_of_birth", "education", "occupation", "income", "marital_status" )
-dependent = "sexual_identity"
+dependent = "sexual_identity_2021"
 
 d_2021_table <- d_2021 %>% 
   summary_factorlist( dependent,
@@ -186,43 +186,43 @@ d_2021_table <- d_2021 %>%
                       add_col_totals = TRUE )
 
 # Fisher's test
-x1 <- table( d_2021$sex, d_2021$sexual_identity )
+x1 <- table( d_2021$sex, d_2021$sexual_identity_2021 )
 x1
 format( round( fisher.test( x1[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x1[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x1[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
 
-x2 <- table( d_2021$age_cat, d_2021$sexual_identity )
+x2 <- table( d_2021$age_cat, d_2021$sexual_identity_2021 )
 x2
 format( round( fisher.test( x2[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x2[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x2[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 
-x3 <- table( d_2021$country_of_birth, d_2021$sexual_identity )
+x3 <- table( d_2021$country_of_birth, d_2021$sexual_identity_2021 )
 x3
 format( round( fisher.test( x3[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x3[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x3[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 
-x4 <- table( d_2021$education, d_2021$sexual_identity )
+x4 <- table( d_2021$education, d_2021$sexual_identity_2021 )
 x4
 format( round( fisher.test( x4[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x4[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x4[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 
-x5 <- table( d_2021$income, d_2021$sexual_identity )
+x5 <- table( d_2021$income, d_2021$sexual_identity_2021 )
 x5
 format( round( fisher.test( x5[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x5[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x5[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 
-x6 <- table( d_2021$marital_status, d_2021$sexual_identity )
+x6 <- table( d_2021$marital_status, d_2021$sexual_identity_2021 )
 x6
 format( round( fisher.test( x6[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x6[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x6[, c( 1, 4 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 
-x7 <- table( d_2021$occupation, d_2021$sexual_identity )
+x7 <- table( d_2021$occupation, d_2021$sexual_identity_2021 )
 x7
 format( round( fisher.test( x7[, c( 1:2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x7[, c( 1, 3 ) ], simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
@@ -254,11 +254,11 @@ d_2021 <- d_2021 %>%
 # item non-response
 itemresponse_prob <- d_2021 %>% 
   group_by( sampling_strata_region ) %>% 
-  summarise( itemresponse_prob = sum( !is.na( sexual_identity ) ) / n() ) # calculate item response rate
+  summarise( itemresponse_prob = sum( !is.na( sexual_identity_2021 ) ) / n() ) # calculate item response rate
 
 d_2021 <- d_2021 %>% 
   left_join( itemresponse_prob, by = "sampling_strata_region" ) %>% 
-  mutate( itemresponse_prob = ifelse( is.na( sexual_identity ), 0, itemresponse_prob ) )
+  mutate( itemresponse_prob = ifelse( is.na( sexual_identity_2021 ), 0, itemresponse_prob ) )
 
 
 ##### summary of stratified sampling #####
@@ -356,9 +356,9 @@ categories <- c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" )
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
                         by = ~ sex,
-                        design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( sex ) ),
+                        design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( sex ) ),
                         FUN = svyciprop,
                         vartype = "ci",
                         method = "beta" )
@@ -374,7 +374,7 @@ prop_cc_sex <- Reduce( function( df1, df2 ) {
 list_of_df )
 
 prop_cc_sex <- left_join( prop_cc_sex,
-                          d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity ) &
+                          d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
                                              !is.na( d_2021_complete_cc$sex ), ] %>% 
                             group_by( subgroup = sex ) %>% 
                             summarise( sample_size_2021 = n() ),
@@ -388,9 +388,9 @@ prop_cc_sex <- left_join( prop_cc_sex,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_age <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_age <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
                         by = ~ age_cat,
-                        design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( age_cat ) ),
+                        design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( age_cat ) ),
                         FUN = svyciprop,
                         vartype = "ci",
                         method = "beta" )
@@ -406,7 +406,7 @@ prop_cc_age <- Reduce( function( df1, df2 ) {
 list_of_df )
 
 prop_cc_age <- left_join( prop_cc_age,
-                          d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity ) &
+                          d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
                                              !is.na( d_2021_complete_cc$age_cat ), ] %>% 
                             group_by( subgroup = age_cat ) %>% 
                             summarise( sample_size_2021 = n() ),
@@ -435,9 +435,9 @@ for ( cut_off in ( min_age ):100 ) {
   
   for ( cat in categories ) {
     prop_cc_age_iteration <- svyby(
-      formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+      formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
       by = ~ age_iteration,
-      design = subset( survey_design_iteration_age, !is.na( sexual_identity ) & !is.na( age ) ),
+      design = subset( survey_design_iteration_age, !is.na( sexual_identity_2021 ) & !is.na( age ) ),
       FUN = svyciprop,
       method = "beta" )
     
@@ -488,9 +488,9 @@ writexl::write_xlsx( results_wide, "prop_cc_age_iteration_2021.xlsx" )
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_age_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_age_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
                             by = ~ age_sex,
-                            design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( age_sex ) ),
+                            design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( age_sex ) ),
                             FUN = svyciprop,
                             vartype = "ci",
                             method = "beta" )
@@ -506,7 +506,7 @@ prop_cc_age_sex <- Reduce( function( df1, df2 ) {
 list_of_df )
 
 prop_cc_age_sex <- left_join( prop_cc_age_sex,
-                              d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity ) &
+                              d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
                                                  !is.na( d_2021_complete_cc$age_sex ), ] %>% 
                                 group_by( subgroup = age_sex ) %>% 
                                 summarise( sample_size_2021 = n() ),
@@ -519,9 +519,9 @@ prop_cc_age_sex <- left_join( prop_cc_age_sex,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_education <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_education <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
                               by = ~ education,
-                              design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( education ) ),
+                              design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( education ) ),
                               FUN = svyciprop,
                               vartype = "ci",
                               method = "beta" )
@@ -537,7 +537,7 @@ prop_cc_education <- Reduce( function( df1, df2 ) {
 list_of_df )
 
 prop_cc_education <- left_join( prop_cc_education,
-                                d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity ) &
+                                d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
                                                    !is.na( d_2021_complete_cc$education ), ] %>% 
                                   group_by( subgroup = education ) %>% 
                                   summarise( sample_size_2021 = n() ),
@@ -550,9 +550,9 @@ prop_cc_education <- left_join( prop_cc_education,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_occupation <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_occupation <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
                                by = ~ occupation,
-                               design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( occupation ) ),
+                               design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( occupation ) ),
                                FUN = svyciprop,
                                vartype = "ci",
                                method = "beta" )
@@ -568,7 +568,7 @@ prop_cc_occupation <- Reduce( function( df1, df2 ) {
   list_of_df )
 
 prop_cc_occupation <- left_join( prop_cc_occupation,
-                                     d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity ) &
+                                     d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
                                                            !is.na( d_2021_complete_cc$occupation ), ] %>% 
                                        group_by( subgroup = occupation ) %>% 
                                        summarise( sample_size_2021 = n() ),
@@ -581,9 +581,9 @@ prop_cc_occupation <- left_join( prop_cc_occupation,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_income <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_income <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
                            by = ~ income,
-                           design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( income ) ),
+                           design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( income ) ),
                            FUN = svyciprop,
                            vartype = "ci",
                            method = "beta" )
@@ -599,7 +599,7 @@ prop_cc_income <- Reduce( function( df1, df2 ) {
 list_of_df )
 
 prop_cc_income <- left_join( prop_cc_income,
-                             d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity ) &
+                             d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
                                                    !is.na( d_2021_complete_cc$income ), ] %>% 
                                group_by( subgroup = income ) %>% 
                                summarise( sample_size_2021 = n() ),
@@ -612,9 +612,9 @@ prop_cc_income <- left_join( prop_cc_income,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_country_of_birth <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_country_of_birth <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
                                      by = ~ country_of_birth,
-                                     design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( country_of_birth ) ),
+                                     design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( country_of_birth ) ),
                                      FUN = svyciprop,
                                      vartype = "ci",
                                      method = "beta" )
@@ -630,7 +630,7 @@ prop_cc_country_of_birth <- Reduce( function( df1, df2 ) {
 list_of_df )
 
 prop_cc_country_of_birth <- left_join( prop_cc_country_of_birth,
-                                       d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity ) &
+                                       d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
                                                    !is.na( d_2021_complete_cc$country_of_birth ), ] %>% 
                                          group_by( subgroup = country_of_birth ) %>% 
                                          summarise( sample_size_2021 = n() ),
@@ -643,9 +643,9 @@ prop_cc_country_of_birth <- left_join( prop_cc_country_of_birth,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_marital_status <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_marital_status <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
                                    by = ~ marital_status,
-                                   design = subset( survey_design_cc, !is.na( sexual_identity ) & !is.na( marital_status ) ),
+                                   design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( marital_status ) ),
                                    FUN = svyciprop,
                                    vartype = "ci",
                                    method = "beta" )
@@ -661,7 +661,7 @@ prop_cc_marital_status <- Reduce( function( df1, df2 ) {
 list_of_df )
 
 prop_cc_marital_status <- left_join( prop_cc_marital_status,
-                                     d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity ) &
+                                     d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
                                                    !is.na( d_2021_complete_cc$marital_status ), ] %>% 
                                        group_by( subgroup = marital_status ) %>% 
                                        summarise( sample_size_2021 = n() ),
@@ -674,8 +674,8 @@ prop_cc_marital_status <- left_join( prop_cc_marital_status,
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_overall <- svyciprop( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
-                                design = subset( survey_design_cc, !is.na( sexual_identity ) ),
+  prop_cc_overall <- svyciprop( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                                design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) ),
                                 vartype = "ci",
                                 method = "beta" )
   
@@ -696,7 +696,7 @@ list_of_df ) %>%
 prop_cc_overall[ 1, 1 ] <- "Stockholm County"
 
 prop_cc_overall <- bind_cols( prop_cc_overall,
-                              d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity ), ] %>% 
+                              d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ), ] %>% 
                                 summarise( sample_size_2021 = n() ) ) %>%
   mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
 ```
@@ -722,7 +722,7 @@ writexl::write_xlsx( prop_cc_summary_2021, "prop_cc_summary_2021.xlsx" )
 ###### 3.2.1.1. Obtain incomplete dataset
 ```{r}
 d_2021_ic <- as.data.frame( d_2021 %>% 
-                              select( "sampling_strata", "sampling_strata_region", "no.of.population", "calibrated_weight", "sexual_identity", "age", "sex", "fodelseland", "utbniva2021", "dispink2021", "marital_status" ) ) %>%
+                              select( "sampling_strata", "sampling_strata_region", "no.of.population", "calibrated_weight", "sexual_identity_2021", "age", "sex", "fodelseland", "utbniva2021", "dispink2021", "marital_status" ) ) %>%
   rename(
     country_of_birth = fodelseland, 
     education = utbniva2021, 
@@ -742,23 +742,23 @@ sapply( d_2021_ic, class ) # all continuous variables are numeric, and all categ
 vis_miss( d_2021_ic )
 n_miss( d_2021_ic )
 md.pattern( d_2021_ic )
-miss_var_summary( d_2021_ic ) # 2.2% missing in sexual_identity, 2.1% in education, and 0.2% in income
+miss_var_summary( d_2021_ic ) # 2.2% missing in sexual_identity_2021, 2.1% in education, and 0.2% in income
 
 # select auxiliary variables for sexual identity
 # check whether potential auxiliary variables are correlated with sexual identity
 names( d_2021_ic )
-plot( d_2021_ic$sampling_strata_region, d_2021_ic$sexual_identity )
-plot( d_2021_ic$sexual_identity, d_2021_ic$age )
-plot( d_2021_ic$sex, d_2021_ic$sexual_identity )
-plot( d_2021_ic$country_of_birth, d_2021_ic$sexual_identity )
-plot( d_2021_ic$education, d_2021_ic$sexual_identity )
-plot( d_2021_ic$sexual_identity, d_2021_ic$income )
-plot( d_2021_ic$marital_status, d_2021_ic$sexual_identity )
+plot( d_2021_ic$sampling_strata_region, d_2021_ic$sexual_identity_2021 )
+plot( d_2021_ic$sexual_identity_2021, d_2021_ic$age )
+plot( d_2021_ic$sex, d_2021_ic$sexual_identity_2021 )
+plot( d_2021_ic$country_of_birth, d_2021_ic$sexual_identity_2021 )
+plot( d_2021_ic$education, d_2021_ic$sexual_identity_2021 )
+plot( d_2021_ic$sexual_identity_2021, d_2021_ic$income )
+plot( d_2021_ic$marital_status, d_2021_ic$sexual_identity_2021 )
 
 # check whether potential auxiliary variables are related to sexual identity being missing
 {
   explanatory = c( "sampling_strata_region", "age", "sex", "country_of_birth", "education", "income", "marital_status" )
-  dependent = "sexual_identity"
+  dependent = "sexual_identity_2021"
   d_2021_ic %>% missing_pairs( dependent, explanatory, position = "fill", showYAxisPlotLabels = TRUE )
   }
 
@@ -801,7 +801,7 @@ sapply( d_2021_ic, class ) # all continuous variables are numeric, and all categ
 
 
 # add random effects in intercepts and predictors
-fml_imp <- sexual_identity + education + income ~ 1 + age + sex + age*sex + country_of_birth + marital_status + sampling_strata_region + ( 1 + age + sex + country_of_birth + marital_status + sampling_strata_region | calibrated_weight_strata )
+fml_imp <- sexual_identity_2021 + education + income ~ 1 + age + sex + age*sex + country_of_birth + marital_status + sampling_strata_region + ( 1 + age + sex + country_of_birth + marital_status + sampling_strata_region | calibrated_weight_strata )
 
 # perform a "dry run"
 ini <- jomoImpute( data = d_2021_ic,
@@ -885,7 +885,7 @@ categories <- c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" )
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_stratum <- svyby( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_stratum <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
                             by = ~ sampling_strata_region, # equivalent to calculating the proportion separately for each stratum 
                             design = survey_design_cc,
                             FUN = svyciprop,
@@ -905,7 +905,7 @@ prop_cc_summary <- Reduce( function( df1, df2 ) {
 list_of_df <- list()
 
 for ( cat in categories ) {
-  prop_cc_overall <- svyciprop( formula = as.formula( paste0( "~ I( sexual_identity == '", cat, "' )" ) ),
+  prop_cc_overall <- svyciprop( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
                                 design = survey_design_cc,
                                 vartype = "ci",
                                 method = "beta" )
@@ -951,13 +951,13 @@ d_2021_cc_model$marital_status_exp <- relevel( d_2021_cc_model$marital_status, r
 
 
 # outcomes of interest, including sexual minority, homosexual, bisexual, and other
-d_2021_cc_model$sexual_minority <- ifelse( d_2021_cc_model$sexual_identity == "Heterosexual", 0, 1 )
+d_2021_cc_model$sexual_minority <- ifelse( d_2021_cc_model$sexual_identity_2021 == "Heterosexual", 0, 1 )
 
-d_2021_cc_model$homosexual <- ifelse( d_2021_cc_model$sexual_identity == "Homosexual", 1, 0 )
+d_2021_cc_model$homosexual <- ifelse( d_2021_cc_model$sexual_identity_2021 == "Homosexual", 1, 0 )
 
-d_2021_cc_model$bisexual <- ifelse( d_2021_cc_model$sexual_identity == "Bisexual", 1, 0 )
+d_2021_cc_model$bisexual <- ifelse( d_2021_cc_model$sexual_identity_2021 == "Bisexual", 1, 0 )
 
-d_2021_cc_model$other <- ifelse( d_2021_cc_model$sexual_identity == "None of the above", 1, 0 )
+d_2021_cc_model$other <- ifelse( d_2021_cc_model$sexual_identity_2021 == "None of the above", 1, 0 )
 
 
 # confounding variables, including age, sex, country of birth, education, income, marital status, 
