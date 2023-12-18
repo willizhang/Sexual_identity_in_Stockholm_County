@@ -93,6 +93,24 @@ extract_results_coef <- function( all_models_list, exposure, outcome, model_type
 }
 
 
+### sexual identity fluidity ###
+extract_results_coef_fluidity <- function( all_models_list, exposure, model_type, variables ) {
+  
+  model <- all_models_list[[ exposure ]][[ model_type ]]
+  
+  # check if model is available
+  if ( !is.null( model ) ) {
+    
+    results <- cbind( coef( model )[ variables ], 
+                      coefci( model, vcov = sandwich )[ variables, , drop = FALSE ] )
+    
+    return( results )
+  } else {
+    return( NULL )
+  }
+}
+
+
 ##### Function to Extract Proportion Ratios and Confidence Intervals for Each Model Across Exposures #####
 
 ### crude analysis ###
@@ -170,6 +188,38 @@ extract_rr <- function( model_results ) {
     temp_df <- as.data.frame( exp_results )
     
     type <- ifelse( grepl( "crude", model_name ), "crude", "adjusted" )
+    
+    colnames( temp_df ) <- c( paste0( "point_estimate_", type ),
+                              paste0( "lower_ci_", type ),
+                              paste0( "upper_ci_", type ) )
+    
+    results_list[[ model_name ]] <- temp_df
+  }
+  
+  names( results_list ) <- NULL
+  
+  combined_df <- tibble::rownames_to_column(
+    do.call( cbind, results_list ),
+    var = "Exposure" )
+  
+  return( combined_df )
+}
+
+
+extract_rr_fluidity <- function( model_results ) {
+  
+  results_list <- list()
+  
+  for ( model_name in names( model_results ) ) {
+    
+    exp_results <- exp( model_results[[ model_name ]] )
+    
+    temp_df <- as.data.frame( exp_results )
+    
+    type <- case_when(
+      grepl( "crude", model_name )   ~ "crude",
+      grepl( "model_1", model_name ) ~ "model_1",
+      grepl( "model_2", model_name ) ~ "model_2" )
     
     colnames( temp_df ) <- c( paste0( "point_estimate_", type ),
                               paste0( "lower_ci_", type ),
