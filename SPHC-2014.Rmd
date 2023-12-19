@@ -1059,207 +1059,279 @@ fml_list_personal_support_crude <- list(
 ##### exposure of interest: age #####
 
 # sexual minority
-fml_sexual_minority_age <- sexual_minority ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_age_model_1 <- sexual_minority ~ age_exp + sex_conf + country_of_birth_conf
+fml_sexual_minority_age_model_2 <- sexual_minority ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # homosexual
-fml_homosexual_age <- homosexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_age_model_1 <- homosexual ~ age_exp + sex_conf + country_of_birth_conf
+fml_homosexual_age_model_2 <- homosexual ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # bisexual
-fml_bisexual_age <- bisexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_age_model_1 <- bisexual ~ age_exp + sex_conf + country_of_birth_conf
+fml_bisexual_age_model_2 <- bisexual ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # other
-fml_other_age <- other ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_age_model_1 <- other ~ age_exp + sex_conf + country_of_birth_conf
+fml_other_age_model_2 <- other ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_age <- list(
-  fml_sexual_minority_age = fml_sexual_minority_age,
-  fml_homosexual_age = fml_homosexual_age,
-  fml_bisexual_age = fml_bisexual_age,
-  fml_other_age = fml_other_age
+  fml_sexual_minority_age_model_1 = fml_sexual_minority_age_model_1,
+  fml_sexual_minority_age_model_2 = fml_sexual_minority_age_model_2,
+  fml_homosexual_age_model_1 = fml_homosexual_age_model_1,
+  fml_homosexual_age_model_2 = fml_homosexual_age_model_2,
+  fml_bisexual_age_model_1 = fml_bisexual_age_model_1,
+  fml_bisexual_age_model_2 = fml_bisexual_age_model_2,
+  fml_other_age_model_1 = fml_other_age_model_1,
+  fml_other_age_model_2 = fml_other_age_model_2
   )
 
 
 ##### exposure of interest: age by sex #####
 
 # sexual minority
-fml_sexual_minority_age_by_sex <- sexual_minority ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_age_by_sex_model_1 <- sexual_minority ~ age_exp*sex_exp + country_of_birth_conf
+fml_sexual_minority_age_by_sex_model_2 <- sexual_minority ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # homosexual
-fml_homosexual_age_by_sex <- homosexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_age_by_sex_model_1 <- homosexual ~ age_exp*sex_exp + country_of_birth_conf
+fml_homosexual_age_by_sex_model_2 <- homosexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # bisexual
-fml_bisexual_age_by_sex <- bisexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_age_by_sex_model_1 <- bisexual ~ age_exp*sex_exp + country_of_birth_conf
+fml_bisexual_age_by_sex_model_2 <- bisexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # other
-fml_other_age_by_sex <- other ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_age_by_sex_model_1 <- other ~ age_exp*sex_exp + country_of_birth_conf
+fml_other_age_by_sex_model_2 <- other ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_age_by_sex <- list(
-  fml_sexual_minority_age_by_sex = fml_sexual_minority_age_by_sex,
-  fml_homosexual_age_by_sex = fml_homosexual_age_by_sex,
-  fml_bisexual_age_by_sex = fml_bisexual_age_by_sex,
-  fml_other_age_by_sex = fml_other_age_by_sex
-)
+  fml_sexual_minority_age_by_sex_model_1 = fml_sexual_minority_age_by_sex_model_1,
+  fml_sexual_minority_age_by_sex_model_2 = fml_sexual_minority_age_by_sex_model_2,
+  fml_homosexual_age_by_sex_model_1 = fml_homosexual_age_by_sex_model_1,
+  fml_homosexual_age_by_sex_model_2 = fml_homosexual_age_by_sex_model_2,
+  fml_bisexual_age_by_sex_model_1 = fml_bisexual_age_by_sex_model_1,
+  fml_bisexual_age_by_sex_model_2 = fml_bisexual_age_by_sex_model_2,
+  fml_other_age_by_sex_model_1 = fml_other_age_by_sex_model_1,
+  fml_other_age_by_sex_model_2 = fml_other_age_by_sex_model_2
+  )
 
 
 ##### exposure of interest: sex #####
 
 # sexual minority
-fml_sexual_minority_sex <- sexual_minority ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_sex_model_1 <- sexual_minority ~ sex_exp + age_conf + country_of_birth_conf
+fml_sexual_minority_sex_model_2 <- sexual_minority ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # homosexual
-fml_homosexual_sex <- homosexual ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_sex_model_1 <- homosexual ~ sex_exp + age_conf + country_of_birth_conf
+fml_homosexual_sex_model_2 <- homosexual ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # bisexual
-fml_bisexual_sex <- bisexual ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_sex_model_1 <- bisexual ~ sex_exp + age_conf + country_of_birth_conf
+fml_bisexual_sex_model_2 <- bisexual ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # other
-fml_other_sex <- other ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_sex_model_1 <- other ~ sex_exp + age_conf + country_of_birth_conf
+fml_other_sex_model_2 <- other ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_sex <- list(
-  fml_sexual_minority_sex = fml_sexual_minority_sex,
-  fml_homosexual_sex = fml_homosexual_sex,
-  fml_bisexual_sex = fml_bisexual_sex,
-  fml_other_sex = fml_other_sex
+  fml_sexual_minority_sex_model_1 = fml_sexual_minority_sex_model_1,
+  fml_sexual_minority_sex_model_2 = fml_sexual_minority_sex_model_2,
+  fml_homosexual_sex_model_1 = fml_homosexual_sex_model_1,
+  fml_homosexual_sex_model_2 = fml_homosexual_sex_model_2,
+  fml_bisexual_sex_model_1 = fml_bisexual_sex_model_1,
+  fml_bisexual_sex_model_2 = fml_bisexual_sex_model_2,
+  fml_other_sex_model_1 = fml_other_sex_model_1,
+  fml_other_sex_model_2 = fml_other_sex_model_2
   )
 
 
 ##### exposure of interest: country of birth #####
 
 # sexual minority
-fml_sexual_minority_country_of_birth <- sexual_minority ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_country_of_birth_model_1 <- sexual_minority ~ country_of_birth_exp + age_conf + sex_conf
+fml_sexual_minority_country_of_birth_model_2 <- sexual_minority ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # homosexual
-fml_homosexual_country_of_birth <- homosexual ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_country_of_birth_model_1 <- homosexual ~ country_of_birth_exp + age_conf + sex_conf
+fml_homosexual_country_of_birth_model_2 <- homosexual ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # bisexual
-fml_bisexual_country_of_birth <- bisexual ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_country_of_birth_model_1 <- bisexual ~ country_of_birth_exp + age_conf + sex_conf
+fml_bisexual_country_of_birth_model_2 <- bisexual ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # other
-fml_other_country_of_birth <- other ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_country_of_birth_model_1 <- other ~ country_of_birth_exp + age_conf + sex_conf
+fml_other_country_of_birth_model_2 <- other ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_country_of_birth <- list(
-  fml_sexual_minority_country_of_birth = fml_sexual_minority_country_of_birth,
-  fml_homosexual_country_of_birth = fml_homosexual_country_of_birth,
-  fml_bisexual_country_of_birth = fml_bisexual_country_of_birth,
-  fml_other_country_of_birth = fml_other_country_of_birth
+  fml_sexual_minority_country_of_birth_model_1 = fml_sexual_minority_country_of_birth_model_1,
+  fml_sexual_minority_country_of_birth_model_2 = fml_sexual_minority_country_of_birth_model_2,
+  fml_homosexual_country_of_birth_model_1 = fml_homosexual_country_of_birth_model_1,
+  fml_homosexual_country_of_birth_model_2 = fml_homosexual_country_of_birth_model_2,
+  fml_bisexual_country_of_birth_model_1 = fml_bisexual_country_of_birth_model_1,
+  fml_bisexual_country_of_birth_model_2 = fml_bisexual_country_of_birth_model_2,
+  fml_other_country_of_birth_model_1 = fml_other_country_of_birth_model_1,
+  fml_other_country_of_birth_model_2 = fml_other_country_of_birth_model_2
 )
 
 
 ##### exposure of interest: education #####
 
 # sexual minority
-fml_sexual_minority_education <- sexual_minority ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_education_model_1 <- sexual_minority ~ education_exp + age_conf + sex_conf + country_of_birth_conf
+fml_sexual_minority_education_model_2 <- sexual_minority ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # homosexual
-fml_homosexual_education <- homosexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_education_model_1 <- homosexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf
+fml_homosexual_education_model_2 <- homosexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # bisexual
-fml_bisexual_education <- bisexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_education_model_1 <- bisexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf
+fml_bisexual_education_model_2 <- bisexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # other
-fml_other_education <- other ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_education_model_1 <- other ~ education_exp + age_conf + sex_conf + country_of_birth_conf
+fml_other_education_model_2 <- other ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_education <- list(
-  fml_sexual_minority_education = fml_sexual_minority_education,
-  fml_homosexual_education = fml_homosexual_education,
-  fml_bisexual_education = fml_bisexual_education,
-  fml_other_education = fml_other_education
+  fml_sexual_minority_education_model_1 = fml_sexual_minority_education_model_1,
+  fml_sexual_minority_education_model_2 = fml_sexual_minority_education_model_2,
+  fml_homosexual_education_model_1 = fml_homosexual_education_model_1,
+  fml_homosexual_education_model_2 = fml_homosexual_education_model_2,
+  fml_bisexual_education_model_1 = fml_bisexual_education_model_1,
+  fml_bisexual_education_model_2 = fml_bisexual_education_model_2,
+  fml_other_education_model_1 = fml_other_education_model_1,
+  fml_other_education_model_2 = fml_other_education_model_2
   )
 
 
 ##### exposure of interest: income #####
 
 # sexual minority
-fml_sexual_minority_income <- sexual_minority ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_income_model_1 <- sexual_minority ~ income_exp + age_conf + sex_conf + country_of_birth_conf
+fml_sexual_minority_income_model_2 <- sexual_minority ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
 
 # homosexual
-fml_homosexual_income <- homosexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_income_model_1 <- homosexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf
+fml_homosexual_income_model_2 <- homosexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
 
 # bisexual
-fml_bisexual_income <- bisexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_income_model_1 <- bisexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf
+fml_bisexual_income_model_2 <- bisexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
 
 # other
-fml_other_income <- other ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
+fml_other_income_model_1 <- other ~ income_exp + age_conf + sex_conf + country_of_birth_conf
+fml_other_income_model_2 <- other ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_income <- list(
-  fml_sexual_minority_income = fml_sexual_minority_income,
-  fml_homosexual_income = fml_homosexual_income,
-  fml_bisexual_income = fml_bisexual_income,
-  fml_other_income = fml_other_income
+  fml_sexual_minority_income_model_1 = fml_sexual_minority_income_model_1,
+  fml_sexual_minority_income_model_2 = fml_sexual_minority_income_model_2,
+  fml_homosexual_income_model_1 = fml_homosexual_income_model_1,
+  fml_homosexual_income_model_2 = fml_homosexual_income_model_2,
+  fml_bisexual_income_model_1 = fml_bisexual_income_model_1,
+  fml_bisexual_income_model_2 = fml_bisexual_income_model_2,
+  fml_other_income_model_1 = fml_other_income_model_1,
+  fml_other_income_model_2 = fml_other_income_model_2
   )
 
 
 ##### exposure of interest: marital status #####
 
 # sexual minority
-fml_sexual_minority_marital_status <- sexual_minority ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
+fml_sexual_minority_marital_status_model_1 <- sexual_minority ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_sexual_minority_marital_status_model_2 <- sexual_minority ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
 
 # homosexual
-fml_homosexual_marital_status <- homosexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
+fml_homosexual_marital_status_model_1 <- homosexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_homosexual_marital_status_model_2 <- homosexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
 
 # bisexual
-fml_bisexual_marital_status <- bisexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
+fml_bisexual_marital_status_model_1 <- bisexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_bisexual_marital_status_model_2 <- bisexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
 
 # other
-fml_other_marital_status <- other ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
+fml_other_marital_status_model_1 <- other ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_other_marital_status_model_2 <- other ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_marital_status <- list(
-  fml_sexual_minority_marital_status = fml_sexual_minority_marital_status,
-  fml_homosexual_marital_status = fml_homosexual_marital_status,
-  fml_bisexual_marital_status = fml_bisexual_marital_status,
-  fml_other_marital_status = fml_other_marital_status
+  fml_sexual_minority_marital_status_model_1 = fml_sexual_minority_marital_status_model_1,
+  fml_sexual_minority_marital_status_model_2 = fml_sexual_minority_marital_status_model_2,
+  fml_homosexual_marital_status_model_1 = fml_homosexual_marital_status_model_1,
+  fml_homosexual_marital_status_model_2 = fml_homosexual_marital_status_model_2,
+  fml_bisexual_marital_status_model_1 = fml_bisexual_marital_status_model_1,
+  fml_bisexual_marital_status_model_2 = fml_bisexual_marital_status_model_2,
+  fml_other_marital_status_model_1 = fml_other_marital_status_model_1,
+  fml_other_marital_status_model_2 = fml_other_marital_status_model_2
   )
 
 
 ##### exposure of interest: living status #####
 
 # sexual minority
-fml_sexual_minority_living_status <- sexual_minority ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_living_status_model_1 <- sexual_minority ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_sexual_minority_living_status_model_2 <- sexual_minority ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # homosexual
-fml_homosexual_living_status <- homosexual ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_living_status_model_1 <- homosexual ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_homosexual_living_status_model_2 <- homosexual ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # bisexual
-fml_bisexual_living_status <- bisexual ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_living_status_model_1 <- bisexual ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_bisexual_living_status_model_2 <- bisexual ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # other
-fml_other_living_status <- other ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_living_status_model_1 <- other ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_other_living_status_model_2 <- other ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_living_status <- list(
-  fml_sexual_minority_living_status = fml_sexual_minority_living_status,
-  fml_homosexual_living_status = fml_homosexual_living_status,
-  fml_bisexual_living_status = fml_bisexual_living_status,
-  fml_other_living_status = fml_other_living_status
+  fml_sexual_minority_living_status_model_1 = fml_sexual_minority_living_status_model_1,
+  fml_sexual_minority_living_status_model_2 = fml_sexual_minority_living_status_model_2,
+  fml_homosexual_living_status_model_1 = fml_homosexual_living_status_model_1,
+  fml_homosexual_living_status_model_2 = fml_homosexual_living_status_model_2,
+  fml_bisexual_living_status_model_1 = fml_bisexual_living_status_model_1,
+  fml_bisexual_living_status_model_2 = fml_bisexual_living_status_model_2,
+  fml_other_living_status_model_1 = fml_other_living_status_model_1,
+  fml_other_living_status_model_2 = fml_other_living_status_model_2
 )
 
 
 ##### exposure of interest: personal support #####
 
 # sexual minority
-fml_sexual_minority_personal_support <- sexual_minority ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_personal_support_model_1 <- sexual_minority ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf
+fml_sexual_minority_personal_support_model_2 <- sexual_minority ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # homosexual
-fml_homosexual_personal_support <- homosexual ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_personal_support_model_1 <- homosexual ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf
+fml_homosexual_personal_support_model_2 <- homosexual ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # bisexual
-fml_bisexual_personal_support <- bisexual ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_personal_support_model_1 <- bisexual ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf
+fml_bisexual_personal_support_model_2 <- bisexual ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # other
-fml_other_personal_support <- other ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_personal_support_model_1 <- other ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf
+fml_other_personal_support_model_2 <- other ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_personal_support <- list(
-  fml_sexual_minority_personal_support = fml_sexual_minority_personal_support,
-  fml_homosexual_personal_support = fml_homosexual_personal_support,
-  fml_bisexual_personal_support = fml_bisexual_personal_support,
-  fml_other_personal_support = fml_other_personal_support
+  fml_sexual_minority_personal_support_model_1 = fml_sexual_minority_personal_support_model_1,
+  fml_sexual_minority_personal_support_model_2 = fml_sexual_minority_personal_support_model_2,
+  fml_homosexual_personal_support_model_1 = fml_homosexual_personal_support_model_1,
+  fml_homosexual_personal_support_model_2 = fml_homosexual_personal_support_model_2,
+  fml_bisexual_personal_support_model_1 = fml_bisexual_personal_support_model_1,
+  fml_bisexual_personal_support_model_2 = fml_bisexual_personal_support_model_2,
+  fml_other_personal_support_model_1 = fml_other_personal_support_model_1,
+  fml_other_personal_support_model_2 = fml_other_personal_support_model_2
 )
 
 exposures <- c( "age", "age_by_sex", "sex", "country_of_birth", "education", "income", "marital_status", "living_status", "personal_support" )
@@ -1547,7 +1619,7 @@ results_cc_personal_support_pr_crude <- extract_results_pr_crude( results_cc_per
 # extract coefficient and 95% CI among males
 results_cc_age_coef <- list()
 
-for ( outcome in outcomes_age ) {
+for ( outcome in names(all_models_cc$age) ) {
   for ( mod in models ) {
     key <- paste( outcome, mod, sep = "_" )
     results_cc_age_coef[[ key ]] <- extract_results_coef(
@@ -1561,9 +1633,16 @@ for ( outcome in outcomes_age ) {
 }
 
 # extract proportion ratio and 95% CI from each model across outcomes
-results_cc_age_pr_poisson <- extract_results_pr( results_cc_age_coef, "poisson", identities, "age" )
-results_cc_age_pr_log_binomial <- extract_results_pr( results_cc_age_coef, "log_binomial", identities, "age" )
-results_cc_age_pr_logistic <- extract_results_pr( results_cc_age_coef, "logistic", identities, "age" )
+results_cc_age_pr_poisson_model_1 <- extract_results_pr( results_cc_age_coef, "model_1_poisson", identities, "age" )
+colnames( results_cc_age_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_age_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_age_pr_poisson_model_2 <- extract_results_pr( results_cc_age_coef, "model_2_poisson", identities, "age" )
+colnames( results_cc_age_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_age_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_age_pr_poisson <- merge( results_cc_age_pr_poisson_model_1, results_cc_age_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_age_pr_log_binomial_model_2 <- extract_results_pr( results_cc_age_coef, "model_2_log_binomial", identities, "age" )
+results_cc_age_pr_logistic_model_2 <- extract_results_pr( results_cc_age_coef, "model_2_logistic", identities, "age" )
 
 
 ##### exposure of interest: age by sex #####
@@ -1571,7 +1650,7 @@ results_cc_age_pr_logistic <- extract_results_pr( results_cc_age_coef, "logistic
 # extract coefficient and 95% CI among males
 results_cc_age_coef_male <- list()
 
-for ( outcome in outcomes_age_by_sex ) {
+for ( outcome in names(all_models_cc$age_by_sex) ) {
   for ( mod in models ) {
     key <- paste( outcome, mod, sep = "_" )
     results_cc_age_coef_male[[ key ]] <- extract_results_coef(
@@ -1585,58 +1664,71 @@ for ( outcome in outcomes_age_by_sex ) {
 }
 
 # extract coefficient and 95% CI among females
-exposures_age_female <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29:sex_expMale", "age_exp30-44:sex_expMale", "age_exp>=60:sex_expMale"  )
-
 results_cc_age_coef_female <- list()
 
-for ( outcome in outcomes_age_by_sex ) {
+for ( outcome in names(refit_model_cc_age_by_sex) ) {
   for ( mod in models ) {
     key <- paste( outcome, mod, sep = "_" )
     model <- refit_model_cc_age_by_sex[[ outcome ]][[ mod ]]
     
     if ( !is.null( model ) ) {
-    results_cc_age_coef_female[[ key ]] <- cbind( coef( model )[ exposures_age_female ], 
-                                                  confint( model, ddf = degf( model$survey.design ) )[ exposures_age_female, , drop = FALSE ] )
+      results_cc_age_coef_female[[ key ]] <- cbind( coef( model )[ exposures_age_female ], 
+                                                    confint( model, ddf = degf( model$survey.design ) )[ exposures_age_female, , drop = FALSE ] )
     }
   }
 }
 
 # extract proportion ratio and 95% CI from each model across outcomes
 # results from poisson regression
-results_cc_age_pr_poisson_male <- extract_results_pr( results_cc_age_coef_male, "poisson", identities, "age_by_sex" ) %>%
-    mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Female", Exposure ), 
-                               paste0( Exposure, "_Male" ), Exposure ) )
+results_cc_age_pr_poisson_male_model_1 <- extract_results_pr( results_cc_age_coef_male, "model_1_poisson", identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
 
-results_cc_age_pr_poisson_female <- extract_results_pr( results_cc_age_coef_female, "poisson", identities, "age_by_sex" ) %>%
-    mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Male", Exposure ), 
-                               paste0( Exposure, "_Female" ), Exposure ) )
+results_cc_age_pr_poisson_male_model_2 <- extract_results_pr( results_cc_age_coef_male, "model_2_poisson", identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Female", Exposure ), 
+                             paste0( Exposure, "_Male" ), Exposure ) )
 
-results_cc_age_by_sex_pr_poisson <- rbind( results_cc_age_pr_poisson_male[ c( 1:3 ), ], 
-                                    results_cc_age_pr_poisson_female[ c( 1:3 ), ] )
+results_cc_age_pr_poisson_female_model_1 <- extract_results_pr( results_cc_age_coef_female, "model_1_poisson", identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_age_pr_poisson_female_model_2 <- extract_results_pr( results_cc_age_coef_female, "model_2_poisson", identities, "age_by_sex" ) %>%
+  mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Male", Exposure ), 
+                             paste0( Exposure, "_Female" ), Exposure ) )
+
+results_cc_age_by_sex_pr_poisson_model_1 <- rbind( results_cc_age_pr_poisson_male_model_1[ c( 1:3 ), ], results_cc_age_pr_poisson_female_model_1[ c( 1:3 ), ] )
+colnames( results_cc_age_by_sex_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_age_by_sex_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_age_by_sex_pr_poisson_model_2 <- rbind( results_cc_age_pr_poisson_male_model_2[ c( 1:3 ), ], results_cc_age_pr_poisson_female_model_2[ c( 1:3 ), ] )
+colnames( results_cc_age_by_sex_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_age_by_sex_pr_poisson_model_2 )[-1], "_model_2" )
+
+results_cc_age_by_sex_pr_poisson <- merge( results_cc_age_by_sex_pr_poisson_model_1, results_cc_age_by_sex_pr_poisson_model_2, by = "Exposure" )
+
 
 # results from log binomial regression
-results_cc_age_pr_log_binomial_male <- extract_results_pr( results_cc_age_coef_male, "log_binomial", identities, "age_by_sex" ) %>%
+results_cc_age_pr_log_binomial_male_model_2 <- extract_results_pr( results_cc_age_coef_male, "model_2_log_binomial", identities, "age_by_sex" ) %>%
   mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Female", Exposure ), 
                              paste0( Exposure, "_Male" ), Exposure ) )
 
-results_cc_age_pr_log_binomial_female <- extract_results_pr( results_cc_age_coef_female, "log_binomial", identities, "age_by_sex" ) %>%
+results_cc_age_pr_log_binomial_female_model_2 <- extract_results_pr( results_cc_age_coef_female, "model_2_log_binomial", identities, "age_by_sex" ) %>%
   mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Male", Exposure ), 
                              paste0( Exposure, "_Female" ), Exposure ) )
 
-results_cc_age_by_sex_pr_log_binomial <- rbind( results_cc_age_pr_log_binomial_male[ c( 1:3 ), ], 
-                                    results_cc_age_pr_log_binomial_female[ c( 1:3 ), ] )
+results_cc_age_by_sex_pr_log_binomial_model_2 <- rbind( results_cc_age_pr_log_binomial_male_model_2[ c( 1:3 ), ], 
+                                                        results_cc_age_pr_log_binomial_female_model_2[ c( 1:3 ), ] )
+
 
 # results from logistic regression
-results_cc_age_pr_logistic_male <- extract_results_pr( results_cc_age_coef_male, "logistic", identities, "age_by_sex" ) %>%
+results_cc_age_pr_logistic_male_model_2 <- extract_results_pr( results_cc_age_coef_male, "model_2_logistic", identities, "age_by_sex" ) %>%
   mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Female", Exposure ), 
                              paste0( Exposure, "_Male" ), Exposure ) )
 
-results_cc_age_pr_logistic_female <- extract_results_pr( results_cc_age_coef_female, "logistic", identities, "age_by_sex" ) %>%
+results_cc_age_pr_logistic_female_model_2 <- extract_results_pr( results_cc_age_coef_female, "model_2_logistic", identities, "age_by_sex" ) %>%
   mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Male", Exposure ), 
                              paste0( Exposure, "_Female" ), Exposure ) )
 
-results_cc_age_by_sex_pr_logistic <- rbind( results_cc_age_pr_logistic_male[ c( 1:3 ), ], 
-                                    results_cc_age_pr_logistic_female[ c( 1:3 ), ] )
+results_cc_age_by_sex_pr_logistic_model_2 <- rbind( results_cc_age_pr_logistic_male_model_2[ c( 1:3 ), ], 
+                                                    results_cc_age_pr_logistic_female_model_2[ c( 1:3 ), ] )
 
 
 ##### exposure of interest: sex #####
@@ -1644,7 +1736,7 @@ results_cc_age_by_sex_pr_logistic <- rbind( results_cc_age_pr_logistic_male[ c( 
 # extract coefficient and 95% CI
 results_cc_sex_coef <- list()
 
-for ( outcome in outcomes_sex ) {
+for ( outcome in names(all_models_cc$sex) ) {
   for ( mod in models ) {
     key <- paste( outcome, mod, sep = "_" )
     results_cc_sex_coef[[ key ]] <- extract_results_coef(
@@ -1653,14 +1745,21 @@ for ( outcome in outcomes_sex ) {
       outcome = outcome, 
       model_type = mod,
       variables = exposures_sex
-      )
+    )
   }
 }
 
 # extract proportion ratio and 95% CI from each model across outcomes
-results_cc_sex_pr_poisson <- extract_results_pr( results_cc_sex_coef, "poisson", identities, "sex" )
-results_cc_sex_pr_log_binomial <- extract_results_pr( results_cc_sex_coef, "log_binomial", identities, "sex" )
-results_cc_sex_pr_logistic <- extract_results_pr( results_cc_sex_coef, "logistic", identities, "sex" )
+results_cc_sex_pr_poisson_model_1 <- extract_results_pr( results_cc_sex_coef, "model_1_poisson", identities, "sex" )
+colnames( results_cc_sex_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_sex_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_sex_pr_poisson_model_2 <- extract_results_pr( results_cc_sex_coef, "model_2_poisson", identities, "sex" )
+colnames( results_cc_sex_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_sex_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_sex_pr_poisson <- merge( results_cc_sex_pr_poisson_model_1, results_cc_sex_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_sex_pr_log_binomial_model_2 <- extract_results_pr( results_cc_sex_coef, "model_2_log_binomial", identities, "sex" )
+results_cc_sex_pr_logistic_model_2 <- extract_results_pr( results_cc_sex_coef, "model_2_logistic", identities, "sex" )
 
 
 ##### exposure of interest: country of birth #####
@@ -1668,7 +1767,7 @@ results_cc_sex_pr_logistic <- extract_results_pr( results_cc_sex_coef, "logistic
 # extract coefficient and 95% CI
 results_cc_country_of_birth_coef <- list()
 
-for ( outcome in outcomes_country_of_birth ) {
+for ( outcome in names(all_models_cc$country_of_birth) ) {
   for ( mod in models ) {
     key <- paste( outcome, mod, sep = "_" )
     results_cc_country_of_birth_coef[[ key ]] <- extract_results_coef(
@@ -1677,14 +1776,21 @@ for ( outcome in outcomes_country_of_birth ) {
       outcome = outcome, 
       model_type = mod,
       variables = exposures_country_of_birth
-      )
+    )
   }
 }
 
 # extract proportion ratio and 95% CI from each model across outcomes
-results_cc_country_of_birth_pr_poisson <- extract_results_pr( results_cc_country_of_birth_coef, "poisson", identities, "country_of_birth" )
-results_cc_country_of_birth_pr_log_binomial <- extract_results_pr( results_cc_country_of_birth_coef, "log_binomial", identities, "country_of_birth" )
-results_cc_country_of_birth_pr_logistic <- extract_results_pr( results_cc_country_of_birth_coef, "logistic", identities, "country_of_birth" )
+results_cc_country_of_birth_pr_poisson_model_1 <- extract_results_pr( results_cc_country_of_birth_coef, "model_1_poisson", identities, "country_of_birth" )
+colnames( results_cc_country_of_birth_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_country_of_birth_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_country_of_birth_pr_poisson_model_2 <- extract_results_pr( results_cc_country_of_birth_coef, "model_2_poisson", identities, "country_of_birth" )
+colnames( results_cc_country_of_birth_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_country_of_birth_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_country_of_birth_pr_poisson <- merge( results_cc_country_of_birth_pr_poisson_model_1, results_cc_country_of_birth_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_country_of_birth_pr_log_binomial_model_2 <- extract_results_pr( results_cc_country_of_birth_coef, "model_2_log_binomial", identities, "country_of_birth" )
+results_cc_country_of_birth_pr_logistic_model_2 <- extract_results_pr( results_cc_country_of_birth_coef, "model_2_logistic", identities, "country_of_birth" )
 
 
 ##### exposure of interest: education #####
@@ -1692,7 +1798,7 @@ results_cc_country_of_birth_pr_logistic <- extract_results_pr( results_cc_countr
 # extract coefficient and 95% CI
 results_cc_education_coef <- list()
 
-for ( outcome in outcomes_education ) {
+for ( outcome in names(all_models_cc$education) ) {
   for ( mod in models ) {
     key <- paste( outcome, mod, sep = "_" )
     results_cc_education_coef[[ key ]] <- extract_results_coef(
@@ -1701,14 +1807,21 @@ for ( outcome in outcomes_education ) {
       outcome = outcome, 
       model_type = mod,
       variables = exposures_education
-      )
+    )
   }
 }
 
 # extract proportion ratio and 95% CI from each model across outcomes
-results_cc_education_pr_poisson <- extract_results_pr( results_cc_education_coef, "poisson", identities, "education" )
-results_cc_education_pr_log_binomial <- extract_results_pr( results_cc_education_coef, "log_binomial", identities, "education" )
-results_cc_education_pr_logistic <- extract_results_pr( results_cc_education_coef, "logistic", identities, "education" )
+results_cc_education_pr_poisson_model_1 <- extract_results_pr( results_cc_education_coef, "model_1_poisson", identities, "education" )
+colnames( results_cc_education_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_education_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_education_pr_poisson_model_2 <- extract_results_pr( results_cc_education_coef, "model_2_poisson", identities, "education" )
+colnames( results_cc_education_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_education_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_education_pr_poisson <- merge( results_cc_education_pr_poisson_model_1, results_cc_education_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_education_pr_log_binomial_model_2 <- extract_results_pr( results_cc_education_coef, "model_2_log_binomial", identities, "education" )
+results_cc_education_pr_logistic_model_2 <- extract_results_pr( results_cc_education_coef, "model_2_logistic", identities, "education" )
 
 
 ##### exposure of interest: income #####
@@ -1716,7 +1829,7 @@ results_cc_education_pr_logistic <- extract_results_pr( results_cc_education_coe
 # extract coefficient and 95% CI
 results_cc_income_coef <- list()
 
-for ( outcome in outcomes_income ) {
+for ( outcome in names(all_models_cc$income) ) {
   for ( mod in models ) {
     key <- paste( outcome, mod, sep = "_" )
     results_cc_income_coef[[ key ]] <- extract_results_coef(
@@ -1725,14 +1838,21 @@ for ( outcome in outcomes_income ) {
       outcome = outcome, 
       model_type = mod,
       variables = exposures_income
-      )
+    )
   }
 }
 
 # extract proportion ratio and 95% CI from each model across outcomes
-results_cc_income_pr_poisson <- extract_results_pr( results_cc_income_coef, "poisson", identities, "income" )
-results_cc_income_pr_log_binomial <- extract_results_pr( results_cc_income_coef, "log_binomial", identities, "income" )
-results_cc_income_pr_logistic <- extract_results_pr( results_cc_income_coef, "logistic", identities, "income" )
+results_cc_income_pr_poisson_model_1 <- extract_results_pr( results_cc_income_coef, "model_1_poisson", identities, "income" )
+colnames( results_cc_income_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_income_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_income_pr_poisson_model_2 <- extract_results_pr( results_cc_income_coef, "model_2_poisson", identities, "income" )
+colnames( results_cc_income_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_income_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_income_pr_poisson <- merge( results_cc_income_pr_poisson_model_1, results_cc_income_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_income_pr_log_binomial_model_2 <- extract_results_pr( results_cc_income_coef, "model_2_log_binomial", identities, "income" )
+results_cc_income_pr_logistic_model_2 <- extract_results_pr( results_cc_income_coef, "model_2_logistic", identities, "income" )
 
 
 ##### exposure of interest: marital status #####
@@ -1740,7 +1860,7 @@ results_cc_income_pr_logistic <- extract_results_pr( results_cc_income_coef, "lo
 # extract coefficient and 95% CI
 results_cc_marital_status_coef <- list()
 
-for ( outcome in outcomes_marital_status ) {
+for ( outcome in names(all_models_cc$marital_status) ) {
   for ( mod in models ) {
     key <- paste( outcome, mod, sep = "_" )
     results_cc_marital_status_coef[[ key ]] <- extract_results_coef(
@@ -1749,14 +1869,21 @@ for ( outcome in outcomes_marital_status ) {
       outcome = outcome, 
       model_type = mod,
       variables = exposures_marital_status
-      )
+    )
   }
 }
 
 # extract proportion ratio and 95% CI from each model across outcomes
-results_cc_marital_status_pr_poisson <- extract_results_pr( results_cc_marital_status_coef, "poisson", identities, "marital_status" )
-results_cc_marital_status_pr_log_binomial <- extract_results_pr( results_cc_marital_status_coef, "log_binomial", identities, "marital_status" )
-results_cc_marital_status_pr_logistic <- extract_results_pr( results_cc_marital_status_coef, "logistic", identities, "marital_status" )
+results_cc_marital_status_pr_poisson_model_1 <- extract_results_pr( results_cc_marital_status_coef, "model_1_poisson", identities, "marital_status" )
+colnames( results_cc_marital_status_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_marital_status_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_marital_status_pr_poisson_model_2 <- extract_results_pr( results_cc_marital_status_coef, "model_2_poisson", identities, "marital_status" )
+colnames( results_cc_marital_status_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_marital_status_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_marital_status_pr_poisson <- merge( results_cc_marital_status_pr_poisson_model_1, results_cc_marital_status_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_marital_status_pr_log_binomial_model_2 <- extract_results_pr( results_cc_marital_status_coef, "model_2_log_binomial", identities, "marital_status" )
+results_cc_marital_status_pr_logistic_model_2 <- extract_results_pr( results_cc_marital_status_coef, "model_2_logistic", identities, "marital_status" )
 
 
 ##### exposure of interest: living status #####
@@ -1764,7 +1891,7 @@ results_cc_marital_status_pr_logistic <- extract_results_pr( results_cc_marital_
 # extract coefficient and 95% CI
 results_cc_living_status_coef <- list()
 
-for ( outcome in outcomes_living_status ) {
+for ( outcome in names(all_models_cc$living_status) ) {
   for ( mod in models ) {
     key <- paste( outcome, mod, sep = "_" )
     results_cc_living_status_coef[[ key ]] <- extract_results_coef(
@@ -1778,9 +1905,16 @@ for ( outcome in outcomes_living_status ) {
 }
 
 # extract proportion ratio and 95% CI from each model across outcomes
-results_cc_living_status_pr_poisson <- extract_results_pr( results_cc_living_status_coef, "poisson", identities, "living_status" )
-results_cc_living_status_pr_log_binomial <- extract_results_pr( results_cc_living_status_coef, "log_binomial", identities, "living_status" )
-results_cc_living_status_pr_logistic <- extract_results_pr( results_cc_living_status_coef, "logistic", identities, "living_status" )
+results_cc_living_status_pr_poisson_model_1 <- extract_results_pr( results_cc_living_status_coef, "model_1_poisson", identities, "living_status" )
+colnames( results_cc_living_status_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_living_status_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_living_status_pr_poisson_model_2 <- extract_results_pr( results_cc_living_status_coef, "model_2_poisson", identities, "living_status" )
+colnames( results_cc_living_status_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_living_status_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_living_status_pr_poisson <- merge( results_cc_living_status_pr_poisson_model_1, results_cc_living_status_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_living_status_pr_log_binomial_model_2 <- extract_results_pr( results_cc_living_status_coef, "model_2_log_binomial", identities, "living_status" )
+results_cc_living_status_pr_logistic_model_2 <- extract_results_pr( results_cc_living_status_coef, "model_2_logistic", identities, "living_status" )
 
 
 ##### exposure of interest: personal support #####
@@ -1788,7 +1922,7 @@ results_cc_living_status_pr_logistic <- extract_results_pr( results_cc_living_st
 # extract coefficient and 95% CI
 results_cc_personal_support_coef <- list()
 
-for ( outcome in outcomes_personal_support ) {
+for ( outcome in names(all_models_cc$personal_support) ) {
   for ( mod in models ) {
     key <- paste( outcome, mod, sep = "_" )
     results_cc_personal_support_coef[[ key ]] <- extract_results_coef(
@@ -1802,12 +1936,20 @@ for ( outcome in outcomes_personal_support ) {
 }
 
 # extract proportion ratio and 95% CI from each model across outcomes
-results_cc_personal_support_pr_poisson <- extract_results_pr( results_cc_personal_support_coef, "poisson", identities, "personal_support" )
-results_cc_personal_support_pr_log_binomial <- extract_results_pr( results_cc_personal_support_coef, "log_binomial", identities, "personal_support" )
-results_cc_personal_support_pr_logistic <- extract_results_pr( results_cc_personal_support_coef, "logistic", identities, "personal_support" )
+results_cc_personal_support_pr_poisson_model_1 <- extract_results_pr( results_cc_personal_support_coef, "model_1_poisson", identities, "personal_support" )
+colnames( results_cc_personal_support_pr_poisson_model_1 )[-1] <- paste0( colnames( results_cc_personal_support_pr_poisson_model_1 )[-1], "_model_1")
+
+results_cc_personal_support_pr_poisson_model_2 <- extract_results_pr( results_cc_personal_support_coef, "model_2_poisson", identities, "personal_support" )
+colnames( results_cc_personal_support_pr_poisson_model_2 )[-1] <- paste0( colnames( results_cc_personal_support_pr_poisson_model_2 )[-1], "_model_2")
+
+results_cc_personal_support_pr_poisson <- merge( results_cc_personal_support_pr_poisson_model_1, results_cc_personal_support_pr_poisson_model_2, by = "Exposure" )
+
+results_cc_personal_support_pr_log_binomial_model_2 <- extract_results_pr( results_cc_personal_support_coef, "model_2_log_binomial", identities, "personal_support" )
+results_cc_personal_support_pr_logistic_model_2 <- extract_results_pr( results_cc_personal_support_coef, "model_2_logistic", identities, "personal_support" )
 
 
 ##### combine results #####
+
 results_cc_pr_crude <- rbind( results_cc_age_pr_crude,
                               results_cc_age_by_sex_pr_crude,
                               results_cc_sex_pr_crude,
@@ -1817,7 +1959,7 @@ results_cc_pr_crude <- rbind( results_cc_age_pr_crude,
                               results_cc_marital_status_pr_crude,
                               results_cc_living_status_pr_crude,
                               results_cc_personal_support_pr_crude
-                              )
+)
 
 results_cc_pr_poisson <- rbind( results_cc_age_pr_poisson,
                                 results_cc_age_by_sex_pr_poisson,
@@ -1828,32 +1970,32 @@ results_cc_pr_poisson <- rbind( results_cc_age_pr_poisson,
                                 results_cc_marital_status_pr_poisson,
                                 results_cc_living_status_pr_poisson,
                                 results_cc_personal_support_pr_poisson
-                                )
+)
 
 writexl::write_xlsx( merge( results_cc_pr_crude, results_cc_pr_poisson, by = "Exposure" ),
                      "results_cc_pr_poisson_2014.xlsx" )
 
-results_cc_pr_log_binomial <- rbind( results_cc_age_pr_log_binomial,
-                                     results_cc_age_by_sex_pr_log_binomial,
-                                     results_cc_sex_pr_log_binomial,
-                                     results_cc_country_of_birth_pr_log_binomial,
-                                     results_cc_education_pr_log_binomial,
-                                     results_cc_income_pr_log_binomial,
-                                     results_cc_marital_status_pr_log_binomial,
-                                     results_cc_living_status_pr_log_binomial,
-                                     results_cc_personal_support_pr_log_binomial
-                                     )
+results_cc_pr_log_binomial <- rbind( results_cc_age_pr_log_binomial_model_2,
+                                     results_cc_age_by_sex_pr_log_binomial_model_2,
+                                     results_cc_sex_pr_log_binomial_model_2,
+                                     results_cc_country_of_birth_pr_log_binomial_model_2,
+                                     results_cc_education_pr_log_binomial_model_2,
+                                     results_cc_income_pr_log_binomial_model_2,
+                                     results_cc_marital_status_pr_log_binomial_model_2,
+                                     results_cc_living_status_pr_log_binomial_model_2,
+                                     results_cc_personal_support_pr_log_binomial_model_2
+)
 
-results_cc_pr_logistic <- rbind( results_cc_age_pr_logistic,
-                                 results_cc_age_by_sex_pr_logistic,
-                                 results_cc_sex_pr_logistic,
-                                 results_cc_country_of_birth_pr_logistic,
-                                 results_cc_education_pr_logistic,
-                                 results_cc_income_pr_logistic,
-                                 results_cc_marital_status_pr_logistic,
-                                 results_cc_living_status_pr_logistic,
-                                 results_cc_personal_support_pr_logistic
-                                 )
+results_cc_pr_logistic <- rbind( results_cc_age_pr_logistic_model_2,
+                                 results_cc_age_by_sex_pr_logistic_model_2,
+                                 results_cc_sex_pr_logistic_model_2,
+                                 results_cc_country_of_birth_pr_logistic_model_2,
+                                 results_cc_education_pr_logistic_model_2,
+                                 results_cc_income_pr_logistic_model_2,
+                                 results_cc_marital_status_pr_logistic_model_2,
+                                 results_cc_living_status_pr_logistic_model_2,
+                                 results_cc_personal_support_pr_logistic_model_2
+)
 
 colnames( results_cc_pr_poisson )[-1] <- paste0( colnames( results_cc_pr_poisson )[-1], "_poisson")
 colnames( results_cc_pr_log_binomial )[-1] <- paste0( colnames( results_cc_pr_log_binomial )[-1], "_log_binomial")
