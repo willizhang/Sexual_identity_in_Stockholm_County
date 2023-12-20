@@ -105,6 +105,9 @@ d_2014$sexual_identity_2021 <- factor( ifelse( d_2014$F21F91 == 1, "Heterosexual
                                           levels = c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" ) )
 table( d_2014$sexual_identity_2021, useNA = "always" )
 
+# any change in sexual identity in 2014-2021
+d_2014$sexual_identity_fluidity <- ifelse( d_2014$sexual_identity_2014 != d_2014$sexual_identity_2021, 1, 0 )
+
 # sex
 table( d_2014$kon, useNA = "always" )
 d_2014$sex <- factor( ifelse( d_2014$kon == 1, "Male", "Female" ),
@@ -2038,14 +2041,8 @@ d_2014_cc_model_fluidity$living_status_exp <- relevel( d_2014_cc_model_fluidity$
 d_2014_cc_model_fluidity$personal_support_exp <- relevel( d_2014_cc_model_fluidity$personal_support, ref = "yes" )
 
 
-# outcomes of interest, any change in sexual identity in 2014-2021
-d_2014_cc_model_fluidity$sexual_identity_fluidity <- ifelse(
-  d_2014_cc_model_fluidity$sexual_identity_2014 != d_2014_cc_model_fluidity$sexual_identity_2021, 
-  1, 0 )
-
-
 # confounding variables, including age, sex, country of birth, education, income, marital status, 
-# and place of residence (i.e., sampling strata)
+# living status, personal support, and place of residence (i.e., sampling strata)
 d_2014_cc_model_fluidity$age_conf <- d_2014_cc_model_fluidity$age # age
 
 d_2014_cc_model_fluidity$sex_conf <- d_2014_cc_model_fluidity$sex # sex
@@ -2057,6 +2054,10 @@ d_2014_cc_model_fluidity$education_conf <- as.factor( d_2014_cc_model_fluidity$u
 d_2014_cc_model_fluidity$income_conf <- d_2014_cc_model_fluidity$dispink2014 # disposable income
 
 d_2014_cc_model_fluidity$marital_status_conf <- d_2014_cc_model_fluidity$marital_status # marital status (grouped into three categories due to sparse data)
+
+d_2014_cc_model_fluidity$living_status_conf <- d_2014_cc_model_fluidity$living_alone
+
+d_2014_cc_model_fluidity$personal_support_conf <- as.factor( d_2014_cc_model_fluidity$F14U56G66 )
 
 d_2014_cc_model_fluidity$place_of_residence_conf <- d_2014_cc_model_fluidity$sampling_strata_region # place of residence
 
@@ -2076,108 +2077,126 @@ survey_design_cc_model_fluidity <- svydesign( ids = ~ 1,
 ##### exposure of interest: age #####
 
 fml_age_crude <- sexual_identity_fluidity ~ age_exp
-fml_age_adjusted <- sexual_identity_fluidity ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_age_model_1 <- sexual_identity_fluidity ~ age_exp + sex_conf + country_of_birth_conf
+fml_age_model_2 <- sexual_identity_fluidity ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_age <- list(
   fml_age_crude = fml_age_crude,
-  fml_age_adjusted = fml_age_adjusted
+  fml_age_model_1 = fml_age_model_1,
+  fml_age_model_2 = fml_age_model_2
 )
 
 
 ##### exposure of interest: age by sex #####
 
 fml_age_by_sex_crude <- sexual_identity_fluidity ~ age_exp*sex_exp
-fml_age_by_sex_adjusted <- sexual_identity_fluidity ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_age_by_sex_model_1 <- sexual_identity_fluidity ~ age_exp*sex_exp + country_of_birth_conf
+fml_age_by_sex_model_2 <- sexual_identity_fluidity ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_age_by_sex <- list(
   fml_age_by_sex_crude = fml_age_by_sex_crude,
-  fml_age_by_sex_adjusted = fml_age_by_sex_adjusted
+  fml_age_by_sex_model_1 = fml_age_by_sex_model_1,
+  fml_age_by_sex_model_2 = fml_age_by_sex_model_2
 )
 
 
 ##### exposure of interest: sex #####
 
 fml_sex_crude <- sexual_identity_fluidity ~ sex_exp
-fml_sex_adjusted <- sexual_identity_fluidity ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sex_model_1 <- sexual_identity_fluidity ~ sex_exp + age_conf + country_of_birth_conf
+fml_sex_model_2 <- sexual_identity_fluidity ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_sex <- list(
   fml_sex_crude = fml_sex_crude,
-  fml_sex_adjusted = fml_sex_adjusted
+  fml_sex_model_1 = fml_sex_model_1,
+  fml_sex_model_2 = fml_sex_model_2
 )
 
 
 ##### exposure of interest: country of birth #####
 
 fml_country_of_birth_crude <- sexual_identity_fluidity ~ country_of_birth_exp
-fml_country_of_birth_adjusted <- sexual_identity_fluidity ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_country_of_birth_model_1 <- sexual_identity_fluidity ~ country_of_birth_exp + age_conf + sex_conf
+fml_country_of_birth_model_2 <- sexual_identity_fluidity ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_country_of_birth <- list(
   fml_country_of_birth_crude = fml_country_of_birth_crude,
-  fml_country_of_birth_adjusted = fml_country_of_birth_adjusted
+  fml_country_of_birth_model_1 = fml_country_of_birth_model_1,
+  fml_country_of_birth_model_2 = fml_country_of_birth_model_2
 )
 
 
 ##### exposure of interest: education #####
 
 fml_education_crude <- sexual_identity_fluidity ~ education_exp
-fml_education_adjusted <- sexual_identity_fluidity ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_education_model_1 <- sexual_identity_fluidity ~ education_exp + age_conf + sex_conf + country_of_birth_conf
+fml_education_model_2 <- sexual_identity_fluidity ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_education <- list(
   fml_education_crude = fml_education_crude,
-  fml_education_adjusted = fml_education_adjusted
+  fml_education_model_1 = fml_education_model_1,
+  fml_education_model_2 = fml_education_model_2
 )
 
 
 ##### exposure of interest: income #####
 
 fml_income_crude <- sexual_identity_fluidity ~ income_exp
-fml_income_adjusted <- sexual_identity_fluidity ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
+fml_income_model_1 <- sexual_identity_fluidity ~ income_exp + age_conf + sex_conf + country_of_birth_conf
+fml_income_model_2 <- sexual_identity_fluidity ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_income <- list(
   fml_income_crude = fml_income_crude,
-  fml_income_adjusted = fml_income_adjusted
+  fml_income_model_1 = fml_income_model_1,
+  fml_income_model_2 = fml_income_model_2
 )
 
 
 ##### exposure of interest: marital status #####
 
 fml_marital_status_crude <- sexual_identity_fluidity ~ marital_status_exp
-fml_marital_status_adjusted <- sexual_identity_fluidity ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
+fml_marital_status_model_1 <- sexual_identity_fluidity ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_marital_status_model_2 <- sexual_identity_fluidity ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + living_status_conf + personal_support_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_marital_status <- list(
   fml_marital_status_crude = fml_marital_status_crude,
-  fml_marital_status_adjusted = fml_marital_status_adjusted
+  fml_marital_status_model_1 = fml_marital_status_model_1,
+  fml_marital_status_model_2 = fml_marital_status_model_2
 )
 
 
 ##### exposure of interest: living status #####
 
 fml_living_status_crude <- sexual_identity_fluidity ~ living_status_exp
-fml_living_status_adjusted <- sexual_identity_fluidity ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_living_status_model_1 <- sexual_identity_fluidity ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf
+fml_living_status_model_2 <- sexual_identity_fluidity ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + personal_support_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_living_status <- list(
   fml_living_status_crude = fml_living_status_crude,
-  fml_living_status_adjusted = fml_living_status_adjusted
+  fml_living_status_model_1 = fml_living_status_model_1,
+  fml_living_status_model_2 = fml_living_status_model_2
 )
 
 
 ##### exposure of interest: personal support #####
 
 fml_personal_support_crude <- sexual_identity_fluidity ~ personal_support_exp
-fml_personal_support_adjusted <- sexual_identity_fluidity ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_personal_support_model_1 <- sexual_identity_fluidity ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf
+fml_personal_support_model_2 <- sexual_identity_fluidity ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + place_of_residence_conf
 
 # list of formulas
 fml_list_personal_support <- list(
   fml_personal_support_crude = fml_personal_support_crude,
-  fml_personal_support_adjusted = fml_personal_support_adjusted
+  fml_personal_support_model_1 = fml_personal_support_model_1,
+  fml_personal_support_model_2 = fml_personal_support_model_2
 )
 
 exposures <- c( "age", "age_by_sex", "sex", "country_of_birth", "education", "income", "marital_status", "living_status", "personal_support" )
@@ -2214,7 +2233,7 @@ refit_model_fluidity_cc_age_by_sex <- list()
 for ( name in names( fml_list_age_by_sex ) ) {
   refit_model_fluidity_cc_age_by_sex[[ name ]] <- fit_model_crude( fml_list_age_by_sex[[ name ]],
                                                                    survey_design_cc_model_fluidity_refit )
-  }
+}
 ```
 
 ##### 5.1.4. Extract results
@@ -2226,7 +2245,7 @@ exposures_age <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60"  )
 # extract coefficient and 95% CI
 fluidity_cc_age_coef <- list()
 
-for ( name in names(fml_list_age) ) {
+for ( name in names( fml_list_age ) ) {
   
   fluidity_cc_age_coef[[ name ]] <- extract_results_coef_crude(
     all_models_list = models_fluidity_cc, 
@@ -2237,7 +2256,7 @@ for ( name in names(fml_list_age) ) {
 }
 
 # extract risk ratio and 95% CI
-fluidity_cc_age_rr <- extract_rr( fluidity_cc_age_coef )
+fluidity_cc_age_rr <- extract_rr_fluidity( fluidity_cc_age_coef )
 
 
 ##### exposure of interest: age by sex #####
@@ -2247,7 +2266,7 @@ exposures_age_male <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp
 # extract coefficient and 95% CI among males
 fluidity_cc_age_by_sex_coef_male <- list()
 
-for ( name in names(fml_list_age_by_sex) ) {
+for ( name in names( fml_list_age_by_sex ) ) {
   
   fluidity_cc_age_by_sex_coef_male[[ name ]] <- extract_results_coef_crude(
     all_models_list = models_fluidity_cc, 
@@ -2258,7 +2277,7 @@ for ( name in names(fml_list_age_by_sex) ) {
 }
 
 # extract risk ratio and 95% CI among males
-fluidity_cc_age_by_sex_rr_male <- extract_rr( fluidity_cc_age_by_sex_coef_male ) %>%
+fluidity_cc_age_by_sex_rr_male <- extract_rr_fluidity( fluidity_cc_age_by_sex_coef_male ) %>%
   mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Female", Exposure ), 
                              paste0( Exposure, "_Male" ), Exposure ) )
 
@@ -2279,7 +2298,7 @@ for( model_name in names( refit_model_fluidity_cc_age_by_sex ) ) {
 }
 
 # extract risk ratio and 95% CI among females
-fluidity_cc_age_by_sex_rr_female <- extract_rr( fluidity_cc_age_by_sex_coef_female ) %>%
+fluidity_cc_age_by_sex_rr_female <- extract_rr_fluidity( fluidity_cc_age_by_sex_coef_female ) %>%
   mutate( Exposure = ifelse( grepl( "age_exp", Exposure ) & !grepl( "Male", Exposure ), 
                              paste0( Exposure, "_Female" ), Exposure ) )
 
@@ -2294,7 +2313,7 @@ exposures_sex <- c( "sex_expFemale" )
 # extract coefficient and 95% CI
 fluidity_cc_sex_coef <- list()
 
-for ( name in names(fml_list_sex) ) {
+for ( name in names( fml_list_sex ) ) {
   
   fluidity_cc_sex_coef[[ name ]] <- extract_results_coef_crude(
     all_models_list = models_fluidity_cc, 
@@ -2305,7 +2324,7 @@ for ( name in names(fml_list_sex) ) {
 }
 
 # extract risk ratio and 95% CI
-fluidity_cc_sex_rr <- extract_rr( fluidity_cc_sex_coef )
+fluidity_cc_sex_rr <- extract_rr_fluidity( fluidity_cc_sex_coef )
 
 
 ##### exposure of interest: country of birth #####
@@ -2315,7 +2334,7 @@ exposures_country_of_birth <- c( "country_of_birth_expEurope", "country_of_birth
 # extract coefficient and 95% CI
 fluidity_cc_country_of_birth_coef <- list()
 
-for ( name in names(fml_list_country_of_birth) ) {
+for ( name in names( fml_list_country_of_birth ) ) {
   
   fluidity_cc_country_of_birth_coef[[ name ]] <- extract_results_coef_crude(
     all_models_list = models_fluidity_cc, 
@@ -2326,7 +2345,7 @@ for ( name in names(fml_list_country_of_birth) ) {
 }
 
 # extract risk ratio and 95% CI
-fluidity_cc_country_of_birth_rr <- extract_rr( fluidity_cc_country_of_birth_coef )
+fluidity_cc_country_of_birth_rr <- extract_rr_fluidity( fluidity_cc_country_of_birth_coef )
 
 
 ##### exposure of interest: education #####
@@ -2336,7 +2355,7 @@ exposures_education <- c( "education_exp<=9 years", "education_exp10-12 years" )
 # extract coefficient and 95% CI
 fluidity_cc_education_coef <- list()
 
-for ( name in names(fml_list_education) ) {
+for ( name in names( fml_list_education ) ) {
   
   fluidity_cc_education_coef[[ name ]] <- extract_results_coef_crude(
     all_models_list = models_fluidity_cc, 
@@ -2347,7 +2366,7 @@ for ( name in names(fml_list_education) ) {
 }
 
 # extract risk ratio and 95% CI
-fluidity_cc_education_rr <- extract_rr( fluidity_cc_education_coef )
+fluidity_cc_education_rr <- extract_rr_fluidity( fluidity_cc_education_coef )
 
 
 ##### exposure of interest: income #####
@@ -2357,7 +2376,7 @@ exposures_income <- c( "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_
 # extract coefficient and 95% CI
 fluidity_cc_income_coef <- list()
 
-for ( name in names(fml_list_income) ) {
+for ( name in names( fml_list_income ) ) {
   
   fluidity_cc_income_coef[[ name ]] <- extract_results_coef_crude(
     all_models_list = models_fluidity_cc, 
@@ -2368,7 +2387,7 @@ for ( name in names(fml_list_income) ) {
 }
 
 # extract risk ratio and 95% CI
-fluidity_cc_income_rr <- extract_rr( fluidity_cc_income_coef )
+fluidity_cc_income_rr <- extract_rr_fluidity( fluidity_cc_income_coef )
 
 
 ##### exposure of interest: marital status #####
@@ -2378,7 +2397,7 @@ exposures_marital_status <- c( "marital_status_expNever married", "marital_statu
 # extract coefficient and 95% CI
 fluidity_cc_marital_status_coef <- list()
 
-for ( name in names(fml_list_marital_status) ) {
+for ( name in names( fml_list_marital_status ) ) {
   
   fluidity_cc_marital_status_coef[[ name ]] <- extract_results_coef_crude(
     all_models_list = models_fluidity_cc, 
@@ -2389,7 +2408,7 @@ for ( name in names(fml_list_marital_status) ) {
 }
 
 # extract risk ratio and 95% CI
-fluidity_cc_marital_status_rr <- extract_rr( fluidity_cc_marital_status_coef )
+fluidity_cc_marital_status_rr <- extract_rr_fluidity( fluidity_cc_marital_status_coef )
 
 
 ##### exposure of interest: living status #####
@@ -2399,7 +2418,7 @@ exposures_living_status <- c( "living_status_expyes" )
 # extract coefficient and 95% CI
 fluidity_cc_living_status_coef <- list()
 
-for ( name in names(fml_list_living_status) ) {
+for ( name in names( fml_list_living_status ) ) {
   
   fluidity_cc_living_status_coef[[ name ]] <- extract_results_coef_crude(
     all_models_list = models_fluidity_cc, 
@@ -2410,7 +2429,7 @@ for ( name in names(fml_list_living_status) ) {
 }
 
 # extract risk ratio and 95% CI
-fluidity_cc_living_status_rr <- extract_rr( fluidity_cc_living_status_coef )
+fluidity_cc_living_status_rr <- extract_rr_fluidity( fluidity_cc_living_status_coef )
 
 
 ##### exposure of interest: personal support #####
@@ -2420,7 +2439,7 @@ exposures_personal_support <- c( "personal_support_expno" )
 # extract coefficient and 95% CI
 fluidity_cc_personal_support_coef <- list()
 
-for ( name in names(fml_list_personal_support) ) {
+for ( name in names( fml_list_personal_support ) ) {
   
   fluidity_cc_personal_support_coef[[ name ]] <- extract_results_coef_crude(
     all_models_list = models_fluidity_cc, 
@@ -2431,7 +2450,7 @@ for ( name in names(fml_list_personal_support) ) {
 }
 
 # extract risk ratio and 95% CI
-fluidity_cc_personal_support_rr <- extract_rr( fluidity_cc_personal_support_coef )
+fluidity_cc_personal_support_rr <- extract_rr_fluidity( fluidity_cc_personal_support_coef )
 
 
 ##### combine results #####
@@ -2449,4 +2468,3 @@ fluidity_cc_rr <- rbind( fluidity_cc_age_rr,
 
 writexl::write_xlsx( fluidity_cc_rr, "fluidity_cc_rr_2014.xlsx" )
 ```
-

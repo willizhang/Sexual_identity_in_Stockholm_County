@@ -1432,7 +1432,8 @@ for ( exposure in exposures ) {
   for ( name in names( get( fml_list_name ) ) ) {
     models_fluidity_cc[[ exposure ]][[ name ]] <- glm( get( fml_list_name )[[ name ]], 
                                                        family = quasipoisson( link = "log" ), 
-                                                       data = d_fluidity_model ) }
+                                                       data = d_fluidity_model ) 
+    }
   }
 
 # refit the model for age by sex, using female as the reference group
@@ -1499,7 +1500,7 @@ exposures_age_male <- c( "age_exp<=29", "age_exp30-44", "age_exp>=60", "age_exp<
 # extract coefficient and 95% CI among males
 fluidity_cc_age_by_sex_coef_male <- list()
 
-for ( name in names(fml_list_age_by_sex) ) {
+for ( name in names( fml_list_age_by_sex ) ) {
   
   fluidity_cc_age_by_sex_coef_male[[ name ]] <- extract_results_coef_fluidity(
     all_models_list = models_fluidity_cc, 
