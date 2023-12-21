@@ -1,4 +1,4 @@
-# title: "Helper function"
+# title: "Helper functions"
 # author: Guoqiang Zhang
 # email: guoqiang.zhang@ki.se
 
@@ -6,6 +6,7 @@
 ##### Function for Weighted Regression Models #####
 
 ### crude analysis ###
+
 fit_model_crude <- function( formula, design ) {
   
   # Poisson regression
@@ -20,6 +21,7 @@ fit_model_crude <- function( formula, design ) {
 
 
 ### adjusted analysis ###
+
 fit_models <- function( formula, design ) {
   
   models <- list()
@@ -58,6 +60,7 @@ fit_models <- function( formula, design ) {
 ##### Function to Extract Coefficients and Confidence Intervals (on log scale) #####
 
 ### crude analysis ###
+
 extract_results_coef_crude <- function( all_models_list, exposure, outcome, variables ) {
   
   model <- all_models_list[[ exposure ]][[ outcome ]]
@@ -76,6 +79,7 @@ extract_results_coef_crude <- function( all_models_list, exposure, outcome, vari
 
 
 ### adjusted analysis ###
+
 extract_results_coef <- function( all_models_list, exposure, outcome, model_type, variables ) {
   
   model <- all_models_list[[ exposure ]][[ outcome ]][[ model_type ]]
@@ -94,6 +98,7 @@ extract_results_coef <- function( all_models_list, exposure, outcome, model_type
 
 
 ### sexual identity fluidity ###
+
 # for data SPHC-F 2010-2021
 extract_results_coef_fluidity <- function( all_models_list, exposure, model_type, variables ) {
   
@@ -116,6 +121,7 @@ extract_results_coef_fluidity <- function( all_models_list, exposure, model_type
 ##### Function to Extract Proportion Ratios and Confidence Intervals for Each Model Across Exposures #####
 
 ### crude analysis ###
+
 extract_results_pr_crude <- function( model_base, identities, exposure ) {
   results_list <- list()
   
@@ -147,6 +153,7 @@ extract_results_pr_crude <- function( model_base, identities, exposure ) {
 
 
 ### adjusted analysis ###
+
 extract_results_pr <- function( model_base, model_type, identities, exposure ) {
   results_list <- list()
   
