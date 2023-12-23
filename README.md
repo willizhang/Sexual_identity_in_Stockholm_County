@@ -11,7 +11,7 @@ The R scripts include:
 
 <small>Notes: SPHC, Stockholm Public Health Cohort.<small>
 
-![SPHC overview](images/SPHC_overview.png)
+![SPHC overview](images/SPHC overview.png)
 
 **Figure. Overview of the Baseline and Follow-Up Surveys in the Stockholm Public Health Cohort from 2002 to 2021**<br>
 <small>The baseline surveys are denoted by blue-colored boxes, each labeled with the respective calendar year. Participants from each baseline survey were followed longitudinally through to 2021, which is indicated by grey-colored boxes alongside their corresponding years.<small>
