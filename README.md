@@ -11,7 +11,8 @@ The R scripts include:
 
 <small>Notes: SPHC, Stockholm Public Health Cohort.<small>
 
-
+<br>
+<br>
 
 <img src="images/SPHC_overview.png" width="70%" height="auto">
 

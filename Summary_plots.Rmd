@@ -101,10 +101,12 @@ year_labels <- c( `2002_male` = "SPHC-B 2002, Males",
                   `2014` = "SPHC-B 2014", 
                   `2021` = "SPHC-B 2021" )
 
-ggplot( df_long, 
-        aes( x = Municipality, y = response_rate, group = interaction( year, response_type ) ) ) +
-  
-  geom_line( aes( color = year, linetype = response_type ) ) +
+ggplot( df_long ) +
+  geom_line( aes( x = Municipality, 
+                  y = response_rate, 
+                  group = interaction( year, response_type ), 
+                  color = year, 
+                  linetype = response_type ) ) +
   
   scale_linetype_manual( values = c( "unitresponse_rate" = "dashed", 
                                      "itemresponse_rate" = "dotdash", 
@@ -1810,10 +1812,10 @@ results_cc_pr_poisson <- results_cc_pr_poisson %>%
   add_row( Exposure = "Education years", .before = 16 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_row( Exposure = "Income (100 kr/yr)ᵉ", .before = 19 )
+  add_row( Exposure = "Income (100 kr/yr)ᶠ", .before = 19 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_row( Exposure = "Marital statusᶠ", .before = 23 )
+  add_row( Exposure = "Marital statusᵍ", .before = 23 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_row( Exposure = "Living alone", .before = 26 )
@@ -1822,10 +1824,10 @@ results_cc_pr_poisson <- results_cc_pr_poisson %>%
   add_row( Exposure = "Personal support", .before = 28 )
 
 results_cc_pr_poisson$Exposure[ results_cc_pr_poisson$Exposure == "sex_expFemale" ] <- paste0( "   ", "Female\n\n" )
-results_cc_pr_poisson$Exposure[ results_cc_pr_poisson$Exposure == "age_exp16-29" ] <- paste0( "   ", "16–29 yrsᶜ\n\n" )
+results_cc_pr_poisson$Exposure[ results_cc_pr_poisson$Exposure == "age_exp16-29" ] <- paste0( "   ", "16–29 yrsᵈ\n\n" )
 results_cc_pr_poisson$Exposure[ results_cc_pr_poisson$Exposure == "age_exp30-44" ] <- paste0( "   ", "30–44 yrs\n\n" )
 results_cc_pr_poisson$Exposure[ results_cc_pr_poisson$Exposure == "age_exp>=60" ] <- paste0( "   ", "\u2265 60 yrs\n\n" )
-results_cc_pr_poisson$Exposure[ results_cc_pr_poisson$Exposure == "country_of_birth_expEurope" ] <- paste0( "   ", "Europeᵈ\n\n" )
+results_cc_pr_poisson$Exposure[ results_cc_pr_poisson$Exposure == "country_of_birth_expEurope" ] <- paste0( "   ", "Europeᵉ\n\n" )
 results_cc_pr_poisson$Exposure[ results_cc_pr_poisson$Exposure == "country_of_birth_expOutside Europe" ] <- paste0( "   ", "Outside Europe\n\n" )
 results_cc_pr_poisson$Exposure[ results_cc_pr_poisson$Exposure == "education_exp<=9 years" ] <- paste0( "   ", "\u2264 9 yrs\n\n" )
 results_cc_pr_poisson$Exposure[ results_cc_pr_poisson$Exposure == "education_exp10-12 years" ] <- paste0( "   ", "10–12 yrs\n\n" )
@@ -1845,364 +1847,543 @@ results_cc_pr_poisson <- results_cc_pr_poisson %>%
     .before = 2 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Sexual_minority_2010" = paste0(
-    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_point_estimate_2010 ), " (", 
-    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_lower_ci_2010 ), ", ", 
-    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_upper_ci_2010 ), ")" ),
+  add_column( "Sexual_minority_2010_model_1" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2010 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_lower_ci_model_1_2010 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_upper_ci_model_1_2010 ), ")" ),
     .before = 3 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Sexual_minority_2010_model_2" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_point_estimate_model_2_2010 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_lower_ci_model_2_2010 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_upper_ci_model_2_2010 ), ")" ),
+    .before = 4 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_column( "Homosexual_2010_crude" = paste0(
     sprintf( "%.2f", results_cc_pr_poisson$homosexual_point_estimate_crude_2010 ), " (", 
     sprintf( "%.2f", results_cc_pr_poisson$homosexual_lower_ci_crude_2010 ), ", ", 
     sprintf( "%.2f", results_cc_pr_poisson$homosexual_upper_ci_crude_2010 ), ")" ),
-    .before = 4 )
+    .before = 5 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Homosexual_2010" = paste0(
-    sprintf( "%.2f", results_cc_pr_poisson$homosexual_point_estimate_2010 ), " (", 
-    sprintf( "%.2f", results_cc_pr_poisson$homosexual_lower_ci_2010 ), ", ", 
-    sprintf( "%.2f", results_cc_pr_poisson$homosexual_upper_ci_2010 ), ")" ),
-    .before = 5 )
+  add_column( "Homosexual_2010_model_1" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_point_estimate_model_1_2010 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_lower_ci_model_1_2010 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_upper_ci_model_1_2010 ), ")" ),
+    .before = 6 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Homosexual_2010_model_2" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_point_estimate_model_2_2010 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_lower_ci_model_2_2010 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_upper_ci_model_2_2010 ), ")" ),
+    .before = 7 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_column( "Bisexual_2010_crude" = paste0(
     sprintf( "%.2f", results_cc_pr_poisson$bisexual_point_estimate_crude_2010 ), " (", 
     sprintf( "%.2f", results_cc_pr_poisson$bisexual_lower_ci_crude_2010 ), ", ", 
     sprintf( "%.2f", results_cc_pr_poisson$bisexual_upper_ci_crude_2010 ), ")" ),
-    .before = 6 )
+    .before = 8 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Bisexual_2010" = paste0(
-    sprintf( "%.2f", results_cc_pr_poisson$bisexual_point_estimate_2010 ), " (", 
-    sprintf( "%.2f", results_cc_pr_poisson$bisexual_lower_ci_2010 ), ", ", 
-    sprintf( "%.2f", results_cc_pr_poisson$bisexual_upper_ci_2010 ), ")" ),
-    .before = 7 )
+  add_column( "Bisexual_2010_model_1" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_point_estimate_model_1_2010 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_lower_ci_model_1_2010 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_upper_ci_model_1_2010 ), ")" ),
+    .before = 9 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Bisexual_2010_model_2" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_point_estimate_model_2_2010 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_lower_ci_model_2_2010 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_upper_ci_model_2_2010 ), ")" ),
+    .before = 10 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_column( "Other_2010_crude" = paste0(
     sprintf( "%.2f", results_cc_pr_poisson$other_point_estimate_crude_2010 ), " (", 
     sprintf( "%.2f", results_cc_pr_poisson$other_lower_ci_crude_2010 ), ", ", 
     sprintf( "%.2f", results_cc_pr_poisson$other_upper_ci_crude_2010 ), ")" ),
-    .before = 8 )
+    .before = 11 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Other_2010" = paste0(
-    sprintf( "%.2f", results_cc_pr_poisson$other_point_estimate_2010 ), " (", 
-    sprintf( "%.2f", results_cc_pr_poisson$other_lower_ci_2010 ), ", ", 
-    sprintf( "%.2f", results_cc_pr_poisson$other_upper_ci_2010 ), ")" ),
-    .before = 9 )
+  add_column( "Other_2010_model_1" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$other_point_estimate_model_1_2010 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$other_lower_ci_model_1_2010 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$other_upper_ci_model_1_2010 ), ")" ),
+    .before = 12 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Other_2010_model_2" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$other_point_estimate_model_2_2010 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$other_lower_ci_model_2_2010 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$other_upper_ci_model_2_2010 ), ")" ),
+    .before = 13 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_column( "Sexual_minority_2014_crude" = paste0(
     sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_point_estimate_crude_2014 ), " (", 
     sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_lower_ci_crude_2014 ), ", ", 
     sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_upper_ci_crude_2014 ), ")" ),
-    .before = 10 )
+    .before = 14 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Sexual_minority_2014" = paste0(
-    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_point_estimate_2014 ), " (", 
-    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_lower_ci_2014 ), ", ", 
-    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_upper_ci_2014 ), ")" ),
-    .before = 11 )
+  add_column( "Sexual_minority_2014_model_1" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2014 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_lower_ci_model_1_2014 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_upper_ci_model_1_2014 ), ")" ),
+    .before = 15 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Sexual_minority_2014_model_2" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_point_estimate_model_2_2014 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_lower_ci_model_2_2014 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_upper_ci_model_2_2014 ), ")" ),
+    .before = 16 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_column( "Homosexual_2014_crude" = paste0(
     sprintf( "%.2f", results_cc_pr_poisson$homosexual_point_estimate_crude_2014 ), " (", 
     sprintf( "%.2f", results_cc_pr_poisson$homosexual_lower_ci_crude_2014 ), ", ", 
     sprintf( "%.2f", results_cc_pr_poisson$homosexual_upper_ci_crude_2014 ), ")" ),
-    .before = 12 )
+    .before = 17 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Homosexual_2014" = paste0(
-    sprintf( "%.2f", results_cc_pr_poisson$homosexual_point_estimate_2014 ), " (", 
-    sprintf( "%.2f", results_cc_pr_poisson$homosexual_lower_ci_2014 ), ", ", 
-    sprintf( "%.2f", results_cc_pr_poisson$homosexual_upper_ci_2014 ), ")" ),
-    .before = 13 )
+  add_column( "Homosexual_2014_model_1" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_point_estimate_model_1_2014 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_lower_ci_model_1_2014 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_upper_ci_model_1_2014 ), ")" ),
+    .before = 18 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Homosexual_2014_model_2" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_point_estimate_model_2_2014 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_lower_ci_model_2_2014 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_upper_ci_model_2_2014 ), ")" ),
+    .before = 19 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_column( "Bisexual_2014_crude" = paste0(
     sprintf( "%.2f", results_cc_pr_poisson$bisexual_point_estimate_crude_2014 ), " (", 
     sprintf( "%.2f", results_cc_pr_poisson$bisexual_lower_ci_crude_2014 ), ", ", 
     sprintf( "%.2f", results_cc_pr_poisson$bisexual_upper_ci_crude_2014 ), ")" ),
-    .before = 14 )
+    .before = 20 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Bisexual_2014" = paste0(
-    sprintf( "%.2f", results_cc_pr_poisson$bisexual_point_estimate_2014 ), " (", 
-    sprintf( "%.2f", results_cc_pr_poisson$bisexual_lower_ci_2014 ), ", ", 
-    sprintf( "%.2f", results_cc_pr_poisson$bisexual_upper_ci_2014 ), ")" ),
-    .before = 15 )
+  add_column( "Bisexual_2014_model_1" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_point_estimate_model_1_2014 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_lower_ci_model_1_2014 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_upper_ci_model_1_2014 ), ")" ),
+    .before = 21 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Bisexual_2014_model_2" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_point_estimate_model_2_2014 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_lower_ci_model_2_2014 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_upper_ci_model_2_2014 ), ")" ),
+    .before = 22 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_column( "Other_2014_crude" = paste0(
     sprintf( "%.2f", results_cc_pr_poisson$other_point_estimate_crude_2014 ), " (", 
     sprintf( "%.2f", results_cc_pr_poisson$other_lower_ci_crude_2014 ), ", ", 
     sprintf( "%.2f", results_cc_pr_poisson$other_upper_ci_crude_2014 ), ")" ),
-    .before = 16 )
+    .before = 23 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Other_2014" = paste0(
-    sprintf( "%.2f", results_cc_pr_poisson$other_point_estimate_2014 ), " (", 
-    sprintf( "%.2f", results_cc_pr_poisson$other_lower_ci_2014 ), ", ", 
-    sprintf( "%.2f", results_cc_pr_poisson$other_upper_ci_2014 ), ")" ),
-    .before = 17 )
+  add_column( "Other_2014_model_1" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$other_point_estimate_model_1_2014 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$other_lower_ci_model_1_2014 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$other_upper_ci_model_1_2014 ), ")" ),
+    .before = 24 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Other_2014_model_2" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$other_point_estimate_model_2_2014 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$other_lower_ci_model_2_2014 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$other_upper_ci_model_2_2014 ), ")" ),
+    .before = 25 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_column( "Sexual_minority_2021_crude" = paste0(
     sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_point_estimate_crude_2021 ), " (", 
     sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_lower_ci_crude_2021 ), ", ", 
     sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_upper_ci_crude_2021 ), ")" ),
-    .before = 18 )
+    .before = 26 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Sexual_minority_2021" = paste0(
-    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_point_estimate_2021 ), " (", 
-    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_lower_ci_2021 ), ", ", 
-    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_upper_ci_2021 ), ")" ),
-    .before = 19 )
+  add_column( "Sexual_minority_2021_model_1" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2021 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_lower_ci_model_1_2021 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_upper_ci_model_1_2021 ), ")" ),
+    .before = 27 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Sexual_minority_2021_model_2" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_point_estimate_model_2_2021 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_lower_ci_model_2_2021 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$sexual_minority_upper_ci_model_2_2021 ), ")" ),
+    .before = 28 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_column( "Homosexual_2021_crude" = paste0(
     sprintf( "%.2f", results_cc_pr_poisson$homosexual_point_estimate_crude_2021 ), " (", 
     sprintf( "%.2f", results_cc_pr_poisson$homosexual_lower_ci_crude_2021 ), ", ", 
     sprintf( "%.2f", results_cc_pr_poisson$homosexual_upper_ci_crude_2021 ), ")" ),
-    .before = 20 )
+    .before = 29 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Homosexual_2021" = paste0(
-    sprintf( "%.2f", results_cc_pr_poisson$homosexual_point_estimate_2021 ), " (", 
-    sprintf( "%.2f", results_cc_pr_poisson$homosexual_lower_ci_2021 ), ", ", 
-    sprintf( "%.2f", results_cc_pr_poisson$homosexual_upper_ci_2021 ), ")" ),
-    .before = 21 )
+  add_column( "Homosexual_2021_model_1" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_point_estimate_model_1_2021 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_lower_ci_model_1_2021 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_upper_ci_model_1_2021 ), ")" ),
+    .before = 30 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Homosexual_2021_model_2" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_point_estimate_model_2_2021 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_lower_ci_model_2_2021 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$homosexual_upper_ci_model_2_2021 ), ")" ),
+    .before = 31 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_column( "Bisexual_2021_crude" = paste0(
     sprintf( "%.2f", results_cc_pr_poisson$bisexual_point_estimate_crude_2021 ), " (", 
     sprintf( "%.2f", results_cc_pr_poisson$bisexual_lower_ci_crude_2021 ), ", ", 
     sprintf( "%.2f", results_cc_pr_poisson$bisexual_upper_ci_crude_2021 ), ")" ),
-    .before = 22 )
+    .before = 32 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Bisexual_2021" = paste0(
-    sprintf( "%.2f", results_cc_pr_poisson$bisexual_point_estimate_2021 ), " (", 
-    sprintf( "%.2f", results_cc_pr_poisson$bisexual_lower_ci_2021 ), ", ", 
-    sprintf( "%.2f", results_cc_pr_poisson$bisexual_upper_ci_2021 ), ")" ),
-    .before = 23 )
+  add_column( "Bisexual_2021_model_1" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_point_estimate_model_1_2021 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_lower_ci_model_1_2021 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_upper_ci_model_1_2021 ), ")" ),
+    .before = 33 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Bisexual_2021_model_2" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_point_estimate_model_2_2021 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_lower_ci_model_2_2021 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$bisexual_upper_ci_model_2_2021 ), ")" ),
+    .before = 34 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_column( "Other_2021_crude" = paste0(
     sprintf( "%.2f", results_cc_pr_poisson$other_point_estimate_crude_2021 ), " (", 
     sprintf( "%.2f", results_cc_pr_poisson$other_lower_ci_crude_2021 ), ", ", 
     sprintf( "%.2f", results_cc_pr_poisson$other_upper_ci_crude_2021 ), ")" ),
-    .before = 24 )
+    .before = 35 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Other_2021" = paste0(
-    sprintf( "%.2f", results_cc_pr_poisson$other_point_estimate_2021 ), " (", 
-    sprintf( "%.2f", results_cc_pr_poisson$other_lower_ci_2021 ), ", ", 
-    sprintf( "%.2f", results_cc_pr_poisson$other_upper_ci_2021 ), ")" ),
-    .before = 25 )
+  add_column( "Other_2021_model_1" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$other_point_estimate_model_1_2021 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$other_lower_ci_model_1_2021 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$other_upper_ci_model_1_2021 ), ")" ),
+    .before = 36 )
 
-results_cc_pr_poisson$Sexual_minority_2021_crude <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2021 ), "\u2013",
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Other_2021_model_2" = paste0(
+    sprintf( "%.2f", results_cc_pr_poisson$other_point_estimate_model_2_2021 ), " (", 
+    sprintf( "%.2f", results_cc_pr_poisson$other_lower_ci_model_2_2021 ), ", ", 
+    sprintf( "%.2f", results_cc_pr_poisson$other_upper_ci_model_2_2021 ), ")" ),
+    .before = 37 )
+
+
+results_cc_pr_poisson$Sexual_minority_2021_crude <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2021 ), "\u2013",
                                                       results_cc_pr_poisson$Sexual_minority_2021_crude )
 
-results_cc_pr_poisson$Homosexual_2021_crude <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2021 ), "\u2013",
+results_cc_pr_poisson$Sexual_minority_2021_model_1 <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2021 ), "\u2013",
+                                                      results_cc_pr_poisson$Sexual_minority_2021_model_1 )
+
+results_cc_pr_poisson$Sexual_minority_2021_model_2 <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2021 ), "\u2013",
+                                                      results_cc_pr_poisson$Sexual_minority_2021_model_2 )
+
+results_cc_pr_poisson$Homosexual_2021_crude <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2021 ), "\u2013",
                                                       results_cc_pr_poisson$Homosexual_2021_crude )
 
-results_cc_pr_poisson$Bisexual_2021_crude <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2021 ), "\u2013",
+results_cc_pr_poisson$Homosexual_2021_model_1 <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2021 ), "\u2013",
+                                                      results_cc_pr_poisson$Homosexual_2021_model_1 )
+
+results_cc_pr_poisson$Homosexual_2021_model_2 <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2021 ), "\u2013",
+                                                      results_cc_pr_poisson$Homosexual_2021_model_2 )
+
+results_cc_pr_poisson$Bisexual_2021_crude <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2021 ), "\u2013",
                                                       results_cc_pr_poisson$Bisexual_2021_crude )
 
-results_cc_pr_poisson$Other_2021_crude <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2021 ), "\u2013",
+results_cc_pr_poisson$Bisexual_2021_model_1 <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2021 ), "\u2013",
+                                                      results_cc_pr_poisson$Bisexual_2021_model_1 )
+
+results_cc_pr_poisson$Bisexual_2021_model_2 <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2021 ), "\u2013",
+                                                      results_cc_pr_poisson$Bisexual_2021_model_2 )
+
+results_cc_pr_poisson$Other_2021_crude <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2021 ), "\u2013",
                                                       results_cc_pr_poisson$Other_2021_crude )
 
-results_cc_pr_poisson$Sexual_minority_2021 <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2021 ), "\u2013",
-                                                      results_cc_pr_poisson$Sexual_minority_2021 )
+results_cc_pr_poisson$Other_2021_model_1 <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2021 ), "\u2013",
+                                                      results_cc_pr_poisson$Other_2021_model_1 )
 
-results_cc_pr_poisson$Homosexual_2021 <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2021 ), "\u2013",
-                                                      results_cc_pr_poisson$Homosexual_2021 )
-
-results_cc_pr_poisson$Bisexual_2021 <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2021 ), "\u2013",
-                                                      results_cc_pr_poisson$Bisexual_2021 )
-
-results_cc_pr_poisson$Other_2021 <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2021 ), "\u2013",
-                                                      results_cc_pr_poisson$Other_2021 )
+results_cc_pr_poisson$Other_2021_model_2 <- ifelse( !is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2010 ) & is.na( results_cc_pr_poisson$sexual_minority_point_estimate_model_1_2021 ), "\u2013",
+                                                      results_cc_pr_poisson$Other_2021_model_2 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_column( "Sexual_minority_crude" = paste( results_cc_pr_poisson$Sexual_minority_2010_crude,
-                                         results_cc_pr_poisson$Sexual_minority_2014_crude,
-                                         results_cc_pr_poisson$Sexual_minority_2021_crude,
-                                         sep = "\n" ),
+                                               results_cc_pr_poisson$Sexual_minority_2014_crude,
+                                               results_cc_pr_poisson$Sexual_minority_2021_crude,
+                                               sep = "\n" ),
               .before = 2 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Sexual_minority" = paste( results_cc_pr_poisson$Sexual_minority_2010,
-                                         results_cc_pr_poisson$Sexual_minority_2014,
-                                         results_cc_pr_poisson$Sexual_minority_2021,
-                                         sep = "\n" ),
+  add_column( "Sexual_minority_model_1" = paste( results_cc_pr_poisson$Sexual_minority_2010_model_1,
+                                                 results_cc_pr_poisson$Sexual_minority_2014_model_1,
+                                                 results_cc_pr_poisson$Sexual_minority_2021_model_1,
+                                                 sep = "\n" ),
               .before = 3 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Homosexual_crude" = paste( results_cc_pr_poisson$Homosexual_2010_crude,
-                                         results_cc_pr_poisson$Homosexual_2014_crude,
-                                         results_cc_pr_poisson$Homosexual_2021_crude,
-                                         sep = "\n" ),
+  add_column( "Sexual_minority_model_2" = paste( results_cc_pr_poisson$Sexual_minority_2010_model_2,
+                                                 results_cc_pr_poisson$Sexual_minority_2014_model_2,
+                                                 results_cc_pr_poisson$Sexual_minority_2021_model_2,
+                                                 sep = "\n" ),
               .before = 4 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Homosexual" = paste( results_cc_pr_poisson$Homosexual_2010,
-                                         results_cc_pr_poisson$Homosexual_2014,
-                                         results_cc_pr_poisson$Homosexual_2021,
-                                         sep = "\n" ),
+  add_column( "Homosexual_crude" = paste( results_cc_pr_poisson$Homosexual_2010_crude,
+                                          results_cc_pr_poisson$Homosexual_2014_crude,
+                                          results_cc_pr_poisson$Homosexual_2021_crude,
+                                          sep = "\n" ),
               .before = 5 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Bisexual_crude" = paste( results_cc_pr_poisson$Bisexual_2010_crude,
-                                         results_cc_pr_poisson$Bisexual_2014_crude,
-                                         results_cc_pr_poisson$Bisexual_2021_crude,
-                                         sep = "\n" ),
+  add_column( "Homosexual_model_1" = paste( results_cc_pr_poisson$Homosexual_2010_model_1,
+                                            results_cc_pr_poisson$Homosexual_2014_model_1,
+                                            results_cc_pr_poisson$Homosexual_2021_model_1,
+                                            sep = "\n" ),
               .before = 6 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Bisexual" = paste( results_cc_pr_poisson$Bisexual_2010,
-                                         results_cc_pr_poisson$Bisexual_2014,
-                                         results_cc_pr_poisson$Bisexual_2021,
-                                         sep = "\n" ),
+  add_column( "Homosexual_model_2" = paste( results_cc_pr_poisson$Homosexual_2010_model_2,
+                                            results_cc_pr_poisson$Homosexual_2014_model_2,
+                                            results_cc_pr_poisson$Homosexual_2021_model_2,
+                                            sep = "\n" ),
               .before = 7 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Other_crude" = paste( results_cc_pr_poisson$Other_2010_crude,
-                                         results_cc_pr_poisson$Other_2014_crude,
-                                         results_cc_pr_poisson$Other_2021_crude,
-                                         sep = "\n" ),
+  add_column( "Bisexual_crude" = paste( results_cc_pr_poisson$Bisexual_2010_crude,
+                                        results_cc_pr_poisson$Bisexual_2014_crude,
+                                        results_cc_pr_poisson$Bisexual_2021_crude,
+                                        sep = "\n" ),
               .before = 8 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_column( "Other" = paste( results_cc_pr_poisson$Other_2010,
-                                         results_cc_pr_poisson$Other_2014,
-                                         results_cc_pr_poisson$Other_2021,
-                                         sep = "\n" ),
+  add_column( "Bisexual_model_1" = paste( results_cc_pr_poisson$Bisexual_2010_model_1,
+                                          results_cc_pr_poisson$Bisexual_2014_model_1,
+                                          results_cc_pr_poisson$Bisexual_2021_model_1,
+                                          sep = "\n" ),
               .before = 9 )
 
-results_cc_pr_poisson$Sexual_minority_crude <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2010 ), "",
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Bisexual_model_2" = paste( results_cc_pr_poisson$Bisexual_2010_model_2,
+                                          results_cc_pr_poisson$Bisexual_2014_model_2,
+                                          results_cc_pr_poisson$Bisexual_2021_model_2,
+                                          sep = "\n" ),
+              .before = 10 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Other_crude" = paste( results_cc_pr_poisson$Other_2010_crude,
+                                     results_cc_pr_poisson$Other_2014_crude,
+                                     results_cc_pr_poisson$Other_2021_crude,
+                                     sep = "\n" ),
+              .before = 11 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Other_model_1" = paste( results_cc_pr_poisson$Other_2010_model_1,
+                                       results_cc_pr_poisson$Other_2014_model_1,
+                                       results_cc_pr_poisson$Other_2021_model_1,
+                                       sep = "\n" ),
+              .before = 12 )
+
+results_cc_pr_poisson <- results_cc_pr_poisson %>% 
+  add_column( "Other_model_2" = paste( results_cc_pr_poisson$Other_2010_model_2,
+                                       results_cc_pr_poisson$Other_2014_model_2,
+                                       results_cc_pr_poisson$Other_2021_model_2,
+                                       sep = "\n" ),
+              .before = 13 )
+
+
+results_cc_pr_poisson$Sexual_minority_crude <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_crude_2010 ), "",
                                                       results_cc_pr_poisson$Sexual_minority_crude )
-results_cc_pr_poisson$Homosexual_crude <- ifelse( is.na( results_cc_pr_poisson$homosexual_point_estimate_2010 ), "",
+
+results_cc_pr_poisson$Sexual_minority_model_1 <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_crude_2010 ), "",
+                                                      results_cc_pr_poisson$Sexual_minority_model_1 )
+
+results_cc_pr_poisson$Sexual_minority_model_2 <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_crude_2010 ), "",
+                                                      results_cc_pr_poisson$Sexual_minority_model_2 )
+
+results_cc_pr_poisson$Homosexual_crude <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_crude_2010 ), "",
                                                       results_cc_pr_poisson$Homosexual_crude )
-results_cc_pr_poisson$Bisexual_crude <- ifelse( is.na( results_cc_pr_poisson$bisexual_point_estimate_2010 ), "",
+
+results_cc_pr_poisson$Homosexual_model_1 <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_crude_2010 ), "",
+                                                      results_cc_pr_poisson$Homosexual_model_1 )
+
+results_cc_pr_poisson$Homosexual_model_2 <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_crude_2010 ), "",
+                                                      results_cc_pr_poisson$Homosexual_model_2 )
+
+results_cc_pr_poisson$Bisexual_crude <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_crude_2010 ), "",
                                                       results_cc_pr_poisson$Bisexual_crude )
-results_cc_pr_poisson$Other_crude <- ifelse( is.na( results_cc_pr_poisson$other_point_estimate_2010 ), "",
+
+results_cc_pr_poisson$Bisexual_model_1 <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_crude_2010 ), "",
+                                                      results_cc_pr_poisson$Bisexual_model_1 )
+
+results_cc_pr_poisson$Bisexual_model_2 <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_crude_2010 ), "",
+                                                      results_cc_pr_poisson$Bisexual_model_2 )
+
+results_cc_pr_poisson$Other_crude <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_crude_2010 ), "",
                                                       results_cc_pr_poisson$Other_crude )
-results_cc_pr_poisson$Sexual_minority <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_2010 ), "",
-                                                      results_cc_pr_poisson$Sexual_minority )
-results_cc_pr_poisson$Homosexual <- ifelse( is.na( results_cc_pr_poisson$homosexual_point_estimate_2010 ), "",
-                                                      results_cc_pr_poisson$Homosexual )
-results_cc_pr_poisson$Bisexual <- ifelse( is.na( results_cc_pr_poisson$bisexual_point_estimate_2010 ), "",
-                                                      results_cc_pr_poisson$Bisexual )
-results_cc_pr_poisson$Other <- ifelse( is.na( results_cc_pr_poisson$other_point_estimate_2010 ), "",
-                                                      results_cc_pr_poisson$Other )
+
+results_cc_pr_poisson$Other_model_1 <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_crude_2010 ), "",
+                                                      results_cc_pr_poisson$Other_model_1 )
+
+results_cc_pr_poisson$Other_model_2 <- ifelse( is.na( results_cc_pr_poisson$sexual_minority_point_estimate_crude_2010 ), "",
+                                                      results_cc_pr_poisson$Other_model_2 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_row( Exposure = paste0( "   ", "Male" ), 
            Sexual_minority_crude = "Reference",
-           Sexual_minority = "Reference",
+           Sexual_minority_model_1 = "Reference",
+           Sexual_minority_model_2 = "Reference",
            Homosexual_crude = "Reference",
-           Homosexual = "Reference",
+           Homosexual_model_1 = "Reference",
+           Homosexual_model_2 = "Reference",
            Bisexual_crude = "Reference",
-           Bisexual = "Reference",
+           Bisexual_model_1 = "Reference",
+           Bisexual_model_2 = "Reference",
            Other_crude = "Reference",
-           Other = "Reference",
+           Other_model_1 = "Reference",
+           Other_model_2 = "Reference",
            .before = 2 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_row( Exposure = paste0( "   ", "45–59 yrs" ), 
            Sexual_minority_crude = "Reference",
-           Sexual_minority = "Reference",
+           Sexual_minority_model_1 = "Reference",
+           Sexual_minority_model_2 = "Reference",
            Homosexual_crude = "Reference",
-           Homosexual = "Reference",
+           Homosexual_model_1 = "Reference",
+           Homosexual_model_2 = "Reference",
            Bisexual_crude = "Reference",
-           Bisexual = "Reference",
+           Bisexual_model_1 = "Reference",
+           Bisexual_model_2 = "Reference",
            Other_crude = "Reference",
-           Other = "Reference",
+           Other_model_1 = "Reference",
+           Other_model_2 = "Reference",
            .before = 7 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_row( Exposure = paste0( "   ", "Sweden" ), 
            Sexual_minority_crude = "Reference",
-           Sexual_minority = "Reference",
+           Sexual_minority_model_1 = "Reference",
+           Sexual_minority_model_2 = "Reference",
            Homosexual_crude = "Reference",
-           Homosexual = "Reference",
+           Homosexual_model_1 = "Reference",
+           Homosexual_model_2 = "Reference",
            Bisexual_crude = "Reference",
-           Bisexual = "Reference",
+           Bisexual_model_1 = "Reference",
+           Bisexual_model_2 = "Reference",
            Other_crude = "Reference",
-           Other = "Reference",
+           Other_model_1 = "Reference",
+           Other_model_2 = "Reference",
            .before = 16 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_row( Exposure = paste0( "   ", "\u2265 13 yrs" ), 
            Sexual_minority_crude = "Reference",
-           Sexual_minority = "Reference",
+           Sexual_minority_model_1 = "Reference",
+           Sexual_minority_model_2 = "Reference",
            Homosexual_crude = "Reference",
-           Homosexual = "Reference",
+           Homosexual_model_1 = "Reference",
+           Homosexual_model_2 = "Reference",
            Bisexual_crude = "Reference",
-           Bisexual = "Reference",
+           Bisexual_model_1 = "Reference",
+           Bisexual_model_2 = "Reference",
            Other_crude = "Reference",
-           Other = "Reference",
+           Other_model_1 = "Reference",
+           Other_model_2 = "Reference",
            .before = 22 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_row( Exposure = paste0( "   ", "> 4,500" ), 
            Sexual_minority_crude = "Reference",
-           Sexual_minority = "Reference",
+           Sexual_minority_model_1 = "Reference",
+           Sexual_minority_model_2 = "Reference",
            Homosexual_crude = "Reference",
-           Homosexual = "Reference",
+           Homosexual_model_1 = "Reference",
+           Homosexual_model_2 = "Reference",
            Bisexual_crude = "Reference",
-           Bisexual = "Reference",
+           Bisexual_model_1 = "Reference",
+           Bisexual_model_2 = "Reference",
            Other_crude = "Reference",
-           Other = "Reference",
+           Other_model_1 = "Reference",
+           Other_model_2 = "Reference",
            .before = 27 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_row( Exposure = paste0( "   ", "Currently married" ), 
            Sexual_minority_crude = "Reference",
-           Sexual_minority = "Reference",
+           Sexual_minority_model_1 = "Reference",
+           Sexual_minority_model_2 = "Reference",
            Homosexual_crude = "Reference",
-           Homosexual = "Reference",
+           Homosexual_model_1 = "Reference",
+           Homosexual_model_2 = "Reference",
            Bisexual_crude = "Reference",
-           Bisexual = "Reference",
+           Bisexual_model_1 = "Reference",
+           Bisexual_model_2 = "Reference",
            Other_crude = "Reference",
-           Other = "Reference",
+           Other_model_1 = "Reference",
+           Other_model_2 = "Reference",
            .before = 29 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_row( Exposure = paste0( "   ", "No" ), 
            Sexual_minority_crude = "Reference",
-           Sexual_minority = "Reference",
+           Sexual_minority_model_1 = "Reference",
+           Sexual_minority_model_2 = "Reference",
            Homosexual_crude = "Reference",
-           Homosexual = "Reference",
+           Homosexual_model_1 = "Reference",
+           Homosexual_model_2 = "Reference",
            Bisexual_crude = "Reference",
-           Bisexual = "Reference",
+           Bisexual_model_1 = "Reference",
+           Bisexual_model_2 = "Reference",
            Other_crude = "Reference",
-           Other = "Reference",
+           Other_model_1 = "Reference",
+           Other_model_2 = "Reference",
            .before = 34 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_row( Exposure = paste0( "   ", "Yes" ), 
            Sexual_minority_crude = "Reference",
-           Sexual_minority = "Reference",
+           Sexual_minority_model_1 = "Reference",
+           Sexual_minority_model_2 = "Reference",
            Homosexual_crude = "Reference",
-           Homosexual = "Reference",
+           Homosexual_model_1 = "Reference",
+           Homosexual_model_2 = "Reference",
            Bisexual_crude = "Reference",
-           Bisexual = "Reference",
+           Bisexual_model_1 = "Reference",
+           Bisexual_model_2 = "Reference",
            Other_crude = "Reference",
-           Other = "Reference",
+           Other_model_1 = "Reference",
+           Other_model_2 = "Reference",
            .before = 36 )
 ```
 
 ##### 4.1.2. Sexual minority group
 ###### 4.1.2.1. Part 1
 ```{r}
-results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson[ -c( 9:14, 28:37 ), c( 1:3, 34:36, 46:48, 58:60, 70:72, 82:84, 94:96 ) ]
+selected_cols <- grep( "exposure|sexual_minority", colnames( results_cc_pr_poisson ), ignore.case = TRUE )
+
+results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson[ -c( 9:14, 23:37 ), selected_cols ]
 
 results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson_sexual_minority %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -2210,13 +2391,17 @@ results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson_sexual_minority %
 results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson_sexual_minority %>% 
   add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
 
+results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson_sexual_minority %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
 results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson_sexual_minority %>%
   add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
 
 colnames( results_cc_pr_poisson_sexual_minority )[1] <- "Demographic Factor"
 
-names( results_cc_pr_poisson_sexual_minority )[ names( results_cc_pr_poisson_sexual_minority ) %in% c( "temp1", "temp2", "Sexual_minority_crude", "Sexual_minority" ) ] <- ""
+names( results_cc_pr_poisson_sexual_minority )[ names( results_cc_pr_poisson_sexual_minority ) %in% c( "temp1", "temp2", "temp3", "Sexual_minority_crude", "Sexual_minority_model_1", "Sexual_minority_model_2" ) ] <- ""
 
 tm <- forest_theme(
   base_size = 10,
@@ -2231,33 +2416,48 @@ tm <- forest_theme(
   )
 
 p_cc_pr_poisson_sexual_minority <- forest(
-  results_cc_pr_poisson_sexual_minority[ , c( 1:7 ) ],
+  results_cc_pr_poisson_sexual_minority[ , c( 1:10 ) ],
   
   est = list( results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_crude_2010,
-              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_2010,
+              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_model_1_2010,
+              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_model_2_2010,
+              
               results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_crude_2014,
-              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_2014,
+              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_model_1_2014,
+              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_model_2_2014,
+              
               results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_crude_2021,
-              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_2021
+              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_model_1_2021,
+              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_model_2_2021
               ),
   
   lower = list( results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_crude_2010,
-                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_2010,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_model_1_2010,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_model_2_2010,
+                
                 results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_crude_2014,
-                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_2014,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_model_1_2014,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_model_2_2014,
+                
                 results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_crude_2021,
-                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_2021
+                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_model_1_2021,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_model_2_2021
                 ),
   
   upper = list( results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_crude_2010,
-                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_2010,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_model_1_2010,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_model_2_2010,
+                
                 results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_crude_2014,
-                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_2014,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_model_1_2014,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_model_2_2014,
+                
                 results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_crude_2021,
-                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_2021
+                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_model_1_2021,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_model_2_2021
                 ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
@@ -2271,7 +2471,7 @@ p_cc_pr_poisson_sexual_minority <- forest(
 )
 
 p_cc_pr_poisson_sexual_minority <- edit_plot( p_cc_pr_poisson_sexual_minority,
-                                              row = c( 1, 4, 9, 13, 17 ),
+                                              row = c( 1, 4, 9, 13 ),
                                               col = 1,
                                               gp = gpar( fontface = "bold" ) 
                                               )
@@ -2291,8 +2491,21 @@ p_cc_pr_poisson_sexual_minority <- add_text(
 
 p_cc_pr_poisson_sexual_minority <- add_text(
   p_cc_pr_poisson_sexual_minority,
-  text = "Adjusted Proportion Ratio (95% CI)ᵇ",
+  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_sexual_minority <- add_text(
+  p_cc_pr_poisson_sexual_minority,
+  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -2305,7 +2518,7 @@ p_cc_pr_poisson_sexual_minority <- add_text(
 p_cc_pr_poisson_sexual_minority <- insert_text(
   p_cc_pr_poisson_sexual_minority,
   text = "Sexual Minoritiesᵃ",
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -2316,22 +2529,22 @@ p_cc_pr_poisson_sexual_minority <- insert_text(
 )
 
 p_cc_pr_poisson_sexual_minority <- edit_plot( p_cc_pr_poisson_sexual_minority,
-                           row = c( 1, 4, 9, 13, 17 ), 
-                           which = "background",
-                           gp = gpar( fill = "white" )
-                           )
+                                              row = c( 1, 4, 9, 13 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "white" )
+                                              )
 
 p_cc_pr_poisson_sexual_minority <- edit_plot( p_cc_pr_poisson_sexual_minority,
-                           row = c( 2, 3, 5:8, 10:12, 14:16, 18:21 ), 
-                           which = "background",
-                           gp = gpar( fill = "#eff3f2" )
-                           )
+                                              row = c( 2, 3, 5:8, 10:12, 14:16 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "#eff3f2" )
+                                              )
 
 p_cc_pr_poisson_sexual_minority <- add_border(
   p_cc_pr_poisson_sexual_minority,
   part = "header",
   row = 2,
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
@@ -2341,7 +2554,7 @@ plot( p_cc_pr_poisson_sexual_minority )
 
 ###### 4.1.2.2. Part 2
 ```{r}
-results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson[ -c( 9:14, 1:27 ), c( 1:3, 34:36, 46:48, 58:60, 70:72, 82:84, 94:96 ) ]
+results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson[ -c( 1:22 ), selected_cols ]
 
 results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson_sexual_minority %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -2349,13 +2562,17 @@ results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson_sexual_minority %
 results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson_sexual_minority %>% 
   add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
 
+results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson_sexual_minority %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
 results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson_sexual_minority %>%
   add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
 
 colnames( results_cc_pr_poisson_sexual_minority )[1] <- "Demographic Factor"
 
-names( results_cc_pr_poisson_sexual_minority )[ names( results_cc_pr_poisson_sexual_minority ) %in% c( "temp1", "temp2", "Sexual_minority_crude", "Sexual_minority" ) ] <- ""
+names( results_cc_pr_poisson_sexual_minority )[ names( results_cc_pr_poisson_sexual_minority ) %in% c( "temp1", "temp2", "temp3", "Sexual_minority_crude", "Sexual_minority_model_1", "Sexual_minority_model_2" ) ] <- ""
 
 tm <- forest_theme(
   base_size = 10,
@@ -2367,36 +2584,51 @@ tm <- forest_theme(
   refline_lty = "dashed",
   refline_lwd = 1,
   refline_col = "grey20"
-)
+  )
 
 p_cc_pr_poisson_sexual_minority <- forest(
-  results_cc_pr_poisson_sexual_minority[ , c( 1:7 ) ],
+  results_cc_pr_poisson_sexual_minority[ , c( 1:10 ) ],
   
   est = list( results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_crude_2010,
-              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_2010,
+              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_model_1_2010,
+              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_model_2_2010,
+              
               results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_crude_2014,
-              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_2014,
+              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_model_1_2014,
+              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_model_2_2014,
+              
               results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_crude_2021,
-              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_2021
-  ),
+              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_model_1_2021,
+              results_cc_pr_poisson_sexual_minority$sexual_minority_point_estimate_model_2_2021
+              ),
   
   lower = list( results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_crude_2010,
-                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_2010,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_model_1_2010,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_model_2_2010,
+                
                 results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_crude_2014,
-                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_2014,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_model_1_2014,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_model_2_2014,
+                
                 results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_crude_2021,
-                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_2021
-  ),
+                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_model_1_2021,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_lower_ci_model_2_2021
+                ),
   
   upper = list( results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_crude_2010,
-                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_2010,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_model_1_2010,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_model_2_2010,
+                
                 results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_crude_2014,
-                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_2014,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_model_1_2014,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_model_2_2014,
+                
                 results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_crude_2021,
-                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_2021
-  ),
+                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_model_1_2021,
+                results_cc_pr_poisson_sexual_minority$sexual_minority_upper_ci_model_2_2021
+                ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
@@ -2410,7 +2642,7 @@ p_cc_pr_poisson_sexual_minority <- forest(
 )
 
 p_cc_pr_poisson_sexual_minority <- edit_plot( p_cc_pr_poisson_sexual_minority,
-                                              row = c( 1, 5, 8 ),
+                                              row = c( 1, 6, 10, 13 ),
                                               col = 1,
                                               gp = gpar( fontface = "bold" ) 
 )
@@ -2430,8 +2662,21 @@ p_cc_pr_poisson_sexual_minority <- add_text(
 
 p_cc_pr_poisson_sexual_minority <- add_text(
   p_cc_pr_poisson_sexual_minority,
-  text = "Adjusted Proportion Ratio (95% CI)ᵇ",
+  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_sexual_minority <- add_text(
+  p_cc_pr_poisson_sexual_minority,
+  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -2444,7 +2689,7 @@ p_cc_pr_poisson_sexual_minority <- add_text(
 p_cc_pr_poisson_sexual_minority <- insert_text(
   p_cc_pr_poisson_sexual_minority,
   text = "Sexual Minoritiesᵃ",
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -2455,22 +2700,22 @@ p_cc_pr_poisson_sexual_minority <- insert_text(
 )
 
 p_cc_pr_poisson_sexual_minority <- edit_plot( p_cc_pr_poisson_sexual_minority,
-                                              row = c( 1, 5, 8 ), 
+                                              row = c( 1, 6, 10, 13 ), 
                                               which = "background",
                                               gp = gpar( fill = "white" )
-)
+                                              )
 
 p_cc_pr_poisson_sexual_minority <- edit_plot( p_cc_pr_poisson_sexual_minority,
-                                              row = c( 2:4, 6, 7, 9, 10 ), 
+                                              row = c( 2:5, 7:9, 11, 12, 14, 15 ), 
                                               which = "background",
                                               gp = gpar( fill = "#eff3f2" )
-)
+                                              )
 
 p_cc_pr_poisson_sexual_minority <- add_border(
   p_cc_pr_poisson_sexual_minority,
   part = "header",
   row = 2,
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
@@ -2481,7 +2726,9 @@ plot( p_cc_pr_poisson_sexual_minority )
 ##### 4.1.3. Homosexual group
 ###### 4.1.3.1. Part 1
 ```{r}
-results_cc_pr_poisson_homosexual <- results_cc_pr_poisson[ -c( 9:14, 28:37 ), c( 1, 4, 5, 37:39, 49:51, 61:63, 73:75, 85:87, 97:99 ) ]
+selected_cols <- grep( "exposure|homosexual", colnames( results_cc_pr_poisson ), ignore.case = TRUE )
+
+results_cc_pr_poisson_homosexual <- results_cc_pr_poisson[ -c( 9:14, 23:37 ), selected_cols ]
 
 results_cc_pr_poisson_homosexual <- results_cc_pr_poisson_homosexual %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -2489,13 +2736,17 @@ results_cc_pr_poisson_homosexual <- results_cc_pr_poisson_homosexual %>%
 results_cc_pr_poisson_homosexual <- results_cc_pr_poisson_homosexual %>% 
   add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
 
+results_cc_pr_poisson_homosexual <- results_cc_pr_poisson_homosexual %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
 results_cc_pr_poisson_homosexual <- results_cc_pr_poisson_homosexual %>%
   add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
 
 colnames( results_cc_pr_poisson_homosexual )[1] <- "Demographic Factor"
 
-names( results_cc_pr_poisson_homosexual )[ names( results_cc_pr_poisson_homosexual ) %in% c( "temp1", "temp2", "Homosexual_crude", "Homosexual" ) ] <- ""
+names( results_cc_pr_poisson_homosexual )[ names( results_cc_pr_poisson_homosexual ) %in% c( "temp1", "temp2", "temp3", "Homosexual_crude", "Homosexual_model_1", "Homosexual_model_2" ) ] <- ""
 
 tm <- forest_theme(
   base_size = 10,
@@ -2510,33 +2761,48 @@ tm <- forest_theme(
 )
 
 p_cc_pr_poisson_homosexual <- forest(
-  results_cc_pr_poisson_homosexual[ , c( 1:7 ) ],
+  results_cc_pr_poisson_homosexual[ , c( 1:10 ) ],
   
   est = list( results_cc_pr_poisson_homosexual$homosexual_point_estimate_crude_2010,
-              results_cc_pr_poisson_homosexual$homosexual_point_estimate_2010,
+              results_cc_pr_poisson_homosexual$homosexual_point_estimate_model_1_2010,
+              results_cc_pr_poisson_homosexual$homosexual_point_estimate_model_2_2010,
+              
               results_cc_pr_poisson_homosexual$homosexual_point_estimate_crude_2014,
-              results_cc_pr_poisson_homosexual$homosexual_point_estimate_2014,
+              results_cc_pr_poisson_homosexual$homosexual_point_estimate_model_1_2014,
+              results_cc_pr_poisson_homosexual$homosexual_point_estimate_model_2_2014,
+              
               results_cc_pr_poisson_homosexual$homosexual_point_estimate_crude_2021,
-              results_cc_pr_poisson_homosexual$homosexual_point_estimate_2021
+              results_cc_pr_poisson_homosexual$homosexual_point_estimate_model_1_2021,
+              results_cc_pr_poisson_homosexual$homosexual_point_estimate_model_2_2021
   ),
   
   lower = list( results_cc_pr_poisson_homosexual$homosexual_lower_ci_crude_2010,
-                results_cc_pr_poisson_homosexual$homosexual_lower_ci_2010,
+                results_cc_pr_poisson_homosexual$homosexual_lower_ci_model_1_2010,
+                results_cc_pr_poisson_homosexual$homosexual_lower_ci_model_2_2010,
+                
                 results_cc_pr_poisson_homosexual$homosexual_lower_ci_crude_2014,
-                results_cc_pr_poisson_homosexual$homosexual_lower_ci_2014,
+                results_cc_pr_poisson_homosexual$homosexual_lower_ci_model_1_2014,
+                results_cc_pr_poisson_homosexual$homosexual_lower_ci_model_2_2014,
+                
                 results_cc_pr_poisson_homosexual$homosexual_lower_ci_crude_2021,
-                results_cc_pr_poisson_homosexual$homosexual_lower_ci_2021
+                results_cc_pr_poisson_homosexual$homosexual_lower_ci_model_1_2021,
+                results_cc_pr_poisson_homosexual$homosexual_lower_ci_model_2_2021
   ),
   
   upper = list( results_cc_pr_poisson_homosexual$homosexual_upper_ci_crude_2010,
-                results_cc_pr_poisson_homosexual$homosexual_upper_ci_2010,
+                results_cc_pr_poisson_homosexual$homosexual_upper_ci_model_1_2010,
+                results_cc_pr_poisson_homosexual$homosexual_upper_ci_model_2_2010,
+                
                 results_cc_pr_poisson_homosexual$homosexual_upper_ci_crude_2014,
-                results_cc_pr_poisson_homosexual$homosexual_upper_ci_2014,
+                results_cc_pr_poisson_homosexual$homosexual_upper_ci_model_1_2014,
+                results_cc_pr_poisson_homosexual$homosexual_upper_ci_model_2_2014,
+                
                 results_cc_pr_poisson_homosexual$homosexual_upper_ci_crude_2021,
-                results_cc_pr_poisson_homosexual$homosexual_upper_ci_2021
+                results_cc_pr_poisson_homosexual$homosexual_upper_ci_model_1_2021,
+                results_cc_pr_poisson_homosexual$homosexual_upper_ci_model_2_2021
   ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
@@ -2550,7 +2816,7 @@ p_cc_pr_poisson_homosexual <- forest(
 )
 
 p_cc_pr_poisson_homosexual <- edit_plot( p_cc_pr_poisson_homosexual,
-                                              row = c( 1, 4, 9, 13, 17 ),
+                                              row = c( 1, 4, 9, 13 ),
                                               col = 1,
                                               gp = gpar( fontface = "bold" ) 
 )
@@ -2570,8 +2836,21 @@ p_cc_pr_poisson_homosexual <- add_text(
 
 p_cc_pr_poisson_homosexual <- add_text(
   p_cc_pr_poisson_homosexual,
-  text = "Adjusted Proportion Ratio (95% CI)ᵇ",
+  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_homosexual <- add_text(
+  p_cc_pr_poisson_homosexual,
+  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -2584,7 +2863,7 @@ p_cc_pr_poisson_homosexual <- add_text(
 p_cc_pr_poisson_homosexual <- insert_text(
   p_cc_pr_poisson_homosexual,
   text = "Homosexual Identityᵃ",
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -2595,13 +2874,13 @@ p_cc_pr_poisson_homosexual <- insert_text(
 )
 
 p_cc_pr_poisson_homosexual <- edit_plot( p_cc_pr_poisson_homosexual,
-                                              row = c( 1, 4, 9, 13, 17 ), 
+                                              row = c( 1, 4, 9, 13 ), 
                                               which = "background",
                                               gp = gpar( fill = "white" )
 )
 
 p_cc_pr_poisson_homosexual <- edit_plot( p_cc_pr_poisson_homosexual,
-                                              row = c( 2, 3, 5:8, 10:12, 14:16, 18:21 ), 
+                                              row = c( 2, 3, 5:8, 10:12, 14:16 ), 
                                               which = "background",
                                               gp = gpar( fill = "#eff3f2" )
 )
@@ -2610,7 +2889,7 @@ p_cc_pr_poisson_homosexual <- add_border(
   p_cc_pr_poisson_homosexual,
   part = "header",
   row = 2,
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
@@ -2620,7 +2899,7 @@ plot( p_cc_pr_poisson_homosexual )
 
 ###### 4.1.3.2. Part 2
 ```{r}
-results_cc_pr_poisson_homosexual <- results_cc_pr_poisson[ -c( 9:14, 1:27 ), c( 1, 4, 5, 37:39, 49:51, 61:63, 73:75, 85:87, 97:99 ) ]
+results_cc_pr_poisson_homosexual <- results_cc_pr_poisson[ -c( 1:22 ), selected_cols ]
 
 results_cc_pr_poisson_homosexual <- results_cc_pr_poisson_homosexual %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -2628,13 +2907,17 @@ results_cc_pr_poisson_homosexual <- results_cc_pr_poisson_homosexual %>%
 results_cc_pr_poisson_homosexual <- results_cc_pr_poisson_homosexual %>% 
   add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
 
+results_cc_pr_poisson_homosexual <- results_cc_pr_poisson_homosexual %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
 results_cc_pr_poisson_homosexual <- results_cc_pr_poisson_homosexual %>%
   add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
 
 colnames( results_cc_pr_poisson_homosexual )[1] <- "Demographic Factor"
 
-names( results_cc_pr_poisson_homosexual )[ names( results_cc_pr_poisson_homosexual ) %in% c( "temp1", "temp2", "Homosexual_crude", "Homosexual" ) ] <- ""
+names( results_cc_pr_poisson_homosexual )[ names( results_cc_pr_poisson_homosexual ) %in% c( "temp1", "temp2", "temp3", "Homosexual_crude", "Homosexual_model_1", "Homosexual_model_2" ) ] <- ""
 
 tm <- forest_theme(
   base_size = 10,
@@ -2649,33 +2932,48 @@ tm <- forest_theme(
 )
 
 p_cc_pr_poisson_homosexual <- forest(
-  results_cc_pr_poisson_homosexual[ , c( 1:7 ) ],
+  results_cc_pr_poisson_homosexual[ , c( 1:10 ) ],
   
   est = list( results_cc_pr_poisson_homosexual$homosexual_point_estimate_crude_2010,
-              results_cc_pr_poisson_homosexual$homosexual_point_estimate_2010,
+              results_cc_pr_poisson_homosexual$homosexual_point_estimate_model_1_2010,
+              results_cc_pr_poisson_homosexual$homosexual_point_estimate_model_2_2010,
+              
               results_cc_pr_poisson_homosexual$homosexual_point_estimate_crude_2014,
-              results_cc_pr_poisson_homosexual$homosexual_point_estimate_2014,
+              results_cc_pr_poisson_homosexual$homosexual_point_estimate_model_1_2014,
+              results_cc_pr_poisson_homosexual$homosexual_point_estimate_model_2_2014,
+              
               results_cc_pr_poisson_homosexual$homosexual_point_estimate_crude_2021,
-              results_cc_pr_poisson_homosexual$homosexual_point_estimate_2021
+              results_cc_pr_poisson_homosexual$homosexual_point_estimate_model_1_2021,
+              results_cc_pr_poisson_homosexual$homosexual_point_estimate_model_2_2021
   ),
   
   lower = list( results_cc_pr_poisson_homosexual$homosexual_lower_ci_crude_2010,
-                results_cc_pr_poisson_homosexual$homosexual_lower_ci_2010,
+                results_cc_pr_poisson_homosexual$homosexual_lower_ci_model_1_2010,
+                results_cc_pr_poisson_homosexual$homosexual_lower_ci_model_2_2010,
+                
                 results_cc_pr_poisson_homosexual$homosexual_lower_ci_crude_2014,
-                results_cc_pr_poisson_homosexual$homosexual_lower_ci_2014,
+                results_cc_pr_poisson_homosexual$homosexual_lower_ci_model_1_2014,
+                results_cc_pr_poisson_homosexual$homosexual_lower_ci_model_2_2014,
+                
                 results_cc_pr_poisson_homosexual$homosexual_lower_ci_crude_2021,
-                results_cc_pr_poisson_homosexual$homosexual_lower_ci_2021
+                results_cc_pr_poisson_homosexual$homosexual_lower_ci_model_1_2021,
+                results_cc_pr_poisson_homosexual$homosexual_lower_ci_model_2_2021
   ),
   
   upper = list( results_cc_pr_poisson_homosexual$homosexual_upper_ci_crude_2010,
-                results_cc_pr_poisson_homosexual$homosexual_upper_ci_2010,
+                results_cc_pr_poisson_homosexual$homosexual_upper_ci_model_1_2010,
+                results_cc_pr_poisson_homosexual$homosexual_upper_ci_model_2_2010,
+                
                 results_cc_pr_poisson_homosexual$homosexual_upper_ci_crude_2014,
-                results_cc_pr_poisson_homosexual$homosexual_upper_ci_2014,
+                results_cc_pr_poisson_homosexual$homosexual_upper_ci_model_1_2014,
+                results_cc_pr_poisson_homosexual$homosexual_upper_ci_model_2_2014,
+                
                 results_cc_pr_poisson_homosexual$homosexual_upper_ci_crude_2021,
-                results_cc_pr_poisson_homosexual$homosexual_upper_ci_2021
+                results_cc_pr_poisson_homosexual$homosexual_upper_ci_model_1_2021,
+                results_cc_pr_poisson_homosexual$homosexual_upper_ci_model_2_2021
   ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
@@ -2689,9 +2987,9 @@ p_cc_pr_poisson_homosexual <- forest(
 )
 
 p_cc_pr_poisson_homosexual <- edit_plot( p_cc_pr_poisson_homosexual,
-                                              row = c( 1, 5, 8 ),
-                                              col = 1,
-                                              gp = gpar( fontface = "bold" ) 
+                                         row = c( 1, 6, 10, 13 ),
+                                         col = 1,
+                                         gp = gpar( fontface = "bold" ) 
 )
 
 p_cc_pr_poisson_homosexual <- add_text(
@@ -2709,8 +3007,21 @@ p_cc_pr_poisson_homosexual <- add_text(
 
 p_cc_pr_poisson_homosexual <- add_text(
   p_cc_pr_poisson_homosexual,
-  text = "Adjusted Proportion Ratio (95% CI)ᵇ",
+  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_homosexual <- add_text(
+  p_cc_pr_poisson_homosexual,
+  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -2723,7 +3034,7 @@ p_cc_pr_poisson_homosexual <- add_text(
 p_cc_pr_poisson_homosexual <- insert_text(
   p_cc_pr_poisson_homosexual,
   text = "Homosexual Identityᵃ",
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -2734,22 +3045,22 @@ p_cc_pr_poisson_homosexual <- insert_text(
 )
 
 p_cc_pr_poisson_homosexual <- edit_plot( p_cc_pr_poisson_homosexual,
-                                              row = c( 1, 5, 8 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "white" )
+                                         row = c( 1, 6, 10, 13 ), 
+                                         which = "background",
+                                         gp = gpar( fill = "white" )
 )
 
 p_cc_pr_poisson_homosexual <- edit_plot( p_cc_pr_poisson_homosexual,
-                                              row = c( 2:4, 6, 7, 9, 10 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "#eff3f2" )
+                                         row = c( 2:5, 7:9, 11, 12, 14, 15 ), 
+                                         which = "background",
+                                         gp = gpar( fill = "#eff3f2" )
 )
 
 p_cc_pr_poisson_homosexual <- add_border(
   p_cc_pr_poisson_homosexual,
   part = "header",
   row = 2,
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
@@ -2760,7 +3071,9 @@ plot( p_cc_pr_poisson_homosexual )
 ##### 4.1.4. Bisexual group
 ###### 4.1.4.1. Part 1
 ```{r}
-results_cc_pr_poisson_bisexual <- results_cc_pr_poisson[ -c( 9:14, 28:37 ), c( 1, 6, 7, 40:42, 52:54, 64:66, 76:78, 88:90, 100:102 ) ]
+selected_cols <- grep( "exposure|bisexual", colnames( results_cc_pr_poisson ), ignore.case = TRUE )
+
+results_cc_pr_poisson_bisexual <- results_cc_pr_poisson[ -c( 9:14, 23:37 ), selected_cols ]
 
 results_cc_pr_poisson_bisexual <- results_cc_pr_poisson_bisexual %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -2768,13 +3081,17 @@ results_cc_pr_poisson_bisexual <- results_cc_pr_poisson_bisexual %>%
 results_cc_pr_poisson_bisexual <- results_cc_pr_poisson_bisexual %>% 
   add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
 
+results_cc_pr_poisson_bisexual <- results_cc_pr_poisson_bisexual %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
 results_cc_pr_poisson_bisexual <- results_cc_pr_poisson_bisexual %>%
   add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
 
 colnames( results_cc_pr_poisson_bisexual )[1] <- "Demographic Factor"
 
-names( results_cc_pr_poisson_bisexual )[ names( results_cc_pr_poisson_bisexual ) %in% c( "temp1", "temp2", "Bisexual_crude", "Bisexual" ) ] <- ""
+names( results_cc_pr_poisson_bisexual )[ names( results_cc_pr_poisson_bisexual ) %in% c( "temp1", "temp2", "temp3", "Bisexual_crude", "Bisexual_model_1", "Bisexual_model_2" ) ] <- ""
 
 tm <- forest_theme(
   base_size = 10,
@@ -2789,33 +3106,48 @@ tm <- forest_theme(
 )
 
 p_cc_pr_poisson_bisexual <- forest(
-  results_cc_pr_poisson_bisexual[ , c( 1:7 ) ],
+  results_cc_pr_poisson_bisexual[ , c( 1:10 ) ],
   
   est = list( results_cc_pr_poisson_bisexual$bisexual_point_estimate_crude_2010,
-              results_cc_pr_poisson_bisexual$bisexual_point_estimate_2010,
+              results_cc_pr_poisson_bisexual$bisexual_point_estimate_model_1_2010,
+              results_cc_pr_poisson_bisexual$bisexual_point_estimate_model_2_2010,
+              
               results_cc_pr_poisson_bisexual$bisexual_point_estimate_crude_2014,
-              results_cc_pr_poisson_bisexual$bisexual_point_estimate_2014,
+              results_cc_pr_poisson_bisexual$bisexual_point_estimate_model_1_2014,
+              results_cc_pr_poisson_bisexual$bisexual_point_estimate_model_2_2014,
+              
               results_cc_pr_poisson_bisexual$bisexual_point_estimate_crude_2021,
-              results_cc_pr_poisson_bisexual$bisexual_point_estimate_2021
+              results_cc_pr_poisson_bisexual$bisexual_point_estimate_model_1_2021,
+              results_cc_pr_poisson_bisexual$bisexual_point_estimate_model_2_2021
   ),
   
   lower = list( results_cc_pr_poisson_bisexual$bisexual_lower_ci_crude_2010,
-                results_cc_pr_poisson_bisexual$bisexual_lower_ci_2010,
+                results_cc_pr_poisson_bisexual$bisexual_lower_ci_model_1_2010,
+                results_cc_pr_poisson_bisexual$bisexual_lower_ci_model_2_2010,
+                
                 results_cc_pr_poisson_bisexual$bisexual_lower_ci_crude_2014,
-                results_cc_pr_poisson_bisexual$bisexual_lower_ci_2014,
+                results_cc_pr_poisson_bisexual$bisexual_lower_ci_model_1_2014,
+                results_cc_pr_poisson_bisexual$bisexual_lower_ci_model_2_2014,
+                
                 results_cc_pr_poisson_bisexual$bisexual_lower_ci_crude_2021,
-                results_cc_pr_poisson_bisexual$bisexual_lower_ci_2021
+                results_cc_pr_poisson_bisexual$bisexual_lower_ci_model_1_2021,
+                results_cc_pr_poisson_bisexual$bisexual_lower_ci_model_2_2021
   ),
   
   upper = list( results_cc_pr_poisson_bisexual$bisexual_upper_ci_crude_2010,
-                results_cc_pr_poisson_bisexual$bisexual_upper_ci_2010,
+                results_cc_pr_poisson_bisexual$bisexual_upper_ci_model_1_2010,
+                results_cc_pr_poisson_bisexual$bisexual_upper_ci_model_2_2010,
+                
                 results_cc_pr_poisson_bisexual$bisexual_upper_ci_crude_2014,
-                results_cc_pr_poisson_bisexual$bisexual_upper_ci_2014,
+                results_cc_pr_poisson_bisexual$bisexual_upper_ci_model_1_2014,
+                results_cc_pr_poisson_bisexual$bisexual_upper_ci_model_2_2014,
+                
                 results_cc_pr_poisson_bisexual$bisexual_upper_ci_crude_2021,
-                results_cc_pr_poisson_bisexual$bisexual_upper_ci_2021
+                results_cc_pr_poisson_bisexual$bisexual_upper_ci_model_1_2021,
+                results_cc_pr_poisson_bisexual$bisexual_upper_ci_model_2_2021
   ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
@@ -2829,7 +3161,7 @@ p_cc_pr_poisson_bisexual <- forest(
 )
 
 p_cc_pr_poisson_bisexual <- edit_plot( p_cc_pr_poisson_bisexual,
-                                         row = c( 1, 4, 9, 13, 17 ),
+                                         row = c( 1, 4, 9, 13 ),
                                          col = 1,
                                          gp = gpar( fontface = "bold" ) 
 )
@@ -2849,8 +3181,21 @@ p_cc_pr_poisson_bisexual <- add_text(
 
 p_cc_pr_poisson_bisexual <- add_text(
   p_cc_pr_poisson_bisexual,
-  text = "Adjusted Proportion Ratio (95% CI)ᵇ",
+  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_bisexual <- add_text(
+  p_cc_pr_poisson_bisexual,
+  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -2863,7 +3208,7 @@ p_cc_pr_poisson_bisexual <- add_text(
 p_cc_pr_poisson_bisexual <- insert_text(
   p_cc_pr_poisson_bisexual,
   text = "Bisexual Identityᵃ",
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -2874,22 +3219,22 @@ p_cc_pr_poisson_bisexual <- insert_text(
 )
 
 p_cc_pr_poisson_bisexual <- edit_plot( p_cc_pr_poisson_bisexual,
-                                              row = c( 1, 4, 9, 13, 17 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "white" )
+                                         row = c( 1, 4, 9, 13 ), 
+                                         which = "background",
+                                         gp = gpar( fill = "white" )
 )
 
 p_cc_pr_poisson_bisexual <- edit_plot( p_cc_pr_poisson_bisexual,
-                                              row = c( 2, 3, 5:8, 10:12, 14:16, 18:21 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "#eff3f2" )
+                                         row = c( 2, 3, 5:8, 10:12, 14:16 ), 
+                                         which = "background",
+                                         gp = gpar( fill = "#eff3f2" )
 )
 
 p_cc_pr_poisson_bisexual <- add_border(
   p_cc_pr_poisson_bisexual,
   part = "header",
   row = 2,
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
@@ -2899,7 +3244,7 @@ plot( p_cc_pr_poisson_bisexual )
 
 ###### 4.1.4.2. Part 2
 ```{r}
-results_cc_pr_poisson_bisexual <- results_cc_pr_poisson[ -c( 9:14, 1:27 ), c( 1, 6, 7, 40:42, 52:54, 64:66, 76:78, 88:90, 100:102 ) ]
+results_cc_pr_poisson_bisexual <- results_cc_pr_poisson[ -c( 1:22 ), selected_cols ]
 
 results_cc_pr_poisson_bisexual <- results_cc_pr_poisson_bisexual %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -2907,13 +3252,17 @@ results_cc_pr_poisson_bisexual <- results_cc_pr_poisson_bisexual %>%
 results_cc_pr_poisson_bisexual <- results_cc_pr_poisson_bisexual %>% 
   add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
 
+results_cc_pr_poisson_bisexual <- results_cc_pr_poisson_bisexual %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
 results_cc_pr_poisson_bisexual <- results_cc_pr_poisson_bisexual %>%
   add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
 
 colnames( results_cc_pr_poisson_bisexual )[1] <- "Demographic Factor"
 
-names( results_cc_pr_poisson_bisexual )[ names( results_cc_pr_poisson_bisexual ) %in% c( "temp1", "temp2", "Bisexual_crude", "Bisexual" ) ] <- ""
+names( results_cc_pr_poisson_bisexual )[ names( results_cc_pr_poisson_bisexual ) %in% c( "temp1", "temp2", "temp3", "Bisexual_crude", "Bisexual_model_1", "Bisexual_model_2" ) ] <- ""
 
 tm <- forest_theme(
   base_size = 10,
@@ -2928,33 +3277,48 @@ tm <- forest_theme(
 )
 
 p_cc_pr_poisson_bisexual <- forest(
-  results_cc_pr_poisson_bisexual[ , c( 1:7 ) ],
+  results_cc_pr_poisson_bisexual[ , c( 1:10 ) ],
   
   est = list( results_cc_pr_poisson_bisexual$bisexual_point_estimate_crude_2010,
-              results_cc_pr_poisson_bisexual$bisexual_point_estimate_2010,
+              results_cc_pr_poisson_bisexual$bisexual_point_estimate_model_1_2010,
+              results_cc_pr_poisson_bisexual$bisexual_point_estimate_model_2_2010,
+              
               results_cc_pr_poisson_bisexual$bisexual_point_estimate_crude_2014,
-              results_cc_pr_poisson_bisexual$bisexual_point_estimate_2014,
+              results_cc_pr_poisson_bisexual$bisexual_point_estimate_model_1_2014,
+              results_cc_pr_poisson_bisexual$bisexual_point_estimate_model_2_2014,
+              
               results_cc_pr_poisson_bisexual$bisexual_point_estimate_crude_2021,
-              results_cc_pr_poisson_bisexual$bisexual_point_estimate_2021
+              results_cc_pr_poisson_bisexual$bisexual_point_estimate_model_1_2021,
+              results_cc_pr_poisson_bisexual$bisexual_point_estimate_model_2_2021
   ),
   
   lower = list( results_cc_pr_poisson_bisexual$bisexual_lower_ci_crude_2010,
-                results_cc_pr_poisson_bisexual$bisexual_lower_ci_2010,
+                results_cc_pr_poisson_bisexual$bisexual_lower_ci_model_1_2010,
+                results_cc_pr_poisson_bisexual$bisexual_lower_ci_model_2_2010,
+                
                 results_cc_pr_poisson_bisexual$bisexual_lower_ci_crude_2014,
-                results_cc_pr_poisson_bisexual$bisexual_lower_ci_2014,
+                results_cc_pr_poisson_bisexual$bisexual_lower_ci_model_1_2014,
+                results_cc_pr_poisson_bisexual$bisexual_lower_ci_model_2_2014,
+                
                 results_cc_pr_poisson_bisexual$bisexual_lower_ci_crude_2021,
-                results_cc_pr_poisson_bisexual$bisexual_lower_ci_2021
+                results_cc_pr_poisson_bisexual$bisexual_lower_ci_model_1_2021,
+                results_cc_pr_poisson_bisexual$bisexual_lower_ci_model_2_2021
   ),
   
   upper = list( results_cc_pr_poisson_bisexual$bisexual_upper_ci_crude_2010,
-                results_cc_pr_poisson_bisexual$bisexual_upper_ci_2010,
+                results_cc_pr_poisson_bisexual$bisexual_upper_ci_model_1_2010,
+                results_cc_pr_poisson_bisexual$bisexual_upper_ci_model_2_2010,
+                
                 results_cc_pr_poisson_bisexual$bisexual_upper_ci_crude_2014,
-                results_cc_pr_poisson_bisexual$bisexual_upper_ci_2014,
+                results_cc_pr_poisson_bisexual$bisexual_upper_ci_model_1_2014,
+                results_cc_pr_poisson_bisexual$bisexual_upper_ci_model_2_2014,
+                
                 results_cc_pr_poisson_bisexual$bisexual_upper_ci_crude_2021,
-                results_cc_pr_poisson_bisexual$bisexual_upper_ci_2021
+                results_cc_pr_poisson_bisexual$bisexual_upper_ci_model_1_2021,
+                results_cc_pr_poisson_bisexual$bisexual_upper_ci_model_2_2021
   ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
@@ -2968,9 +3332,9 @@ p_cc_pr_poisson_bisexual <- forest(
 )
 
 p_cc_pr_poisson_bisexual <- edit_plot( p_cc_pr_poisson_bisexual,
-                                         row = c( 1, 5, 8 ),
-                                         col = 1,
-                                         gp = gpar( fontface = "bold" ) 
+                                       row = c( 1, 6, 10, 13 ),
+                                       col = 1,
+                                       gp = gpar( fontface = "bold" ) 
 )
 
 p_cc_pr_poisson_bisexual <- add_text(
@@ -2988,8 +3352,21 @@ p_cc_pr_poisson_bisexual <- add_text(
 
 p_cc_pr_poisson_bisexual <- add_text(
   p_cc_pr_poisson_bisexual,
-  text = "Adjusted Proportion Ratio (95% CI)ᵇ",
+  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_bisexual <- add_text(
+  p_cc_pr_poisson_bisexual,
+  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -3002,7 +3379,7 @@ p_cc_pr_poisson_bisexual <- add_text(
 p_cc_pr_poisson_bisexual <- insert_text(
   p_cc_pr_poisson_bisexual,
   text = "Bisexual Identityᵃ",
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -3013,22 +3390,22 @@ p_cc_pr_poisson_bisexual <- insert_text(
 )
 
 p_cc_pr_poisson_bisexual <- edit_plot( p_cc_pr_poisson_bisexual,
-                                              row = c( 1, 5, 8 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "white" )
+                                       row = c( 1, 6, 10, 13 ), 
+                                       which = "background",
+                                       gp = gpar( fill = "white" )
 )
 
 p_cc_pr_poisson_bisexual <- edit_plot( p_cc_pr_poisson_bisexual,
-                                              row = c( 2:4, 6, 7, 9, 10 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "#eff3f2" )
+                                       row = c( 2:5, 7:9, 11, 12, 14, 15 ), 
+                                       which = "background",
+                                       gp = gpar( fill = "#eff3f2" )
 )
 
 p_cc_pr_poisson_bisexual <- add_border(
   p_cc_pr_poisson_bisexual,
   part = "header",
   row = 2,
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
@@ -3039,7 +3416,9 @@ plot( p_cc_pr_poisson_bisexual )
 ##### 4.1.5. Other group
 ###### 4.1.5.1. Part 1
 ```{r}
-results_cc_pr_poisson_other <- results_cc_pr_poisson[ -c( 9:14, 28:37 ), c( 1, 8, 9, 43:45, 55:57, 67:69, 79:81, 91:93, 103:105 ) ]
+selected_cols <- grep( "exposure|other", colnames( results_cc_pr_poisson ), ignore.case = TRUE )
+
+results_cc_pr_poisson_other <- results_cc_pr_poisson[ -c( 9:14, 23:37 ), selected_cols ]
 
 results_cc_pr_poisson_other <- results_cc_pr_poisson_other %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -3047,13 +3426,17 @@ results_cc_pr_poisson_other <- results_cc_pr_poisson_other %>%
 results_cc_pr_poisson_other <- results_cc_pr_poisson_other %>% 
   add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
 
+results_cc_pr_poisson_other <- results_cc_pr_poisson_other %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
 results_cc_pr_poisson_other <- results_cc_pr_poisson_other %>%
   add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
 
 colnames( results_cc_pr_poisson_other )[1] <- "Demographic Factor"
 
-names( results_cc_pr_poisson_other )[ names( results_cc_pr_poisson_other ) %in% c( "temp1", "temp2", "Other_crude", "Other" ) ] <- ""
+names( results_cc_pr_poisson_other )[ names( results_cc_pr_poisson_other ) %in% c( "temp1", "temp2", "temp3", "Other_crude", "Other_model_1", "Other_model_2" ) ] <- ""
 
 tm <- forest_theme(
   base_size = 10,
@@ -3068,39 +3451,54 @@ tm <- forest_theme(
 )
 
 p_cc_pr_poisson_other <- forest(
-  results_cc_pr_poisson_other[ , c( 1:7 ) ],
+  results_cc_pr_poisson_other[ , c( 1:10 ) ],
   
   est = list( results_cc_pr_poisson_other$other_point_estimate_crude_2010,
-              results_cc_pr_poisson_other$other_point_estimate_2010,
+              results_cc_pr_poisson_other$other_point_estimate_model_1_2010,
+              results_cc_pr_poisson_other$other_point_estimate_model_2_2010,
+              
               results_cc_pr_poisson_other$other_point_estimate_crude_2014,
-              results_cc_pr_poisson_other$other_point_estimate_2014,
+              results_cc_pr_poisson_other$other_point_estimate_model_1_2014,
+              results_cc_pr_poisson_other$other_point_estimate_model_2_2014,
+              
               results_cc_pr_poisson_other$other_point_estimate_crude_2021,
-              results_cc_pr_poisson_other$other_point_estimate_2021
+              results_cc_pr_poisson_other$other_point_estimate_model_1_2021,
+              results_cc_pr_poisson_other$other_point_estimate_model_2_2021
   ),
   
   lower = list( results_cc_pr_poisson_other$other_lower_ci_crude_2010,
-                results_cc_pr_poisson_other$other_lower_ci_2010,
+                results_cc_pr_poisson_other$other_lower_ci_model_1_2010,
+                results_cc_pr_poisson_other$other_lower_ci_model_2_2010,
+                
                 results_cc_pr_poisson_other$other_lower_ci_crude_2014,
-                results_cc_pr_poisson_other$other_lower_ci_2014,
+                results_cc_pr_poisson_other$other_lower_ci_model_1_2014,
+                results_cc_pr_poisson_other$other_lower_ci_model_2_2014,
+                
                 results_cc_pr_poisson_other$other_lower_ci_crude_2021,
-                results_cc_pr_poisson_other$other_lower_ci_2021
+                results_cc_pr_poisson_other$other_lower_ci_model_1_2021,
+                results_cc_pr_poisson_other$other_lower_ci_model_2_2021
   ),
   
   upper = list( results_cc_pr_poisson_other$other_upper_ci_crude_2010,
-                results_cc_pr_poisson_other$other_upper_ci_2010,
+                results_cc_pr_poisson_other$other_upper_ci_model_1_2010,
+                results_cc_pr_poisson_other$other_upper_ci_model_2_2010,
+                
                 results_cc_pr_poisson_other$other_upper_ci_crude_2014,
-                results_cc_pr_poisson_other$other_upper_ci_2014,
+                results_cc_pr_poisson_other$other_upper_ci_model_1_2014,
+                results_cc_pr_poisson_other$other_upper_ci_model_2_2014,
+                
                 results_cc_pr_poisson_other$other_upper_ci_crude_2021,
-                results_cc_pr_poisson_other$other_upper_ci_2021
+                results_cc_pr_poisson_other$other_upper_ci_model_1_2021,
+                results_cc_pr_poisson_other$other_upper_ci_model_2_2021
   ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
   
-  xlim = c( 0, 8 ),
-  ticks_at = c( 0, 1, 2, 4, 6, 8 ),
+  xlim = c( 0, 10 ),
+  ticks_at = c( 0, 1, 2, 4, 6, 8, 10 ),
   
   xlab = "Proportion Ratio (95% CI)",
   nudge_y = 0.33,
@@ -3108,7 +3506,7 @@ p_cc_pr_poisson_other <- forest(
 )
 
 p_cc_pr_poisson_other <- edit_plot( p_cc_pr_poisson_other,
-                                       row = c( 1, 4, 9, 13, 17 ),
+                                       row = c( 1, 4, 9, 13 ),
                                        col = 1,
                                        gp = gpar( fontface = "bold" ) 
 )
@@ -3128,8 +3526,21 @@ p_cc_pr_poisson_other <- add_text(
 
 p_cc_pr_poisson_other <- add_text(
   p_cc_pr_poisson_other,
-  text = "Adjusted Proportion Ratio (95% CI)ᵇ",
+  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_other <- add_text(
+  p_cc_pr_poisson_other,
+  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -3142,7 +3553,7 @@ p_cc_pr_poisson_other <- add_text(
 p_cc_pr_poisson_other <- insert_text(
   p_cc_pr_poisson_other,
   text = "Uncertain/Other Sexual Identitiesᵃ",
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -3153,22 +3564,22 @@ p_cc_pr_poisson_other <- insert_text(
 )
 
 p_cc_pr_poisson_other <- edit_plot( p_cc_pr_poisson_other,
-                                              row = c( 1, 4, 9, 13, 17 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "white" )
+                                       row = c( 1, 4, 9, 13 ), 
+                                       which = "background",
+                                       gp = gpar( fill = "white" )
 )
 
 p_cc_pr_poisson_other <- edit_plot( p_cc_pr_poisson_other,
-                                              row = c( 2, 3, 5:8, 10:12, 14:16, 18:21 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "#eff3f2" )
+                                       row = c( 2, 3, 5:8, 10:12, 14:16 ), 
+                                       which = "background",
+                                       gp = gpar( fill = "#eff3f2" )
 )
 
 p_cc_pr_poisson_other <- add_border(
   p_cc_pr_poisson_other,
   part = "header",
   row = 2,
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
@@ -3178,7 +3589,7 @@ plot( p_cc_pr_poisson_other )
 
 ###### 4.1.5.2. Part 2
 ```{r}
-results_cc_pr_poisson_other <- results_cc_pr_poisson[ -c( 9:14, 1:27 ), c( 1, 8, 9, 43:45, 55:57, 67:69, 79:81, 91:93, 103:105 ) ]
+results_cc_pr_poisson_other <- results_cc_pr_poisson[ -c( 1:22 ), selected_cols ]
 
 results_cc_pr_poisson_other <- results_cc_pr_poisson_other %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -3186,13 +3597,17 @@ results_cc_pr_poisson_other <- results_cc_pr_poisson_other %>%
 results_cc_pr_poisson_other <- results_cc_pr_poisson_other %>% 
   add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
 
+results_cc_pr_poisson_other <- results_cc_pr_poisson_other %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
 results_cc_pr_poisson_other <- results_cc_pr_poisson_other %>%
   add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
 
 colnames( results_cc_pr_poisson_other )[1] <- "Demographic Factor"
 
-names( results_cc_pr_poisson_other )[ names( results_cc_pr_poisson_other ) %in% c( "temp1", "temp2", "Other_crude", "Other" ) ] <- ""
+names( results_cc_pr_poisson_other )[ names( results_cc_pr_poisson_other ) %in% c( "temp1", "temp2", "temp3", "Other_crude", "Other_model_1", "Other_model_2" ) ] <- ""
 
 tm <- forest_theme(
   base_size = 10,
@@ -3207,39 +3622,54 @@ tm <- forest_theme(
 )
 
 p_cc_pr_poisson_other <- forest(
-  results_cc_pr_poisson_other[ , c( 1:7 ) ],
+  results_cc_pr_poisson_other[ , c( 1:10 ) ],
   
   est = list( results_cc_pr_poisson_other$other_point_estimate_crude_2010,
-              results_cc_pr_poisson_other$other_point_estimate_2010,
+              results_cc_pr_poisson_other$other_point_estimate_model_1_2010,
+              results_cc_pr_poisson_other$other_point_estimate_model_2_2010,
+              
               results_cc_pr_poisson_other$other_point_estimate_crude_2014,
-              results_cc_pr_poisson_other$other_point_estimate_2014,
+              results_cc_pr_poisson_other$other_point_estimate_model_1_2014,
+              results_cc_pr_poisson_other$other_point_estimate_model_2_2014,
+              
               results_cc_pr_poisson_other$other_point_estimate_crude_2021,
-              results_cc_pr_poisson_other$other_point_estimate_2021
+              results_cc_pr_poisson_other$other_point_estimate_model_1_2021,
+              results_cc_pr_poisson_other$other_point_estimate_model_2_2021
   ),
   
   lower = list( results_cc_pr_poisson_other$other_lower_ci_crude_2010,
-                results_cc_pr_poisson_other$other_lower_ci_2010,
+                results_cc_pr_poisson_other$other_lower_ci_model_1_2010,
+                results_cc_pr_poisson_other$other_lower_ci_model_2_2010,
+                
                 results_cc_pr_poisson_other$other_lower_ci_crude_2014,
-                results_cc_pr_poisson_other$other_lower_ci_2014,
+                results_cc_pr_poisson_other$other_lower_ci_model_1_2014,
+                results_cc_pr_poisson_other$other_lower_ci_model_2_2014,
+                
                 results_cc_pr_poisson_other$other_lower_ci_crude_2021,
-                results_cc_pr_poisson_other$other_lower_ci_2021
+                results_cc_pr_poisson_other$other_lower_ci_model_1_2021,
+                results_cc_pr_poisson_other$other_lower_ci_model_2_2021
   ),
   
   upper = list( results_cc_pr_poisson_other$other_upper_ci_crude_2010,
-                results_cc_pr_poisson_other$other_upper_ci_2010,
+                results_cc_pr_poisson_other$other_upper_ci_model_1_2010,
+                results_cc_pr_poisson_other$other_upper_ci_model_2_2010,
+                
                 results_cc_pr_poisson_other$other_upper_ci_crude_2014,
-                results_cc_pr_poisson_other$other_upper_ci_2014,
+                results_cc_pr_poisson_other$other_upper_ci_model_1_2014,
+                results_cc_pr_poisson_other$other_upper_ci_model_2_2014,
+                
                 results_cc_pr_poisson_other$other_upper_ci_crude_2021,
-                results_cc_pr_poisson_other$other_upper_ci_2021
+                results_cc_pr_poisson_other$other_upper_ci_model_1_2021,
+                results_cc_pr_poisson_other$other_upper_ci_model_2_2021
   ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
   
-  xlim = c( 0, 8 ),
-  ticks_at = c( 0, 1, 2, 4, 6, 8 ),
+  xlim = c( 0, 10 ),
+  ticks_at = c( 0, 1, 2, 4, 6, 8, 10 ),
   
   xlab = "Proportion Ratio (95% CI)",
   nudge_y = 0.33,
@@ -3247,9 +3677,9 @@ p_cc_pr_poisson_other <- forest(
 )
 
 p_cc_pr_poisson_other <- edit_plot( p_cc_pr_poisson_other,
-                                       row = c( 1, 5, 8 ),
-                                       col = 1,
-                                       gp = gpar( fontface = "bold" ) 
+                                    row = c( 1, 6, 10, 13 ),
+                                    col = 1,
+                                    gp = gpar( fontface = "bold" ) 
 )
 
 p_cc_pr_poisson_other <- add_text(
@@ -3267,8 +3697,21 @@ p_cc_pr_poisson_other <- add_text(
 
 p_cc_pr_poisson_other <- add_text(
   p_cc_pr_poisson_other,
-  text = "Adjusted Proportion Ratio (95% CI)ᵇ",
+  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_other <- add_text(
+  p_cc_pr_poisson_other,
+  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -3281,7 +3724,7 @@ p_cc_pr_poisson_other <- add_text(
 p_cc_pr_poisson_other <- insert_text(
   p_cc_pr_poisson_other,
   text = "Uncertain/Other Sexual Identitiesᵃ",
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -3292,22 +3735,22 @@ p_cc_pr_poisson_other <- insert_text(
 )
 
 p_cc_pr_poisson_other <- edit_plot( p_cc_pr_poisson_other,
-                                              row = c( 1, 5, 8 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "white" )
+                                    row = c( 1, 6, 10, 13 ), 
+                                    which = "background",
+                                    gp = gpar( fill = "white" )
 )
 
 p_cc_pr_poisson_other <- edit_plot( p_cc_pr_poisson_other,
-                                              row = c( 2:4, 6, 7, 9, 10 ), 
-                                              which = "background",
-                                              gp = gpar( fill = "#eff3f2" )
+                                    row = c( 2:5, 7:9, 11, 12, 14, 15 ), 
+                                    which = "background",
+                                    gp = gpar( fill = "#eff3f2" )
 )
 
 p_cc_pr_poisson_other <- add_border(
   p_cc_pr_poisson_other,
   part = "header",
   row = 2,
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
@@ -3326,66 +3769,88 @@ results_cc_pr_poisson_age_sex <- results_cc_pr_poisson_age_sex %>%
 results_cc_pr_poisson_age_sex <- results_cc_pr_poisson_age_sex %>% 
   add_row( Exposure = "Female", .before = 5 )
 
-results_cc_pr_poisson_age_sex$Exposure[ results_cc_pr_poisson_age_sex$Exposure == "age_exp16-29_Male" ] <- paste0( "   ", "16–29 yrsᶜ\n\n" )
+results_cc_pr_poisson_age_sex$Exposure[ results_cc_pr_poisson_age_sex$Exposure == "age_exp16-29_Male" ] <- paste0( "   ", "16–29 yrsᵈ\n\n" )
 results_cc_pr_poisson_age_sex$Exposure[ results_cc_pr_poisson_age_sex$Exposure == "age_exp30-44_Male" ] <- paste0( "   ", "30–44 yrs\n\n" )
 results_cc_pr_poisson_age_sex$Exposure[ results_cc_pr_poisson_age_sex$Exposure == "age_exp>=60_Male" ] <- paste0( "   ", "\u2265 60 yrs\n\n" )
 
-results_cc_pr_poisson_age_sex$Exposure[ results_cc_pr_poisson_age_sex$Exposure == "age_exp16-29_Female" ] <- paste0( "   ", "16–29 yrsᶜ\n\n" )
+results_cc_pr_poisson_age_sex$Exposure[ results_cc_pr_poisson_age_sex$Exposure == "age_exp16-29_Female" ] <- paste0( "   ", "16–29 yrsᵈ\n\n" )
 results_cc_pr_poisson_age_sex$Exposure[ results_cc_pr_poisson_age_sex$Exposure == "age_exp30-44_Female" ] <- paste0( "   ", "30–44 yrs\n\n" )
 results_cc_pr_poisson_age_sex$Exposure[ results_cc_pr_poisson_age_sex$Exposure == "age_exp>=60_Female" ] <- paste0( "   ", "\u2265 60 yrs\n\n" )
 
 results_cc_pr_poisson_age_sex <- results_cc_pr_poisson_age_sex %>% 
   add_row( Exposure = paste0( "   ", "45–59 yrs" ), 
            Sexual_minority_crude = "Reference",
-           Sexual_minority = "Reference",
+           Sexual_minority_model_1 = "Reference",
+           Sexual_minority_model_2 = "Reference",
            Homosexual_crude = "Reference",
-           Homosexual = "Reference",
+           Homosexual_model_1 = "Reference",
+           Homosexual_model_2 = "Reference",
            Bisexual_crude = "Reference",
-           Bisexual = "Reference",
+           Bisexual_model_1 = "Reference",
+           Bisexual_model_2 = "Reference",
            Other_crude = "Reference",
-           Other = "Reference",
+           Other_model_1 = "Reference",
+           Other_model_2 = "Reference",
            .before = 4 )
 
 results_cc_pr_poisson_age_sex <- results_cc_pr_poisson_age_sex %>% 
   add_row( Exposure = paste0( "   ", "45–59 yrs" ), 
            Sexual_minority_crude = "Reference",
-           Sexual_minority = "Reference",
+           Sexual_minority_model_1 = "Reference",
+           Sexual_minority_model_2 = "Reference",
            Homosexual_crude = "Reference",
-           Homosexual = "Reference",
+           Homosexual_model_1 = "Reference",
+           Homosexual_model_2 = "Reference",
            Bisexual_crude = "Reference",
-           Bisexual = "Reference",
+           Bisexual_model_1 = "Reference",
+           Bisexual_model_2 = "Reference",
            Other_crude = "Reference",
-           Other = "Reference",
+           Other_model_1 = "Reference",
+           Other_model_2 = "Reference",
            .before = 9 )
 
 results_cc_pr_poisson_age_sex$Sexual_minority_crude <- ifelse( is.na( results_cc_pr_poisson_age_sex$Sexual_minority_crude ), "",
                                                       results_cc_pr_poisson_age_sex$Sexual_minority_crude )
 
-results_cc_pr_poisson_age_sex$Sexual_minority <- ifelse( is.na( results_cc_pr_poisson_age_sex$Sexual_minority ), "",
-                                                      results_cc_pr_poisson_age_sex$Sexual_minority )
+results_cc_pr_poisson_age_sex$Sexual_minority_model_1 <- ifelse( is.na( results_cc_pr_poisson_age_sex$Sexual_minority_model_1 ), "",
+                                                      results_cc_pr_poisson_age_sex$Sexual_minority_model_1 )
+
+results_cc_pr_poisson_age_sex$Sexual_minority_model_2 <- ifelse( is.na( results_cc_pr_poisson_age_sex$Sexual_minority_model_2 ), "",
+                                                      results_cc_pr_poisson_age_sex$Sexual_minority_model_2 )
 
 results_cc_pr_poisson_age_sex$Homosexual_crude <- ifelse( is.na( results_cc_pr_poisson_age_sex$Homosexual_crude ), "",
                                                       results_cc_pr_poisson_age_sex$Homosexual_crude )
 
-results_cc_pr_poisson_age_sex$Homosexual <- ifelse( is.na( results_cc_pr_poisson_age_sex$Homosexual ), "",
-                                                      results_cc_pr_poisson_age_sex$Homosexual )
+results_cc_pr_poisson_age_sex$Homosexual_model_1 <- ifelse( is.na( results_cc_pr_poisson_age_sex$Homosexual_model_1 ), "",
+                                                      results_cc_pr_poisson_age_sex$Homosexual_model_1 )
+
+results_cc_pr_poisson_age_sex$Homosexual_model_2 <- ifelse( is.na( results_cc_pr_poisson_age_sex$Homosexual_model_2 ), "",
+                                                      results_cc_pr_poisson_age_sex$Homosexual_model_2 )
 
 results_cc_pr_poisson_age_sex$Bisexual_crude <- ifelse( is.na( results_cc_pr_poisson_age_sex$Bisexual_crude ), "",
                                                       results_cc_pr_poisson_age_sex$Bisexual_crude )
 
-results_cc_pr_poisson_age_sex$Bisexual <- ifelse( is.na( results_cc_pr_poisson_age_sex$Bisexual ), "",
-                                                      results_cc_pr_poisson_age_sex$Bisexual )
+results_cc_pr_poisson_age_sex$Bisexual_model_1 <- ifelse( is.na( results_cc_pr_poisson_age_sex$Bisexual_model_1 ), "",
+                                                      results_cc_pr_poisson_age_sex$Bisexual_model_1 )
+
+results_cc_pr_poisson_age_sex$Bisexual_model_2 <- ifelse( is.na( results_cc_pr_poisson_age_sex$Bisexual_model_2 ), "",
+                                                      results_cc_pr_poisson_age_sex$Bisexual_model_2 )
 
 results_cc_pr_poisson_age_sex$Other_crude <- ifelse( is.na( results_cc_pr_poisson_age_sex$Other_crude ), "",
                                                       results_cc_pr_poisson_age_sex$Other_crude )
 
-results_cc_pr_poisson_age_sex$Other <- ifelse( is.na( results_cc_pr_poisson_age_sex$Other ), "",
-                                                      results_cc_pr_poisson_age_sex$Other )
+results_cc_pr_poisson_age_sex$Other_model_1 <- ifelse( is.na( results_cc_pr_poisson_age_sex$Other_model_1 ), "",
+                                                      results_cc_pr_poisson_age_sex$Other_model_1 )
+
+results_cc_pr_poisson_age_sex$Other_model_2 <- ifelse( is.na( results_cc_pr_poisson_age_sex$Other_model_2 ), "",
+                                                      results_cc_pr_poisson_age_sex$Other_model_2 )
 ```
 
 ###### 4.1.6.2. Sexual minority group
 ```{r}
-results_cc_pr_poisson_age_sex_sexual_minorities <- results_cc_pr_poisson_age_sex[ , c( 1:3, 34:36, 46:48, 58:60, 70:72, 82:84, 94:96 ) ]
+selected_cols <- grep( "exposure|sexual_minority", colnames( results_cc_pr_poisson_age_sex ), ignore.case = TRUE )
+
+results_cc_pr_poisson_age_sex_sexual_minorities <- results_cc_pr_poisson_age_sex[ , selected_cols ]
 
 results_cc_pr_poisson_age_sex_sexual_minorities <- results_cc_pr_poisson_age_sex_sexual_minorities %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -3393,13 +3858,17 @@ results_cc_pr_poisson_age_sex_sexual_minorities <- results_cc_pr_poisson_age_sex
 results_cc_pr_poisson_age_sex_sexual_minorities <- results_cc_pr_poisson_age_sex_sexual_minorities %>% 
   add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
 
+results_cc_pr_poisson_age_sex_sexual_minorities <- results_cc_pr_poisson_age_sex_sexual_minorities %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
 results_cc_pr_poisson_age_sex_sexual_minorities <- results_cc_pr_poisson_age_sex_sexual_minorities %>%
   add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
 
 colnames( results_cc_pr_poisson_age_sex_sexual_minorities )[1] <- "Demographic Factor"
 
-names( results_cc_pr_poisson_age_sex_sexual_minorities )[ names( results_cc_pr_poisson_age_sex_sexual_minorities ) %in% c( "temp1", "temp2", "Sexual_minority_crude", "Sexual_minority" ) ] <- ""
+names( results_cc_pr_poisson_age_sex_sexual_minorities )[ names( results_cc_pr_poisson_age_sex_sexual_minorities ) %in% c( "temp1", "temp2", "temp3", "Sexual_minority_crude", "Sexual_minority_model_1", "Sexual_minority_model_2" ) ] <- ""
 
 tm <- forest_theme(
   base_size = 10,
@@ -3413,34 +3882,49 @@ tm <- forest_theme(
   refline_col = "grey20"
 )
 
-p_cc_pr_poisson_age_sex_sexual_minorities <- forest(
-  results_cc_pr_poisson_age_sex_sexual_minorities[ , c( 1:7 ) ],
+p_cc_pr_poisson_sexual_minority <- forest(
+  results_cc_pr_poisson_age_sex_sexual_minorities[ , c( 1:10 ) ],
   
   est = list( results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_point_estimate_crude_2010,
-              results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_point_estimate_2010,
+              results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_point_estimate_model_1_2010,
+              results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_point_estimate_model_2_2010,
+              
               results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_point_estimate_crude_2014,
-              results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_point_estimate_2014,
+              results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_point_estimate_model_1_2014,
+              results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_point_estimate_model_2_2014,
+              
               results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_point_estimate_crude_2021,
-              results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_point_estimate_2021
+              results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_point_estimate_model_1_2021,
+              results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_point_estimate_model_2_2021
   ),
   
   lower = list( results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_lower_ci_crude_2010,
-                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_lower_ci_2010,
+                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_lower_ci_model_1_2010,
+                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_lower_ci_model_2_2010,
+                
                 results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_lower_ci_crude_2014,
-                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_lower_ci_2014,
+                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_lower_ci_model_1_2014,
+                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_lower_ci_model_2_2014,
+                
                 results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_lower_ci_crude_2021,
-                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_lower_ci_2021
+                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_lower_ci_model_1_2021,
+                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_lower_ci_model_2_2021
   ),
   
   upper = list( results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_upper_ci_crude_2010,
-                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_upper_ci_2010,
+                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_upper_ci_model_1_2010,
+                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_upper_ci_model_2_2010,
+                
                 results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_upper_ci_crude_2014,
-                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_upper_ci_2014,
+                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_upper_ci_model_1_2014,
+                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_upper_ci_model_2_2014,
+                
                 results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_upper_ci_crude_2021,
-                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_upper_ci_2021
+                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_upper_ci_model_1_2021,
+                results_cc_pr_poisson_age_sex_sexual_minorities$sexual_minority_upper_ci_model_2_2021
   ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
@@ -3453,14 +3937,14 @@ p_cc_pr_poisson_age_sex_sexual_minorities <- forest(
   theme = tm
 )
 
-p_cc_pr_poisson_age_sex_sexual_minorities <- edit_plot( p_cc_pr_poisson_age_sex_sexual_minorities,
-                                      row = c( 1, 6 ),
-                                      col = 1,
-                                      gp = gpar( fontface = "bold" ) 
+p_cc_pr_poisson_sexual_minority <- edit_plot( p_cc_pr_poisson_sexual_minority,
+                                              row = c( 1, 6 ),
+                                              col = 1,
+                                              gp = gpar( fontface = "bold" ) 
 )
 
-p_cc_pr_poisson_age_sex_sexual_minorities <- add_text(
-  p_cc_pr_poisson_age_sex_sexual_minorities,
+p_cc_pr_poisson_sexual_minority <- add_text(
+  p_cc_pr_poisson_sexual_minority,
   text = "Crude Proportion Ratio (95% CI)",
   col = c( 3:4 ),
   row = 1,
@@ -3472,9 +3956,9 @@ p_cc_pr_poisson_age_sex_sexual_minorities <- add_text(
   )
 )
 
-p_cc_pr_poisson_age_sex_sexual_minorities <- add_text(
-  p_cc_pr_poisson_age_sex_sexual_minorities,
-  text = "Adjusted Proportion Ratio (95% CI)ᵇ",
+p_cc_pr_poisson_sexual_minority <- add_text(
+  p_cc_pr_poisson_sexual_minority,
+  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
   row = 1,
   part = "header",
@@ -3485,10 +3969,10 @@ p_cc_pr_poisson_age_sex_sexual_minorities <- add_text(
   )
 )
 
-p_cc_pr_poisson_age_sex_sexual_minorities <- insert_text(
-  p_cc_pr_poisson_age_sex_sexual_minorities,
-  text = "Sexual Minoritiesᵃ",
-  col = c( 3:7 ),
+p_cc_pr_poisson_sexual_minority <- add_text(
+  p_cc_pr_poisson_sexual_minority,
+  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -3498,33 +3982,48 @@ p_cc_pr_poisson_age_sex_sexual_minorities <- insert_text(
   )
 )
 
-p_cc_pr_poisson_age_sex_sexual_minorities <- edit_plot( p_cc_pr_poisson_age_sex_sexual_minorities,
-                                      row = c( 1, 6 ), 
-                                      which = "background",
-                                      gp = gpar( fill = "white" )
+p_cc_pr_poisson_sexual_minority <- insert_text(
+  p_cc_pr_poisson_sexual_minority,
+  text = "Sexual Minoritiesᵃ",
+  col = c( 3:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
 )
 
-p_cc_pr_poisson_age_sex_sexual_minorities <- edit_plot( p_cc_pr_poisson_age_sex_sexual_minorities,
-                                      row = c( 2:5, 7:10 ), 
-                                      which = "background",
-                                      gp = gpar( fill = "#eff3f2" )
+p_cc_pr_poisson_sexual_minority <- edit_plot( p_cc_pr_poisson_sexual_minority,
+                                              row = c( 1, 6 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "white" )
 )
 
-p_cc_pr_poisson_age_sex_sexual_minorities <- add_border(
-  p_cc_pr_poisson_age_sex_sexual_minorities,
+p_cc_pr_poisson_sexual_minority <- edit_plot( p_cc_pr_poisson_sexual_minority,
+                                              row = c( 2:5, 7:10 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "#eff3f2" )
+)
+
+p_cc_pr_poisson_sexual_minority <- add_border(
+  p_cc_pr_poisson_sexual_minority,
   part = "header",
   row = 2,
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
 
-plot( p_cc_pr_poisson_age_sex_sexual_minorities )
+plot( p_cc_pr_poisson_sexual_minority )
 ```
 
 ###### 4.1.6.3. Homosexual group
 ```{r}
-results_cc_pr_poisson_age_sex_homosexual <- results_cc_pr_poisson_age_sex[ , c( 1, 4, 5, 37:39, 49:51, 61:63, 73:75, 85:87, 97:99 ) ]
+selected_cols <- grep( "exposure|homosexual", colnames( results_cc_pr_poisson_age_sex ), ignore.case = TRUE )
+
+results_cc_pr_poisson_age_sex_homosexual <- results_cc_pr_poisson_age_sex[ , selected_cols ]
 
 results_cc_pr_poisson_age_sex_homosexual <- results_cc_pr_poisson_age_sex_homosexual %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -3532,13 +4031,17 @@ results_cc_pr_poisson_age_sex_homosexual <- results_cc_pr_poisson_age_sex_homose
 results_cc_pr_poisson_age_sex_homosexual <- results_cc_pr_poisson_age_sex_homosexual %>% 
   add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
 
+results_cc_pr_poisson_age_sex_homosexual <- results_cc_pr_poisson_age_sex_homosexual %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
 results_cc_pr_poisson_age_sex_homosexual <- results_cc_pr_poisson_age_sex_homosexual %>%
   add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
 
 colnames( results_cc_pr_poisson_age_sex_homosexual )[1] <- "Demographic Factor"
 
-names( results_cc_pr_poisson_age_sex_homosexual )[ names( results_cc_pr_poisson_age_sex_homosexual ) %in% c( "temp1", "temp2", "Homosexual_crude", "Homosexual" ) ] <- ""
+names( results_cc_pr_poisson_age_sex_homosexual )[ names( results_cc_pr_poisson_age_sex_homosexual ) %in% c( "temp1", "temp2", "temp3", "Homosexual_crude", "Homosexual_model_1", "Homosexual_model_2" ) ] <- ""
 
 tm <- forest_theme(
   base_size = 10,
@@ -3552,34 +4055,49 @@ tm <- forest_theme(
   refline_col = "grey20"
 )
 
-p_cc_pr_poisson_age_sex_homosexual <- forest(
-  results_cc_pr_poisson_age_sex_homosexual[ , c( 1:7 ) ],
+p_cc_pr_poisson_homosexual <- forest(
+  results_cc_pr_poisson_age_sex_homosexual[ , c( 1:10 ) ],
   
   est = list( results_cc_pr_poisson_age_sex_homosexual$homosexual_point_estimate_crude_2010,
-              results_cc_pr_poisson_age_sex_homosexual$homosexual_point_estimate_2010,
+              results_cc_pr_poisson_age_sex_homosexual$homosexual_point_estimate_model_1_2010,
+              results_cc_pr_poisson_age_sex_homosexual$homosexual_point_estimate_model_2_2010,
+              
               results_cc_pr_poisson_age_sex_homosexual$homosexual_point_estimate_crude_2014,
-              results_cc_pr_poisson_age_sex_homosexual$homosexual_point_estimate_2014,
+              results_cc_pr_poisson_age_sex_homosexual$homosexual_point_estimate_model_1_2014,
+              results_cc_pr_poisson_age_sex_homosexual$homosexual_point_estimate_model_2_2014,
+              
               results_cc_pr_poisson_age_sex_homosexual$homosexual_point_estimate_crude_2021,
-              results_cc_pr_poisson_age_sex_homosexual$homosexual_point_estimate_2021
+              results_cc_pr_poisson_age_sex_homosexual$homosexual_point_estimate_model_1_2021,
+              results_cc_pr_poisson_age_sex_homosexual$homosexual_point_estimate_model_2_2021
   ),
   
   lower = list( results_cc_pr_poisson_age_sex_homosexual$homosexual_lower_ci_crude_2010,
-                results_cc_pr_poisson_age_sex_homosexual$homosexual_lower_ci_2010,
+                results_cc_pr_poisson_age_sex_homosexual$homosexual_lower_ci_model_1_2010,
+                results_cc_pr_poisson_age_sex_homosexual$homosexual_lower_ci_model_2_2010,
+                
                 results_cc_pr_poisson_age_sex_homosexual$homosexual_lower_ci_crude_2014,
-                results_cc_pr_poisson_age_sex_homosexual$homosexual_lower_ci_2014,
+                results_cc_pr_poisson_age_sex_homosexual$homosexual_lower_ci_model_1_2014,
+                results_cc_pr_poisson_age_sex_homosexual$homosexual_lower_ci_model_2_2014,
+                
                 results_cc_pr_poisson_age_sex_homosexual$homosexual_lower_ci_crude_2021,
-                results_cc_pr_poisson_age_sex_homosexual$homosexual_lower_ci_2021
+                results_cc_pr_poisson_age_sex_homosexual$homosexual_lower_ci_model_1_2021,
+                results_cc_pr_poisson_age_sex_homosexual$homosexual_lower_ci_model_2_2021
   ),
   
   upper = list( results_cc_pr_poisson_age_sex_homosexual$homosexual_upper_ci_crude_2010,
-                results_cc_pr_poisson_age_sex_homosexual$homosexual_upper_ci_2010,
+                results_cc_pr_poisson_age_sex_homosexual$homosexual_upper_ci_model_1_2010,
+                results_cc_pr_poisson_age_sex_homosexual$homosexual_upper_ci_model_2_2010,
+                
                 results_cc_pr_poisson_age_sex_homosexual$homosexual_upper_ci_crude_2014,
-                results_cc_pr_poisson_age_sex_homosexual$homosexual_upper_ci_2014,
+                results_cc_pr_poisson_age_sex_homosexual$homosexual_upper_ci_model_1_2014,
+                results_cc_pr_poisson_age_sex_homosexual$homosexual_upper_ci_model_2_2014,
+                
                 results_cc_pr_poisson_age_sex_homosexual$homosexual_upper_ci_crude_2021,
-                results_cc_pr_poisson_age_sex_homosexual$homosexual_upper_ci_2021
+                results_cc_pr_poisson_age_sex_homosexual$homosexual_upper_ci_model_1_2021,
+                results_cc_pr_poisson_age_sex_homosexual$homosexual_upper_ci_model_2_2021
   ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
@@ -3592,14 +4110,187 @@ p_cc_pr_poisson_age_sex_homosexual <- forest(
   theme = tm
 )
 
-p_cc_pr_poisson_age_sex_homosexual <- edit_plot( p_cc_pr_poisson_age_sex_homosexual,
+p_cc_pr_poisson_homosexual <- edit_plot( p_cc_pr_poisson_homosexual,
+                                              row = c( 1, 6 ),
+                                              col = 1,
+                                              gp = gpar( fontface = "bold" ) 
+)
+
+p_cc_pr_poisson_homosexual <- add_text(
+  p_cc_pr_poisson_homosexual,
+  text = "Crude Proportion Ratio (95% CI)",
+  col = c( 3:4 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_homosexual <- add_text(
+  p_cc_pr_poisson_homosexual,
+  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
+  col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_homosexual <- add_text(
+  p_cc_pr_poisson_homosexual,
+  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_homosexual <- insert_text(
+  p_cc_pr_poisson_homosexual,
+  text = "Homosexual Identityᵃ",
+  col = c( 3:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_homosexual <- edit_plot( p_cc_pr_poisson_homosexual,
+                                              row = c( 1, 6 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "white" )
+)
+
+p_cc_pr_poisson_homosexual <- edit_plot( p_cc_pr_poisson_homosexual,
+                                              row = c( 2:5, 7:10 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "#eff3f2" )
+)
+
+p_cc_pr_poisson_homosexual <- add_border(
+  p_cc_pr_poisson_homosexual,
+  part = "header",
+  row = 2,
+  col = c( 3:10 ),
+  where = "top",
+  gp = gpar(lwd = 1)
+)
+
+plot( p_cc_pr_poisson_homosexual )
+```
+
+###### 4.1.6.4. Bisexual group
+```{r}
+selected_cols <- grep( "exposure|bisexual", colnames( results_cc_pr_poisson_age_sex ), ignore.case = TRUE )
+
+results_cc_pr_poisson_age_sex_bisexual <- results_cc_pr_poisson_age_sex[ , selected_cols ]
+
+results_cc_pr_poisson_age_sex_bisexual <- results_cc_pr_poisson_age_sex_bisexual %>% 
+  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
+
+results_cc_pr_poisson_age_sex_bisexual <- results_cc_pr_poisson_age_sex_bisexual %>% 
+  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
+
+results_cc_pr_poisson_age_sex_bisexual <- results_cc_pr_poisson_age_sex_bisexual %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
+results_cc_pr_poisson_age_sex_bisexual <- results_cc_pr_poisson_age_sex_bisexual %>%
+  add_column( temp1 = " ", .before = 2 ) %>%
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
+
+colnames( results_cc_pr_poisson_age_sex_bisexual )[1] <- "Demographic Factor"
+
+names( results_cc_pr_poisson_age_sex_bisexual )[ names( results_cc_pr_poisson_age_sex_bisexual ) %in% c( "temp1", "temp2", "temp3", "Bisexual_crude", "Bisexual_model_1", "Bisexual_model_2" ) ] <- ""
+
+tm <- forest_theme(
+  base_size = 10,
+  colhead = list( fg_params = list( fontsize = 10 ) ),
+  legend_value = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
+  legend_name = NULL,
+  legend_position = "bottom",
+  base_family = "Arial",
+  refline_lty = "dashed",
+  refline_lwd = 1,
+  refline_col = "grey20"
+)
+
+p_cc_pr_poisson_bisexual <- forest(
+  results_cc_pr_poisson_age_sex_bisexual[ , c( 1:10 ) ],
+  
+  est = list( results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_crude_2010,
+              results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_model_1_2010,
+              results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_model_2_2010,
+              
+              results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_crude_2014,
+              results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_model_1_2014,
+              results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_model_2_2014,
+              
+              results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_crude_2021,
+              results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_model_1_2021,
+              results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_model_2_2021
+  ),
+  
+  lower = list( results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_crude_2010,
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_model_1_2010,
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_model_2_2010,
+                
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_crude_2014,
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_model_1_2014,
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_model_2_2014,
+                
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_crude_2021,
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_model_1_2021,
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_model_2_2021
+  ),
+  
+  upper = list( results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_crude_2010,
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_model_1_2010,
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_model_2_2010,
+                
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_crude_2014,
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_model_1_2014,
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_model_2_2014,
+                
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_crude_2021,
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_model_1_2021,
+                results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_model_2_2021
+  ),
+  
+  ci_column = c( 3, 6, 9 ),
+  sizes = 0.4,
+  
+  ref_line = 1,
+  
+  xlim = c( 0, 8 ),
+  ticks_at = c( 0, 1, 2, 4, 6, 8 ),
+  
+  xlab = "Proportion Ratio (95% CI)",
+  nudge_y = 0.33,
+  theme = tm
+)
+
+p_cc_pr_poisson_bisexual <- edit_plot( p_cc_pr_poisson_bisexual,
                                          row = c( 1, 6 ),
                                          col = 1,
                                          gp = gpar( fontface = "bold" ) 
 )
 
-p_cc_pr_poisson_age_sex_homosexual <- add_text(
-  p_cc_pr_poisson_age_sex_homosexual,
+p_cc_pr_poisson_bisexual <- add_text(
+  p_cc_pr_poisson_bisexual,
   text = "Crude Proportion Ratio (95% CI)",
   col = c( 3:4 ),
   row = 1,
@@ -3611,9 +4302,9 @@ p_cc_pr_poisson_age_sex_homosexual <- add_text(
   )
 )
 
-p_cc_pr_poisson_age_sex_homosexual <- add_text(
-  p_cc_pr_poisson_age_sex_homosexual,
-  text = "Adjusted Proportion Ratio (95% CI)ᵇ",
+p_cc_pr_poisson_bisexual <- add_text(
+  p_cc_pr_poisson_bisexual,
+  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
   row = 1,
   part = "header",
@@ -3624,10 +4315,10 @@ p_cc_pr_poisson_age_sex_homosexual <- add_text(
   )
 )
 
-p_cc_pr_poisson_age_sex_homosexual <- insert_text(
-  p_cc_pr_poisson_age_sex_homosexual,
-  text = "Homosexual Identityᵃ",
-  col = c( 3:7 ),
+p_cc_pr_poisson_bisexual <- add_text(
+  p_cc_pr_poisson_bisexual,
+  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -3637,47 +4328,66 @@ p_cc_pr_poisson_age_sex_homosexual <- insert_text(
   )
 )
 
-p_cc_pr_poisson_age_sex_homosexual <- edit_plot( p_cc_pr_poisson_age_sex_homosexual,
+p_cc_pr_poisson_bisexual <- insert_text(
+  p_cc_pr_poisson_bisexual,
+  text = "Bisexual Identityᵃ",
+  col = c( 3:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_bisexual <- edit_plot( p_cc_pr_poisson_bisexual,
                                          row = c( 1, 6 ), 
                                          which = "background",
                                          gp = gpar( fill = "white" )
 )
 
-p_cc_pr_poisson_age_sex_homosexual <- edit_plot( p_cc_pr_poisson_age_sex_homosexual,
+p_cc_pr_poisson_bisexual <- edit_plot( p_cc_pr_poisson_bisexual,
                                          row = c( 2:5, 7:10 ), 
                                          which = "background",
                                          gp = gpar( fill = "#eff3f2" )
 )
 
-p_cc_pr_poisson_age_sex_homosexual <- add_border(
-  p_cc_pr_poisson_age_sex_homosexual,
+p_cc_pr_poisson_bisexual <- add_border(
+  p_cc_pr_poisson_bisexual,
   part = "header",
   row = 2,
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
 
-plot( p_cc_pr_poisson_age_sex_homosexual )
+plot( p_cc_pr_poisson_bisexual )
 ```
 
-###### 4.1.6.4. Bisexual group
+###### 4.1.6.5. Other group
 ```{r}
-results_cc_pr_poisson_age_sex_bisexual <- results_cc_pr_poisson_age_sex[ , c( 1, 6, 7, 40:42, 52:54, 64:66, 76:78, 88:90, 100:102 ) ]
+selected_cols <- grep( "exposure|other", colnames( results_cc_pr_poisson_age_sex ), ignore.case = TRUE )
 
-results_cc_pr_poisson_age_sex_bisexual <- results_cc_pr_poisson_age_sex_bisexual %>% 
+results_cc_pr_poisson_age_sex_other <- results_cc_pr_poisson_age_sex[ , selected_cols ]
+
+results_cc_pr_poisson_age_sex_other <- results_cc_pr_poisson_age_sex_other %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
 
-results_cc_pr_poisson_age_sex_bisexual <- results_cc_pr_poisson_age_sex_bisexual %>% 
+results_cc_pr_poisson_age_sex_other <- results_cc_pr_poisson_age_sex_other %>% 
   add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
 
-results_cc_pr_poisson_age_sex_bisexual <- results_cc_pr_poisson_age_sex_bisexual %>%
+results_cc_pr_poisson_age_sex_other <- results_cc_pr_poisson_age_sex_other %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
+results_cc_pr_poisson_age_sex_other <- results_cc_pr_poisson_age_sex_other %>%
   add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
 
-colnames( results_cc_pr_poisson_age_sex_bisexual )[1] <- "Demographic Factor"
+colnames( results_cc_pr_poisson_age_sex_other )[1] <- "Demographic Factor"
 
-names( results_cc_pr_poisson_age_sex_bisexual )[ names( results_cc_pr_poisson_age_sex_bisexual ) %in% c( "temp1", "temp2", "Bisexual_crude", "Bisexual" ) ] <- ""
+names( results_cc_pr_poisson_age_sex_other )[ names( results_cc_pr_poisson_age_sex_other ) %in% c( "temp1", "temp2", "temp3", "Other_crude", "Other_model_1", "Other_model_2" ) ] <- ""
 
 tm <- forest_theme(
   base_size = 10,
@@ -3691,54 +4401,69 @@ tm <- forest_theme(
   refline_col = "grey20"
 )
 
-p_cc_pr_poisson_age_sex_bisexual <- forest(
-  results_cc_pr_poisson_age_sex_bisexual[ , c( 1:7 ) ],
+p_cc_pr_poisson_other <- forest(
+  results_cc_pr_poisson_age_sex_other[ , c( 1:10 ) ],
   
-  est = list( results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_crude_2010,
-              results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_2010,
-              results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_crude_2014,
-              results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_2014,
-              results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_crude_2021,
-              results_cc_pr_poisson_age_sex_bisexual$bisexual_point_estimate_2021
+  est = list( results_cc_pr_poisson_age_sex_other$other_point_estimate_crude_2010,
+              results_cc_pr_poisson_age_sex_other$other_point_estimate_model_1_2010,
+              results_cc_pr_poisson_age_sex_other$other_point_estimate_model_2_2010,
+              
+              results_cc_pr_poisson_age_sex_other$other_point_estimate_crude_2014,
+              results_cc_pr_poisson_age_sex_other$other_point_estimate_model_1_2014,
+              results_cc_pr_poisson_age_sex_other$other_point_estimate_model_2_2014,
+              
+              results_cc_pr_poisson_age_sex_other$other_point_estimate_crude_2021,
+              results_cc_pr_poisson_age_sex_other$other_point_estimate_model_1_2021,
+              results_cc_pr_poisson_age_sex_other$other_point_estimate_model_2_2021
   ),
   
-  lower = list( results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_crude_2010,
-                results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_2010,
-                results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_crude_2014,
-                results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_2014,
-                results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_crude_2021,
-                results_cc_pr_poisson_age_sex_bisexual$bisexual_lower_ci_2021
+  lower = list( results_cc_pr_poisson_age_sex_other$other_lower_ci_crude_2010,
+                results_cc_pr_poisson_age_sex_other$other_lower_ci_model_1_2010,
+                results_cc_pr_poisson_age_sex_other$other_lower_ci_model_2_2010,
+                
+                results_cc_pr_poisson_age_sex_other$other_lower_ci_crude_2014,
+                results_cc_pr_poisson_age_sex_other$other_lower_ci_model_1_2014,
+                results_cc_pr_poisson_age_sex_other$other_lower_ci_model_2_2014,
+                
+                results_cc_pr_poisson_age_sex_other$other_lower_ci_crude_2021,
+                results_cc_pr_poisson_age_sex_other$other_lower_ci_model_1_2021,
+                results_cc_pr_poisson_age_sex_other$other_lower_ci_model_2_2021
   ),
   
-  upper = list( results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_crude_2010,
-                results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_2010,
-                results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_crude_2014,
-                results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_2014,
-                results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_crude_2021,
-                results_cc_pr_poisson_age_sex_bisexual$bisexual_upper_ci_2021
+  upper = list( results_cc_pr_poisson_age_sex_other$other_upper_ci_crude_2010,
+                results_cc_pr_poisson_age_sex_other$other_upper_ci_model_1_2010,
+                results_cc_pr_poisson_age_sex_other$other_upper_ci_model_2_2010,
+                
+                results_cc_pr_poisson_age_sex_other$other_upper_ci_crude_2014,
+                results_cc_pr_poisson_age_sex_other$other_upper_ci_model_1_2014,
+                results_cc_pr_poisson_age_sex_other$other_upper_ci_model_2_2014,
+                
+                results_cc_pr_poisson_age_sex_other$other_upper_ci_crude_2021,
+                results_cc_pr_poisson_age_sex_other$other_upper_ci_model_1_2021,
+                results_cc_pr_poisson_age_sex_other$other_upper_ci_model_2_2021
   ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
   
-  xlim = c( 0, 8 ),
-  ticks_at = c( 0, 1, 2, 4, 6, 8 ),
+  xlim = c( 0, 4 ),
+  ticks_at = c( 0, 1, 2, 3, 4 ),
   
   xlab = "Proportion Ratio (95% CI)",
   nudge_y = 0.33,
   theme = tm
 )
 
-p_cc_pr_poisson_age_sex_bisexual <- edit_plot( p_cc_pr_poisson_age_sex_bisexual,
+p_cc_pr_poisson_other <- edit_plot( p_cc_pr_poisson_other,
                                        row = c( 1, 6 ),
                                        col = 1,
                                        gp = gpar( fontface = "bold" ) 
 )
 
-p_cc_pr_poisson_age_sex_bisexual <- add_text(
-  p_cc_pr_poisson_age_sex_bisexual,
+p_cc_pr_poisson_other <- add_text(
+  p_cc_pr_poisson_other,
   text = "Crude Proportion Ratio (95% CI)",
   col = c( 3:4 ),
   row = 1,
@@ -3750,9 +4475,9 @@ p_cc_pr_poisson_age_sex_bisexual <- add_text(
   )
 )
 
-p_cc_pr_poisson_age_sex_bisexual <- add_text(
-  p_cc_pr_poisson_age_sex_bisexual,
-  text = "Adjusted Proportion Ratio (95% CI)ᵇ",
+p_cc_pr_poisson_other <- add_text(
+  p_cc_pr_poisson_other,
+  text = "Model 1, Proportion Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
   row = 1,
   part = "header",
@@ -3763,10 +4488,10 @@ p_cc_pr_poisson_age_sex_bisexual <- add_text(
   )
 )
 
-p_cc_pr_poisson_age_sex_bisexual <- insert_text(
-  p_cc_pr_poisson_age_sex_bisexual,
-  text = "Bisexual Identityᵃ",
-  col = c( 3:7 ),
+p_cc_pr_poisson_other <- add_text(
+  p_cc_pr_poisson_other,
+  text = "Model 2, Proportion Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
   row = 1,
   part = "header",
   gp = gpar(
@@ -3776,167 +4501,41 @@ p_cc_pr_poisson_age_sex_bisexual <- insert_text(
   )
 )
 
-p_cc_pr_poisson_age_sex_bisexual <- edit_plot( p_cc_pr_poisson_age_sex_bisexual,
+p_cc_pr_poisson_other <- insert_text(
+  p_cc_pr_poisson_other,
+  text = "Uncertain/Other Sexual Identitiesᵃ",
+  col = c( 3:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_other <- edit_plot( p_cc_pr_poisson_other,
                                        row = c( 1, 6 ), 
                                        which = "background",
                                        gp = gpar( fill = "white" )
 )
 
-p_cc_pr_poisson_age_sex_bisexual <- edit_plot( p_cc_pr_poisson_age_sex_bisexual,
+p_cc_pr_poisson_other <- edit_plot( p_cc_pr_poisson_other,
                                        row = c( 2:5, 7:10 ), 
                                        which = "background",
                                        gp = gpar( fill = "#eff3f2" )
 )
 
-p_cc_pr_poisson_age_sex_bisexual <- add_border(
-  p_cc_pr_poisson_age_sex_bisexual,
+p_cc_pr_poisson_other <- add_border(
+  p_cc_pr_poisson_other,
   part = "header",
   row = 2,
-  col = c( 3:7 ),
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
 
-plot( p_cc_pr_poisson_age_sex_bisexual )
-```
-
-###### 4.1.6.5. Other group
-```{r}
-results_cc_pr_poisson_age_sex_other <- results_cc_pr_poisson_age_sex[ , c( 1, 8, 9, 43:45, 55:57, 67:69, 79:81, 91:93, 103:105 ) ]
-
-results_cc_pr_poisson_age_sex_other <- results_cc_pr_poisson_age_sex_other %>% 
-  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
-
-results_cc_pr_poisson_age_sex_other <- results_cc_pr_poisson_age_sex_other %>% 
-  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
-
-results_cc_pr_poisson_age_sex_other <- results_cc_pr_poisson_age_sex_other %>%
-  add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
-
-colnames( results_cc_pr_poisson_age_sex_other )[1] <- "Demographic Factor"
-
-names( results_cc_pr_poisson_age_sex_other )[ names( results_cc_pr_poisson_age_sex_other ) %in% c( "temp1", "temp2", "Other_crude", "Other" ) ] <- ""
-
-tm <- forest_theme(
-  base_size = 10,
-  colhead = list( fg_params = list( fontsize = 10 ) ),
-  legend_value = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
-  legend_name = NULL,
-  legend_position = "bottom",
-  base_family = "Arial",
-  refline_lty = "dashed",
-  refline_lwd = 1,
-  refline_col = "grey20"
-)
-
-p_cc_pr_poisson_age_sex_other <- forest(
-  results_cc_pr_poisson_age_sex_other[ , c( 1:7 ) ],
-  
-  est = list( results_cc_pr_poisson_age_sex_other$other_point_estimate_crude_2010,
-              results_cc_pr_poisson_age_sex_other$other_point_estimate_2010,
-              results_cc_pr_poisson_age_sex_other$other_point_estimate_crude_2014,
-              results_cc_pr_poisson_age_sex_other$other_point_estimate_2014,
-              results_cc_pr_poisson_age_sex_other$other_point_estimate_crude_2021,
-              results_cc_pr_poisson_age_sex_other$other_point_estimate_2021
-  ),
-  
-  lower = list( results_cc_pr_poisson_age_sex_other$other_lower_ci_crude_2010,
-                results_cc_pr_poisson_age_sex_other$other_lower_ci_2010,
-                results_cc_pr_poisson_age_sex_other$other_lower_ci_crude_2014,
-                results_cc_pr_poisson_age_sex_other$other_lower_ci_2014,
-                results_cc_pr_poisson_age_sex_other$other_lower_ci_crude_2021,
-                results_cc_pr_poisson_age_sex_other$other_lower_ci_2021
-  ),
-  
-  upper = list( results_cc_pr_poisson_age_sex_other$other_upper_ci_crude_2010,
-                results_cc_pr_poisson_age_sex_other$other_upper_ci_2010,
-                results_cc_pr_poisson_age_sex_other$other_upper_ci_crude_2014,
-                results_cc_pr_poisson_age_sex_other$other_upper_ci_2014,
-                results_cc_pr_poisson_age_sex_other$other_upper_ci_crude_2021,
-                results_cc_pr_poisson_age_sex_other$other_upper_ci_2021
-  ),
-  
-  ci_column = c( 3, 6 ),
-  sizes = 0.4,
-  
-  ref_line = 1,
-  
-  xlim = c( 0, 8 ),
-  ticks_at = c( 0, 1, 2, 4, 6, 8 ),
-  
-  xlab = "Proportion Ratio (95% CI)",
-  nudge_y = 0.33,
-  theme = tm
-)
-
-p_cc_pr_poisson_age_sex_other <- edit_plot( p_cc_pr_poisson_age_sex_other,
-                                    row = c( 1, 6 ),
-                                    col = 1,
-                                    gp = gpar( fontface = "bold" ) 
-)
-
-p_cc_pr_poisson_age_sex_other <- add_text(
-  p_cc_pr_poisson_age_sex_other,
-  text = "Crude Proportion Ratio (95% CI)",
-  col = c( 3:4 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_cc_pr_poisson_age_sex_other <- add_text(
-  p_cc_pr_poisson_age_sex_other,
-  text = "Adjusted Proportion Ratio (95% CI)ᵇ",
-  col = c( 6:7 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_cc_pr_poisson_age_sex_other <- insert_text(
-  p_cc_pr_poisson_age_sex_other,
-  text = "Uncertain/Other Sexual Identitiesᵃ",
-  col = c( 3:7 ),
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_cc_pr_poisson_age_sex_other <- edit_plot( p_cc_pr_poisson_age_sex_other,
-                                    row = c( 1, 6 ), 
-                                    which = "background",
-                                    gp = gpar( fill = "white" )
-)
-
-p_cc_pr_poisson_age_sex_other <- edit_plot( p_cc_pr_poisson_age_sex_other,
-                                    row = c( 2:5, 7:10 ), 
-                                    which = "background",
-                                    gp = gpar( fill = "#eff3f2" )
-)
-
-p_cc_pr_poisson_age_sex_other <- add_border(
-  p_cc_pr_poisson_age_sex_other,
-  part = "header",
-  row = 2,
-  col = c( 3:7 ),
-  where = "top",
-  gp = gpar(lwd = 1)
-)
-
-plot( p_cc_pr_poisson_age_sex_other )
+plot( p_cc_pr_poisson_other )
 ```
 
 ##### 4.1.7. Proportion and proportion ratio by varing age cut-offs
@@ -4109,6 +4708,9 @@ results_cc_pr_all_models_2010 <- results_cc_pr_all_models_2010 %>%
   mutate( Exposure = factor( Exposure, levels = desired_order ) ) %>%
   arrange( Exposure )
 
+results_cc_pr_all_models_2010 <- results_cc_pr_all_models_2010[ , !grepl( "model_1", names(results_cc_pr_all_models_2010 ) ) ]
+names( results_cc_pr_all_models_2010 ) <- gsub( "model_2_poisson", "poisson", names( results_cc_pr_all_models_2010 ) )
+
 long_data_2010 <- results_cc_pr_all_models_2010 %>%
   pivot_longer(
     cols = !Exposure, 
@@ -4132,7 +4734,6 @@ long_data_2010 <- long_data_2010 %>%
 
 long_data_2010 <- long_data_2010 %>%
   mutate(
-    
     Identity = factor(
       case_when(
         Identity == "sexual_minority" ~ "Sexual minorities",
@@ -4209,6 +4810,9 @@ desired_order <- c( "Sex: Female", "Age: 16–29 yrs", "Age: 30–44 yrs", "Age:
 results_cc_pr_all_models_2014 <- results_cc_pr_all_models_2014 %>%
   mutate( Exposure = factor( Exposure, levels = desired_order ) ) %>%
   arrange( Exposure )
+
+results_cc_pr_all_models_2014 <- results_cc_pr_all_models_2014[ , !grepl( "model_1", names(results_cc_pr_all_models_2014 ) ) ]
+names( results_cc_pr_all_models_2014 ) <- gsub( "model_2_poisson", "poisson", names( results_cc_pr_all_models_2014 ) )
 
 long_data_2014 <- results_cc_pr_all_models_2014 %>%
   pivot_longer(
@@ -4309,6 +4913,9 @@ results_cc_pr_all_models_2021 <- results_cc_pr_all_models_2021 %>%
   mutate( Exposure = factor( Exposure, levels = desired_order ) ) %>%
   arrange( Exposure )
 
+results_cc_pr_all_models_2021 <- results_cc_pr_all_models_2021[ , !grepl( "model_1", names(results_cc_pr_all_models_2021 ) ) ]
+names( results_cc_pr_all_models_2021 ) <- gsub( "model_2_poisson", "poisson", names( results_cc_pr_all_models_2021 ) )
+
 long_data_2021 <- results_cc_pr_all_models_2021 %>%
   pivot_longer(
     cols = !Exposure, 
@@ -4377,15 +4984,17 @@ ggplot( long_data_2021,
          strip.text = element_text( family = "Arial", size = 9 )
   )
 ```
-### 5. Plots for Relation between Changes of Sexual Identity and Demographic Factors
+### 5. Plots for Relation between Changes in Sexual Identity and Demographic Factors
 #### 5.1. Complete-case analysis
 ##### 5.1.1. Prepare dataset for plotting
 ```{r}
 fluidity_cc_rr_2010 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_cc_rr_2010.xlsx")
 fluidity_cc_rr_2014 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_cc_rr_2014.xlsx")
+fluidity_cc_rr_SPHC_F_2010_2021 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_cc_rr_SPHC-F_2010-2021.xlsx")
 
 colnames(fluidity_cc_rr_2010)[-1] <- paste0(colnames(fluidity_cc_rr_2010)[-1], "_2010")
 colnames(fluidity_cc_rr_2014)[-1] <- paste0(colnames(fluidity_cc_rr_2014)[-1], "_2014")
+colnames(fluidity_cc_rr_SPHC_F_2010_2021)[-1] <- paste0(colnames(fluidity_cc_rr_SPHC_F_2010_2021)[-1], "_2010_2021")
 
 # to make it easier to combine across datasets
 # a note on these changes will be added on the graph later
@@ -4393,11 +5002,17 @@ fluidity_cc_rr_2010$Exposure[ fluidity_cc_rr_2010$Exposure == "age_exp18-29" ] <
 fluidity_cc_rr_2010$Exposure[ fluidity_cc_rr_2010$Exposure == "age_exp18-29_Male" ] <- "age_exp16-29_Male"
 fluidity_cc_rr_2010$Exposure[ fluidity_cc_rr_2010$Exposure == "age_exp18-29_Female" ] <- "age_exp16-29_Female"
 
+fluidity_cc_rr_SPHC_F_2010_2021$Exposure[ fluidity_cc_rr_SPHC_F_2010_2021$Exposure == "age_exp<=29" ] <- "age_exp16-29"
+fluidity_cc_rr_SPHC_F_2010_2021$Exposure[ fluidity_cc_rr_SPHC_F_2010_2021$Exposure == "age_exp<=29_Male" ] <- "age_exp16-29_Male"
+fluidity_cc_rr_SPHC_F_2010_2021$Exposure[ fluidity_cc_rr_SPHC_F_2010_2021$Exposure == "age_exp<=29_Female" ] <- "age_exp16-29_Female"
+
 # merge datasets
-fluidity_cc_rr <- full_join( fluidity_cc_rr_2010, fluidity_cc_rr_2014, by = "Exposure" )
+fluidity_cc_rr <- fluidity_cc_rr_SPHC_F_2010_2021 %>%
+  full_join( fluidity_cc_rr_2010, by = "Exposure" ) %>%
+  full_join( fluidity_cc_rr_2014, by = "Exposure" )
 
 # modify table format
-desired_order <- c( "sex_expFemale", "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29_Male", "age_exp30-44_Male", "age_exp>=60_Male", "age_exp16-29_Female", "age_exp30-44_Female", "age_exp>=60_Female", "country_of_birth_expEurope", "country_of_birth_expOutside Europe", "education_exp<=9 years", "education_exp10-12 years", "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_exp(3,500, 4,500]", "marital_status_expNever married", "marital_status_expOther", "living_status_expyes", "personal_support_expno" )
+desired_order <- c( "sex_expFemale", "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29_Male", "age_exp30-44_Male", "age_exp>=60_Male", "age_exp16-29_Female", "age_exp30-44_Female", "age_exp>=60_Female", "country_of_birth_expEurope", "country_of_birth_expOutside Europe", "education_exp<=9 years", "education_exp10-12 years", "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_exp(3,500, 4,500]", "marital_status_expNever married", "marital_status_expOther", "living_status_expyes", "personal_support_expno", "year_expSPHC 2006", "year_expSPHC 2010" )
 
 fluidity_cc_rr <- fluidity_cc_rr %>%
   mutate( Exposure = factor( Exposure, levels = desired_order ) ) %>%
@@ -4416,10 +5031,10 @@ fluidity_cc_rr <- fluidity_cc_rr %>%
   add_row( Exposure = "Education years", .before = 16 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
-  add_row( Exposure = "Income (100 kr/yr)ᵉ", .before = 19 )
+  add_row( Exposure = "Income (100 kr/yr)ᶠ", .before = 19 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
-  add_row( Exposure = "Marital statusᶠ", .before = 23 )
+  add_row( Exposure = "Marital statusᵍ", .before = 23 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = "Living alone", .before = 26 )
@@ -4427,115 +5042,202 @@ fluidity_cc_rr <- fluidity_cc_rr %>%
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = "Personal support", .before = 28 )
 
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "sex_expFemale" ] <- paste0( "   ", "Female\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp16-29" ] <- paste0( "   ", "16–29 yrsᶜ\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp30-44" ] <- paste0( "   ", "30–44 yrs\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp>=60" ] <- paste0( "   ", "\u2265 60 yrs\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "country_of_birth_expEurope" ] <- paste0( "   ", "Europeᵈ\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "country_of_birth_expOutside Europe" ] <- paste0( "   ", "Outside Europe\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "education_exp<=9 years" ] <- paste0( "   ", "\u2264 9 yrs\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "education_exp10-12 years" ] <- paste0( "   ", "10–12 yrs\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "income_exp<=2,500" ] <- paste0( "   ", "\u2264 2,500\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "income_exp(2,500, 3,500]" ] <- paste0( "   ", "(2,500, 3,500]\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "income_exp(3,500, 4,500]" ] <- paste0( "   ", "(3,500, 4,500]\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "marital_status_expNever married" ] <- paste0( "   ", "Never married\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "marital_status_expOther" ] <- paste0( "   ", "Other\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "living_status_expyes" ] <- paste0( "   ", "Yes\n" )
-fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "personal_support_expno" ] <- paste0( "   ", "No\n" )
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = "Cohort yearʰ", .before = 30 )
+
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "year_expSPHC 2006" ] <- paste0( "   ", "SPHC 2006\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "year_expSPHC 2010" ] <- paste0( "   ", "SPHC 2010\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "sex_expFemale" ] <- paste0( "   ", "Female\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp16-29" ] <- paste0( "   ", "16–29 yrsᵈ\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp30-44" ] <- paste0( "   ", "30–44 yrs\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp>=60" ] <- paste0( "   ", "\u2265 60 yrs\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "country_of_birth_expEurope" ] <- paste0( "   ", "Europeᵉ\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "country_of_birth_expOutside Europe" ] <- paste0( "   ", "Outside Europe\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "education_exp<=9 years" ] <- paste0( "   ", "\u2264 9 yrs\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "education_exp10-12 years" ] <- paste0( "   ", "10–12 yrs\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "income_exp<=2,500" ] <- paste0( "   ", "\u2264 2,500\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "income_exp(2,500, 3,500]" ] <- paste0( "   ", "(2,500, 3,500]\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "income_exp(3,500, 4,500]" ] <- paste0( "   ", "(3,500, 4,500]\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "marital_status_expNever married" ] <- paste0( "   ", "Never married\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "marital_status_expOther" ] <- paste0( "   ", "Other\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "living_status_expyes" ] <- paste0( "   ", "Yes\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "personal_support_expno" ] <- paste0( "   ", "No\n\n" )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( "Sexual_fluidity_2010_2021_crude" = paste0(
+    sprintf( "%.2f", fluidity_cc_rr$point_estimate_crude_2010_2021 ), " (", 
+    sprintf( "%.2f", fluidity_cc_rr$lower_ci_crude_2010_2021 ), ", ", 
+    sprintf( "%.2f", fluidity_cc_rr$upper_ci_crude_2010_2021 ), ")" ),
+    .before = 2 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( "Sexual_fluidity_2010_2021_model_1" = paste0(
+    sprintf( "%.2f", fluidity_cc_rr$point_estimate_model_1_2010_2021 ), " (", 
+    sprintf( "%.2f", fluidity_cc_rr$lower_ci_model_1_2010_2021 ), ", ", 
+    sprintf( "%.2f", fluidity_cc_rr$upper_ci_model_1_2010_2021 ), ")" ),
+    .before = 3 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( "Sexual_fluidity_2010_2021_model_2" = paste0(
+    sprintf( "%.2f", fluidity_cc_rr$point_estimate_model_2_2010_2021 ), " (", 
+    sprintf( "%.2f", fluidity_cc_rr$lower_ci_model_2_2010_2021 ), ", ", 
+    sprintf( "%.2f", fluidity_cc_rr$upper_ci_model_2_2010_2021 ), ")" ),
+    .before = 4 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_column( "Sexual_fluidity_2010_crude" = paste0(
     sprintf( "%.2f", fluidity_cc_rr$point_estimate_crude_2010 ), " (", 
     sprintf( "%.2f", fluidity_cc_rr$lower_ci_crude_2010 ), ", ", 
     sprintf( "%.2f", fluidity_cc_rr$upper_ci_crude_2010 ), ")" ),
-    .before = 2 )
+    .before = 5 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
-  add_column( "Sexual_fluidity_2010_adjusted" = paste0(
-    sprintf( "%.2f", fluidity_cc_rr$point_estimate_adjusted_2010 ), " (", 
-    sprintf( "%.2f", fluidity_cc_rr$lower_ci_adjusted_2010 ), ", ", 
-    sprintf( "%.2f", fluidity_cc_rr$upper_ci_adjusted_2010 ), ")" ),
+  add_column( "Sexual_fluidity_2010_model_1" = paste0(
+    sprintf( "%.2f", fluidity_cc_rr$point_estimate_model_1_2010 ), " (", 
+    sprintf( "%.2f", fluidity_cc_rr$lower_ci_model_1_2010 ), ", ", 
+    sprintf( "%.2f", fluidity_cc_rr$upper_ci_model_1_2010 ), ")" ),
     .before = 6 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( "Sexual_fluidity_2010_model_2" = paste0(
+    sprintf( "%.2f", fluidity_cc_rr$point_estimate_model_2_2010 ), " (", 
+    sprintf( "%.2f", fluidity_cc_rr$lower_ci_model_2_2010 ), ", ", 
+    sprintf( "%.2f", fluidity_cc_rr$upper_ci_model_2_2010 ), ")" ),
+    .before = 7 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_column( "Sexual_fluidity_2014_crude" = paste0(
     sprintf( "%.2f", fluidity_cc_rr$point_estimate_crude_2014 ), " (", 
     sprintf( "%.2f", fluidity_cc_rr$lower_ci_crude_2014 ), ", ", 
     sprintf( "%.2f", fluidity_cc_rr$upper_ci_crude_2014 ), ")" ),
+    .before = 8 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( "Sexual_fluidity_2014_model_1" = paste0(
+    sprintf( "%.2f", fluidity_cc_rr$point_estimate_model_1_2014 ), " (", 
+    sprintf( "%.2f", fluidity_cc_rr$lower_ci_model_1_2014 ), ", ", 
+    sprintf( "%.2f", fluidity_cc_rr$upper_ci_model_1_2014 ), ")" ),
+    .before = 9 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( "Sexual_fluidity_2014_model_2" = paste0(
+    sprintf( "%.2f", fluidity_cc_rr$point_estimate_model_2_2014 ), " (", 
+    sprintf( "%.2f", fluidity_cc_rr$lower_ci_model_2_2014 ), ", ", 
+    sprintf( "%.2f", fluidity_cc_rr$upper_ci_model_2_2014 ), ")" ),
     .before = 10 )
 
-fluidity_cc_rr <- fluidity_cc_rr %>% 
-  add_column( "Sexual_fluidity_2014_adjusted" = paste0(
-    sprintf( "%.2f", fluidity_cc_rr$point_estimate_adjusted_2014 ), " (", 
-    sprintf( "%.2f", fluidity_cc_rr$lower_ci_adjusted_2014 ), ", ", 
-    sprintf( "%.2f", fluidity_cc_rr$upper_ci_adjusted_2014 ), ")" ),
-    .before = 14 )
+
+fluidity_cc_rr$Sexual_fluidity_2010_crude <- ifelse( !is.na( fluidity_cc_rr$point_estimate_crude_2010_2021 ) & is.na( fluidity_cc_rr$point_estimate_crude_2010 ), "\u2013",
+                                                            fluidity_cc_rr$Sexual_fluidity_2010_crude )
+
+fluidity_cc_rr$Sexual_fluidity_2010_model_1 <- ifelse( !is.na( fluidity_cc_rr$point_estimate_crude_2010_2021 ) & is.na( fluidity_cc_rr$point_estimate_crude_2010 ), "\u2013",
+                                                            fluidity_cc_rr$Sexual_fluidity_2010_model_1 )
+
+fluidity_cc_rr$Sexual_fluidity_2010_model_2 <- ifelse( !is.na( fluidity_cc_rr$point_estimate_crude_2010_2021 ) & is.na( fluidity_cc_rr$point_estimate_crude_2010 ), "\u2013",
+                                                            fluidity_cc_rr$Sexual_fluidity_2010_model_2 )
+
+fluidity_cc_rr$Sexual_fluidity_2014_crude <- ifelse( !is.na( fluidity_cc_rr$point_estimate_crude_2010_2021 ) & is.na( fluidity_cc_rr$point_estimate_crude_2010 ), "\u2013",
+                                                            fluidity_cc_rr$Sexual_fluidity_2014_crude )
+
+fluidity_cc_rr$Sexual_fluidity_2014_model_1 <- ifelse( !is.na( fluidity_cc_rr$point_estimate_crude_2010_2021 ) & is.na( fluidity_cc_rr$point_estimate_crude_2010 ), "\u2013",
+                                                            fluidity_cc_rr$Sexual_fluidity_2014_model_1 )
+
+fluidity_cc_rr$Sexual_fluidity_2014_model_2 <- ifelse( !is.na( fluidity_cc_rr$point_estimate_crude_2010_2021 ) & is.na( fluidity_cc_rr$point_estimate_crude_2010 ), "\u2013",
+                                                            fluidity_cc_rr$Sexual_fluidity_2014_model_2 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
-  add_column( "Sexual_fluidity_2010" = paste( fluidity_cc_rr$Sexual_fluidity_2010_crude,
-                                              fluidity_cc_rr$Sexual_fluidity_2010_adjusted,
-                                              sep = "\n" ),
+  add_column( "Sexual_fluidity_crude" = paste( fluidity_cc_rr$Sexual_fluidity_2010_2021_crude,
+                                               fluidity_cc_rr$Sexual_fluidity_2010_crude,
+                                               fluidity_cc_rr$Sexual_fluidity_2014_crude,
+                                               sep = "\n" ),
               .before = 2 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
-  add_column( "Sexual_fluidity_2014" = paste( fluidity_cc_rr$Sexual_fluidity_2014_crude,
-                                              fluidity_cc_rr$Sexual_fluidity_2014_adjusted,
-                                              sep = "\n" ),
+  add_column( "Sexual_fluidity_model_1" = paste( fluidity_cc_rr$Sexual_fluidity_2010_2021_model_1,
+                                                 fluidity_cc_rr$Sexual_fluidity_2010_model_1,
+                                                 fluidity_cc_rr$Sexual_fluidity_2014_model_1,
+                                                 sep = "\n" ),
               .before = 3 )
 
-fluidity_cc_rr$Sexual_fluidity_2010 <- ifelse( is.na( fluidity_cc_rr$point_estimate_crude_2010 ), "",
-                                                      fluidity_cc_rr$Sexual_fluidity_2010 )
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( "Sexual_fluidity_model_2" = paste( fluidity_cc_rr$Sexual_fluidity_2010_2021_model_2,
+                                                 fluidity_cc_rr$Sexual_fluidity_2010_model_2,
+                                                 fluidity_cc_rr$Sexual_fluidity_2014_model_2,
+                                                 sep = "\n" ),
+              .before = 4 )
 
-fluidity_cc_rr$Sexual_fluidity_2014 <- ifelse( is.na( fluidity_cc_rr$point_estimate_crude_2010 ), "",
-                                                      fluidity_cc_rr$Sexual_fluidity_2014 )
+
+fluidity_cc_rr$Sexual_fluidity_crude <- ifelse( is.na( fluidity_cc_rr$point_estimate_crude_2010_2021 ), "",
+                                                       fluidity_cc_rr$Sexual_fluidity_crude )
+
+fluidity_cc_rr$Sexual_fluidity_model_1 <- ifelse( is.na( fluidity_cc_rr$point_estimate_crude_2010_2021 ), "",
+                                                       fluidity_cc_rr$Sexual_fluidity_model_1 )
+
+fluidity_cc_rr$Sexual_fluidity_model_2 <- ifelse( is.na( fluidity_cc_rr$point_estimate_crude_2010_2021 ), "",
+                                                       fluidity_cc_rr$Sexual_fluidity_model_2 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "Male" ), 
-           Sexual_fluidity_2010 = "Reference",
-           Sexual_fluidity_2014 = "Reference",
+           Sexual_fluidity_crude = "Reference",
+           Sexual_fluidity_model_1 = "Reference",
+           Sexual_fluidity_model_2 = "Reference",
            .before = 2 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "45–59 yrs" ), 
-           Sexual_fluidity_2010 = "Reference",
-           Sexual_fluidity_2014 = "Reference",
+           Sexual_fluidity_crude = "Reference",
+           Sexual_fluidity_model_1 = "Reference",
+           Sexual_fluidity_model_2 = "Reference",
            .before = 7 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "Sweden" ), 
-           Sexual_fluidity_2010 = "Reference",
-           Sexual_fluidity_2014 = "Reference",
+           Sexual_fluidity_crude = "Reference",
+           Sexual_fluidity_model_1 = "Reference",
+           Sexual_fluidity_model_2 = "Reference",
            .before = 16 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "\u2265 13 yrs" ), 
-           Sexual_fluidity_2010 = "Reference",
-           Sexual_fluidity_2014 = "Reference",
+           Sexual_fluidity_crude = "Reference",
+           Sexual_fluidity_model_1 = "Reference",
+           Sexual_fluidity_model_2 = "Reference",
            .before = 22 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "> 4,500" ), 
-           Sexual_fluidity_2010 = "Reference",
-           Sexual_fluidity_2014 = "Reference",
+           Sexual_fluidity_crude = "Reference",
+           Sexual_fluidity_model_1 = "Reference",
+           Sexual_fluidity_model_2 = "Reference",
            .before = 27 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "Currently married" ), 
-           Sexual_fluidity_2010 = "Reference",
-           Sexual_fluidity_2014 = "Reference",
+           Sexual_fluidity_crude = "Reference",
+           Sexual_fluidity_model_1 = "Reference",
+           Sexual_fluidity_model_2 = "Reference",
            .before = 29 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "No" ), 
-           Sexual_fluidity_2010 = "Reference",
-           Sexual_fluidity_2014 = "Reference",
+           Sexual_fluidity_crude = "Reference",
+           Sexual_fluidity_model_1 = "Reference",
+           Sexual_fluidity_model_2 = "Reference",
            .before = 34 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "Yes" ), 
-           Sexual_fluidity_2010 = "Reference",
-           Sexual_fluidity_2014 = "Reference",
+           Sexual_fluidity_crude = "Reference",
+           Sexual_fluidity_model_1 = "Reference",
+           Sexual_fluidity_model_2 = "Reference",
            .before = 36 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = paste0( "   ", "SPHC 2002" ), 
+           Sexual_fluidity_crude = "Reference",
+           Sexual_fluidity_model_1 = "Reference",
+           Sexual_fluidity_model_2 = "Reference",
+           .before = 39 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -4543,13 +5245,17 @@ fluidity_cc_rr <- fluidity_cc_rr %>%
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
 
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
 fluidity_cc_rr <- fluidity_cc_rr %>%
   add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
 
 colnames( fluidity_cc_rr )[1] <- "Demographic Factor"
 
-names( fluidity_cc_rr )[ names( fluidity_cc_rr ) %in% c( "temp1", "temp2", "Sexual_fluidity_2010", "Sexual_fluidity_2014" ) ] <- ""
+names( fluidity_cc_rr )[ names( fluidity_cc_rr ) %in% c( "temp1", "temp2", "temp3", "Sexual_fluidity_crude", "Sexual_fluidity_model_1", "Sexual_fluidity_model_2" ) ] <- ""
 ```
 
 ##### 5.1.2. Plotting
@@ -4558,39 +5264,60 @@ names( fluidity_cc_rr )[ names( fluidity_cc_rr ) %in% c( "temp1", "temp2", "Sexu
 tm <- forest_theme(
   base_size = 10,
   colhead = list( fg_params = list( fontsize = 10 ) ),
-  legend_value = c( "Crude", "Adjusted" ),
+  legend_value = c( "SPHC-F 2010-2021", "SPHC 2010", "SPHC 2014" ),
   legend_name = NULL,
   legend_position = "bottom",
   base_family = "Arial",
   refline_lty = "dashed",
   refline_lwd = 1,
   refline_col = "grey20"
-  )
+)
 
-fluidity_cc_rr_part_1 <- fluidity_cc_rr[ -c( 9:14, 32:37 ), c( 1:7, 9:11, 13:15, 17:19, 21:23 ) ]
+fluidity_cc_rr_part_1 <- fluidity_cc_rr[ -c( 9:14, 23:41 ), ]
+
+p_cc_pr_poisson_sexual_fluidity <- forest(
+  fluidity_cc_rr_part_1[ , c( 1:10 ) ],
   
-p_cc_fluidity_rr <- forest(
-  fluidity_cc_rr_part_1[ , c( 1:7 ) ],
-  
-  est = list( fluidity_cc_rr_part_1$point_estimate_crude_2010,
+  est = list( fluidity_cc_rr_part_1$point_estimate_crude_2010_2021,
+              fluidity_cc_rr_part_1$point_estimate_model_1_2010_2021,
+              fluidity_cc_rr_part_1$point_estimate_model_2_2010_2021,
+              
+              fluidity_cc_rr_part_1$point_estimate_crude_2010,
+              fluidity_cc_rr_part_1$point_estimate_model_1_2010,
+              fluidity_cc_rr_part_1$point_estimate_model_2_2010,
+              
               fluidity_cc_rr_part_1$point_estimate_crude_2014,
-              fluidity_cc_rr_part_1$point_estimate_adjusted_2010,
-              fluidity_cc_rr_part_1$point_estimate_adjusted_2014
-              ),
+              fluidity_cc_rr_part_1$point_estimate_model_1_2014,
+              fluidity_cc_rr_part_1$point_estimate_model_2_2014
+  ),
   
-  lower = list( fluidity_cc_rr_part_1$lower_ci_crude_2010,
+  lower = list( fluidity_cc_rr_part_1$lower_ci_crude_2010_2021,
+                fluidity_cc_rr_part_1$lower_ci_model_1_2010_2021,
+                fluidity_cc_rr_part_1$lower_ci_model_2_2010_2021,
+                
+                fluidity_cc_rr_part_1$lower_ci_crude_2010,
+                fluidity_cc_rr_part_1$lower_ci_model_1_2010,
+                fluidity_cc_rr_part_1$lower_ci_model_2_2010,
+                
                 fluidity_cc_rr_part_1$lower_ci_crude_2014,
-                fluidity_cc_rr_part_1$lower_ci_adjusted_2010,
-                fluidity_cc_rr_part_1$lower_ci_adjusted_2014
-                ),
+                fluidity_cc_rr_part_1$lower_ci_model_1_2014,
+                fluidity_cc_rr_part_1$lower_ci_model_2_2014
+  ),
   
-  upper = list( fluidity_cc_rr_part_1$upper_ci_crude_2010,
+  upper = list( fluidity_cc_rr_part_1$upper_ci_crude_2010_2021,
+                fluidity_cc_rr_part_1$upper_ci_model_1_2010_2021,
+                fluidity_cc_rr_part_1$upper_ci_model_2_2010_2021,
+                
+                fluidity_cc_rr_part_1$upper_ci_crude_2010,
+                fluidity_cc_rr_part_1$upper_ci_model_1_2010,
+                fluidity_cc_rr_part_1$upper_ci_model_2_2010,
+                
                 fluidity_cc_rr_part_1$upper_ci_crude_2014,
-                fluidity_cc_rr_part_1$upper_ci_adjusted_2010,
-                fluidity_cc_rr_part_1$upper_ci_adjusted_2014
-                ),
+                fluidity_cc_rr_part_1$upper_ci_model_1_2014,
+                fluidity_cc_rr_part_1$upper_ci_model_2_2014
+  ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
@@ -4599,19 +5326,19 @@ p_cc_fluidity_rr <- forest(
   ticks_at = c( 0, 1, 2, 3, 4 ),
   
   xlab = "Risk Ratio (95% CI)",
-  nudge_y = 0.4,
+  nudge_y = 0.33,
   theme = tm
 )
 
-p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
-                                              row = c( 1, 4, 9, 13, 17, 22 ),
+p_cc_pr_poisson_sexual_fluidity <- edit_plot( p_cc_pr_poisson_sexual_fluidity,
+                                              row = c( 1, 4, 9, 13 ),
                                               col = 1,
                                               gp = gpar( fontface = "bold" ) 
 )
 
-p_cc_fluidity_rr <- add_text(
-  p_cc_fluidity_rr,
-  text = "Risk Ratio (95% CI)",
+p_cc_pr_poisson_sexual_fluidity <- add_text(
+  p_cc_pr_poisson_sexual_fluidity,
+  text = "Crude Risk Ratio (95% CI)",
   col = c( 3:4 ),
   row = 1,
   part = "header",
@@ -4622,9 +5349,9 @@ p_cc_fluidity_rr <- add_text(
   )
 )
 
-p_cc_fluidity_rr <- add_text(
-  p_cc_fluidity_rr,
-  text = "Risk Ratio (95% CI)",
+p_cc_pr_poisson_sexual_fluidity <- add_text(
+  p_cc_pr_poisson_sexual_fluidity,
+  text = "Model 1, Risk Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
   row = 1,
   part = "header",
@@ -4635,54 +5362,54 @@ p_cc_fluidity_rr <- add_text(
   )
 )
 
-p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
-                                              row = c( 1, 4, 9, 13, 17, 22 ), 
+p_cc_pr_poisson_sexual_fluidity <- add_text(
+  p_cc_pr_poisson_sexual_fluidity,
+  text = "Model 2, Risk Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_sexual_fluidity <- insert_text(
+  p_cc_pr_poisson_sexual_fluidity,
+  text = "Changes in Sexual Identityᵃ",
+  col = c( 3:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_sexual_fluidity <- edit_plot( p_cc_pr_poisson_sexual_fluidity,
+                                              row = c( 1, 4, 9, 13 ), 
                                               which = "background",
                                               gp = gpar( fill = "white" )
 )
 
-p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
-                                              row = c( 2, 3, 5:8, 10:12, 14:16, 18:21, 23:25 ), 
+p_cc_pr_poisson_sexual_fluidity <- edit_plot( p_cc_pr_poisson_sexual_fluidity,
+                                              row = c( 2, 3, 5:8, 10:12, 14:16 ), 
                                               which = "background",
                                               gp = gpar( fill = "#eff3f2" )
 )
 
-p_cc_fluidity_rr <- add_border(
-  p_cc_fluidity_rr,
+p_cc_pr_poisson_sexual_fluidity <- add_border(
+  p_cc_pr_poisson_sexual_fluidity,
   part = "header",
-  row = 1,
-  col = c( 3:4, 6:7 ),
+  row = 2,
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
 
-p_cc_fluidity_rr <- insert_text(
-  p_cc_fluidity_rr,
-  text = "SPHC-B 2010 with SPHC-F 2014–2021ᵃ",
-  col = 3:4,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_cc_fluidity_rr <- add_text(
-  p_cc_fluidity_rr,
-  text = "SPHC-B 2014 with SPHC-F 2021ᵇ",
-  col = 6:7,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-plot( p_cc_fluidity_rr )
+plot( p_cc_pr_poisson_sexual_fluidity )
 ```
 
 ###### 5.1.2.2. Part 2
@@ -4690,39 +5417,60 @@ plot( p_cc_fluidity_rr )
 tm <- forest_theme(
   base_size = 10,
   colhead = list( fg_params = list( fontsize = 10 ) ),
-  legend_value = c( "Crude", "Adjusted" ),
+  legend_value = c( "SPHC-F 2010-2021", "SPHC 2010", "SPHC 2014" ),
   legend_name = NULL,
   legend_position = "bottom",
   base_family = "Arial",
   refline_lty = "dashed",
   refline_lwd = 1,
   refline_col = "grey20"
-  )
+)
 
-fluidity_cc_rr_part_2 <- fluidity_cc_rr[ -c( 9:14, 1:31 ), c( 1:7, 9:11, 13:15, 17:19, 21:23 ) ]
+fluidity_cc_rr_part_2 <- fluidity_cc_rr[ -c( 9:14, 1:22 ), ]
+
+p_cc_pr_poisson_sexual_fluidity <- forest(
+  fluidity_cc_rr_part_2[ , c( 1:10 ) ],
   
-p_cc_fluidity_rr <- forest(
-  fluidity_cc_rr_part_2[ , c( 1:7 ) ],
-  
-  est = list( fluidity_cc_rr_part_2$point_estimate_crude_2010,
+  est = list( fluidity_cc_rr_part_2$point_estimate_crude_2010_2021,
+              fluidity_cc_rr_part_2$point_estimate_model_1_2010_2021,
+              fluidity_cc_rr_part_2$point_estimate_model_2_2010_2021,
+              
+              fluidity_cc_rr_part_2$point_estimate_crude_2010,
+              fluidity_cc_rr_part_2$point_estimate_model_1_2010,
+              fluidity_cc_rr_part_2$point_estimate_model_2_2010,
+              
               fluidity_cc_rr_part_2$point_estimate_crude_2014,
-              fluidity_cc_rr_part_2$point_estimate_adjusted_2010,
-              fluidity_cc_rr_part_2$point_estimate_adjusted_2014
-              ),
+              fluidity_cc_rr_part_2$point_estimate_model_1_2014,
+              fluidity_cc_rr_part_2$point_estimate_model_2_2014
+  ),
   
-  lower = list( fluidity_cc_rr_part_2$lower_ci_crude_2010,
+  lower = list( fluidity_cc_rr_part_2$lower_ci_crude_2010_2021,
+                fluidity_cc_rr_part_2$lower_ci_model_1_2010_2021,
+                fluidity_cc_rr_part_2$lower_ci_model_2_2010_2021,
+                
+                fluidity_cc_rr_part_2$lower_ci_crude_2010,
+                fluidity_cc_rr_part_2$lower_ci_model_1_2010,
+                fluidity_cc_rr_part_2$lower_ci_model_2_2010,
+                
                 fluidity_cc_rr_part_2$lower_ci_crude_2014,
-                fluidity_cc_rr_part_2$lower_ci_adjusted_2010,
-                fluidity_cc_rr_part_2$lower_ci_adjusted_2014
-                ),
+                fluidity_cc_rr_part_2$lower_ci_model_1_2014,
+                fluidity_cc_rr_part_2$lower_ci_model_2_2014
+  ),
   
-  upper = list( fluidity_cc_rr_part_2$upper_ci_crude_2010,
+  upper = list( fluidity_cc_rr_part_2$upper_ci_crude_2010_2021,
+                fluidity_cc_rr_part_2$upper_ci_model_1_2010_2021,
+                fluidity_cc_rr_part_2$upper_ci_model_2_2010_2021,
+                
+                fluidity_cc_rr_part_2$upper_ci_crude_2010,
+                fluidity_cc_rr_part_2$upper_ci_model_1_2010,
+                fluidity_cc_rr_part_2$upper_ci_model_2_2010,
+                
                 fluidity_cc_rr_part_2$upper_ci_crude_2014,
-                fluidity_cc_rr_part_2$upper_ci_adjusted_2010,
-                fluidity_cc_rr_part_2$upper_ci_adjusted_2014
-                ),
+                fluidity_cc_rr_part_2$upper_ci_model_1_2014,
+                fluidity_cc_rr_part_2$upper_ci_model_2_2014
+  ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
@@ -4731,19 +5479,19 @@ p_cc_fluidity_rr <- forest(
   ticks_at = c( 0, 1, 2, 3, 4 ),
   
   xlab = "Risk Ratio (95% CI)",
-  nudge_y = 0.4,
+  nudge_y = 0.33,
   theme = tm
 )
 
-p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
-                                              row = c( 1, 4 ),
+p_cc_pr_poisson_sexual_fluidity <- edit_plot( p_cc_pr_poisson_sexual_fluidity,
+                                              row = c( 1, 6, 10, 13, 16 ),
                                               col = 1,
                                               gp = gpar( fontface = "bold" ) 
 )
 
-p_cc_fluidity_rr <- add_text(
-  p_cc_fluidity_rr,
-  text = "Risk Ratio (95% CI)",
+p_cc_pr_poisson_sexual_fluidity <- add_text(
+  p_cc_pr_poisson_sexual_fluidity,
+  text = "Crude Risk Ratio (95% CI)",
   col = c( 3:4 ),
   row = 1,
   part = "header",
@@ -4754,9 +5502,9 @@ p_cc_fluidity_rr <- add_text(
   )
 )
 
-p_cc_fluidity_rr <- add_text(
-  p_cc_fluidity_rr,
-  text = "Risk Ratio (95% CI)",
+p_cc_pr_poisson_sexual_fluidity <- add_text(
+  p_cc_pr_poisson_sexual_fluidity,
+  text = "Model 1, Risk Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
   row = 1,
   part = "header",
@@ -4767,142 +5515,146 @@ p_cc_fluidity_rr <- add_text(
   )
 )
 
-p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
-                                              row = c( 1, 4 ), 
+p_cc_pr_poisson_sexual_fluidity <- add_text(
+  p_cc_pr_poisson_sexual_fluidity,
+  text = "Model 2, Risk Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_sexual_fluidity <- insert_text(
+  p_cc_pr_poisson_sexual_fluidity,
+  text = "Changes in Sexual Identityᵃ",
+  col = c( 3:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_sexual_fluidity <- edit_plot( p_cc_pr_poisson_sexual_fluidity,
+                                              row = c( 1, 6, 10, 13, 16 ), 
                                               which = "background",
                                               gp = gpar( fill = "white" )
 )
 
-p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
-                                              row = c( 2, 3, 5, 6 ), 
+p_cc_pr_poisson_sexual_fluidity <- edit_plot( p_cc_pr_poisson_sexual_fluidity,
+                                              row = c( 2:5, 7:9, 11, 12, 14, 15, 17:19 ), 
                                               which = "background",
                                               gp = gpar( fill = "#eff3f2" )
 )
 
-p_cc_fluidity_rr <- add_border(
-  p_cc_fluidity_rr,
+p_cc_pr_poisson_sexual_fluidity <- add_border(
+  p_cc_pr_poisson_sexual_fluidity,
   part = "header",
-  row = 1,
-  col = c( 3:4, 6:7 ),
+  row = 2,
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
 
-p_cc_fluidity_rr <- insert_text(
-  p_cc_fluidity_rr,
-  text = "SPHC-B 2010 with SPHC-F 2014–2021ᵃ",
-  col = 3:4,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_cc_fluidity_rr <- add_text(
-  p_cc_fluidity_rr,
-  text = "SPHC-B 2014 with SPHC-F 2021ᵇ",
-  col = 6:7,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-plot( p_cc_fluidity_rr )
+plot( p_cc_pr_poisson_sexual_fluidity )
 ```
 
 ###### 5.1.2.3. Part 3 (age by sex)
 ```{r}
-fluidity_cc_rr_part_3 <- fluidity_cc_rr[ c( 9:14 ), c( 1:7, 9:11, 13:15, 17:19, 21:23 ) ]
+fluidity_cc_rr_age_by_sex <- fluidity_cc_rr[ c( 9:14 ), ]
 
-colnames( fluidity_cc_rr_part_3 )[ 2:7 ] <- c( "temp1", "temp2", "temp3", "temp4", "temp5", "temp6" )
+colnames(fluidity_cc_rr_age_by_sex)[1:10] <- c("Exposure", paste0("temp", 1:9))
 
-fluidity_cc_rr_part_3 <- fluidity_cc_rr_part_3 %>% 
-  add_row( `Demographic Factor` = "Male", .before = 1 )
+fluidity_cc_rr_age_by_sex <- fluidity_cc_rr_age_by_sex %>% 
+  add_row( Exposure = "Male", .before = 1 )
 
-fluidity_cc_rr_part_3 <- fluidity_cc_rr_part_3 %>% 
-  add_row( `Demographic Factor` = "Female", .before = 5 )
+fluidity_cc_rr_age_by_sex <- fluidity_cc_rr_age_by_sex %>% 
+  add_row( Exposure = "Female", .before = 5 )
 
-fluidity_cc_rr_part_3$`Demographic Factor`[ fluidity_cc_rr_part_3$`Demographic Factor` == "age_exp16-29_Male" ] <- paste0( "   ", "16–29 yrsᶜ\n" )
-fluidity_cc_rr_part_3$`Demographic Factor`[ fluidity_cc_rr_part_3$`Demographic Factor` == "age_exp30-44_Male" ] <- paste0( "   ", "30–44 yrs\n" )
-fluidity_cc_rr_part_3$`Demographic Factor`[ fluidity_cc_rr_part_3$`Demographic Factor` == "age_exp>=60_Male" ] <- paste0( "   ", "\u2265 60 yrs\n" )
+fluidity_cc_rr_age_by_sex$Exposure[ fluidity_cc_rr_age_by_sex$Exposure == "age_exp16-29_Male" ] <- paste0( "   ", "16–29 yrsᵈ\n\n" )
+fluidity_cc_rr_age_by_sex$Exposure[ fluidity_cc_rr_age_by_sex$Exposure == "age_exp30-44_Male" ] <- paste0( "   ", "30–44 yrs\n\n" )
+fluidity_cc_rr_age_by_sex$Exposure[ fluidity_cc_rr_age_by_sex$Exposure == "age_exp>=60_Male" ] <- paste0( "   ", "\u2265 60 yrs\n\n" )
 
-fluidity_cc_rr_part_3$`Demographic Factor`[ fluidity_cc_rr_part_3$`Demographic Factor` == "age_exp16-29_Female" ] <- paste0( "   ", "16–29 yrsᶜ\n" )
-fluidity_cc_rr_part_3$`Demographic Factor`[ fluidity_cc_rr_part_3$`Demographic Factor` == "age_exp30-44_Female" ] <- paste0( "   ", "30–44 yrs\n" )
-fluidity_cc_rr_part_3$`Demographic Factor`[ fluidity_cc_rr_part_3$`Demographic Factor` == "age_exp>=60_Female" ] <- paste0( "   ", "\u2265 60 yrs\n" )
+fluidity_cc_rr_age_by_sex$Exposure[ fluidity_cc_rr_age_by_sex$Exposure == "age_exp16-29_Female" ] <- paste0( "   ", "16–29 yrsᵈ\n\n" )
+fluidity_cc_rr_age_by_sex$Exposure[ fluidity_cc_rr_age_by_sex$Exposure == "age_exp30-44_Female" ] <- paste0( "   ", "30–44 yrs\n\n" )
+fluidity_cc_rr_age_by_sex$Exposure[ fluidity_cc_rr_age_by_sex$Exposure == "age_exp>=60_Female" ] <- paste0( "   ", "\u2265 60 yrs\n\n" )
 
-fluidity_cc_rr_part_3 <- fluidity_cc_rr_part_3 %>% 
-  add_row( `Demographic Factor` = paste0( "   ", "45–59 yrs" ), 
-           temp3 = "Reference",
-           temp6 = "Reference",
+fluidity_cc_rr_age_by_sex <- fluidity_cc_rr_age_by_sex %>% 
+  add_row( Exposure = paste0( "   ", "45–59 yrs" ), 
+           Sexual_fluidity_crude = "Reference",
+           Sexual_fluidity_model_1 = "Reference",
+           Sexual_fluidity_model_2 = "Reference",
            .before = 4 )
 
-fluidity_cc_rr_part_3 <- fluidity_cc_rr_part_3 %>% 
-  add_row( `Demographic Factor` = paste0( "   ", "45–59 yrs" ), 
-           temp3 = "Reference",
-           temp6 = "Reference",
+fluidity_cc_rr_age_by_sex <- fluidity_cc_rr_age_by_sex %>% 
+  add_row( Exposure = paste0( "   ", "45–59 yrs" ), 
+           Sexual_fluidity_crude = "Reference",
+           Sexual_fluidity_model_1 = "Reference",
+           Sexual_fluidity_model_2 = "Reference",
            .before = 9 )
-
-fluidity_cc_rr_part_3$temp3 <- ifelse( is.na(fluidity_cc_rr_part_3$temp3), "",
-                                       fluidity_cc_rr_part_3$temp3 )
-
-fluidity_cc_rr_part_3$temp6 <- ifelse( is.na(fluidity_cc_rr_part_3$temp6), "",
-                                       fluidity_cc_rr_part_3$temp6 )
-
-fluidity_cc_rr_part_3_updated <- fluidity_cc_rr_part_3[ , -c( 2, 3, 5, 6 ) ]
-
-fluidity_cc_rr_part_3_updated <- fluidity_cc_rr_part_3_updated %>% 
-  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
-
-fluidity_cc_rr_part_3_updated <- fluidity_cc_rr_part_3_updated %>% 
-  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
-
-fluidity_cc_rr_part_3_updated <- fluidity_cc_rr_part_3_updated %>%
-  add_column( temp1 = " ", .before = 2 ) %>%
-  add_column( temp2 = " ", .before = 5 )
-
-names( fluidity_cc_rr_part_3_updated )[ names( fluidity_cc_rr_part_3_updated ) %in% c( "temp1", "temp2", "temp3", "temp6" ) ] <- ""
 
 tm <- forest_theme(
   base_size = 10,
   colhead = list( fg_params = list( fontsize = 10 ) ),
-  legend_value = c( "Crude", "Adjusted" ),
+  legend_value = c( "SPHC-F 2010-2021", "SPHC 2010", "SPHC 2014" ),
   legend_name = NULL,
   legend_position = "bottom",
   base_family = "Arial",
   refline_lty = "dashed",
   refline_lwd = 1,
   refline_col = "grey20"
-  )
+)
 
-p_cc_fluidity_rr <- forest(
-  fluidity_cc_rr_part_3_updated[ , c( 1:7 ) ],
+
+p_cc_pr_poisson_sexual_fluidity <- forest(
+  fluidity_cc_rr_age_by_sex[ , c( 1:10 ) ],
   
-  est = list( fluidity_cc_rr_part_3_updated$point_estimate_crude_2010,
-              fluidity_cc_rr_part_3_updated$point_estimate_crude_2014,
-              fluidity_cc_rr_part_3_updated$point_estimate_adjusted_2010,
-              fluidity_cc_rr_part_3_updated$point_estimate_adjusted_2014
-              ),
+  est = list( fluidity_cc_rr_age_by_sex$point_estimate_crude_2010_2021,
+              fluidity_cc_rr_age_by_sex$point_estimate_model_1_2010_2021,
+              fluidity_cc_rr_age_by_sex$point_estimate_model_2_2010_2021,
+              
+              fluidity_cc_rr_age_by_sex$point_estimate_crude_2010,
+              fluidity_cc_rr_age_by_sex$point_estimate_model_1_2010,
+              fluidity_cc_rr_age_by_sex$point_estimate_model_2_2010,
+              
+              fluidity_cc_rr_age_by_sex$point_estimate_crude_2014,
+              fluidity_cc_rr_age_by_sex$point_estimate_model_1_2014,
+              fluidity_cc_rr_age_by_sex$point_estimate_model_2_2014
+  ),
   
-  lower = list( fluidity_cc_rr_part_3_updated$lower_ci_crude_2010,
-                fluidity_cc_rr_part_3_updated$lower_ci_crude_2014,
-                fluidity_cc_rr_part_3_updated$lower_ci_adjusted_2010,
-                fluidity_cc_rr_part_3_updated$lower_ci_adjusted_2014
-                ),
+  lower = list( fluidity_cc_rr_age_by_sex$lower_ci_crude_2010_2021,
+                fluidity_cc_rr_age_by_sex$lower_ci_model_1_2010_2021,
+                fluidity_cc_rr_age_by_sex$lower_ci_model_2_2010_2021,
+                
+                fluidity_cc_rr_age_by_sex$lower_ci_crude_2010,
+                fluidity_cc_rr_age_by_sex$lower_ci_model_1_2010,
+                fluidity_cc_rr_age_by_sex$lower_ci_model_2_2010,
+                
+                fluidity_cc_rr_age_by_sex$lower_ci_crude_2014,
+                fluidity_cc_rr_age_by_sex$lower_ci_model_1_2014,
+                fluidity_cc_rr_age_by_sex$lower_ci_model_2_2014
+  ),
   
-  upper = list( fluidity_cc_rr_part_3_updated$upper_ci_crude_2010,
-                fluidity_cc_rr_part_3_updated$upper_ci_crude_2014,
-                fluidity_cc_rr_part_3_updated$upper_ci_adjusted_2010,
-                fluidity_cc_rr_part_3_updated$upper_ci_adjusted_2014
-                ),
+  upper = list( fluidity_cc_rr_age_by_sex$upper_ci_crude_2010_2021,
+                fluidity_cc_rr_age_by_sex$upper_ci_model_1_2010_2021,
+                fluidity_cc_rr_age_by_sex$upper_ci_model_2_2010_2021,
+                
+                fluidity_cc_rr_age_by_sex$upper_ci_crude_2010,
+                fluidity_cc_rr_age_by_sex$upper_ci_model_1_2010,
+                fluidity_cc_rr_age_by_sex$upper_ci_model_2_2010,
+                
+                fluidity_cc_rr_age_by_sex$upper_ci_crude_2014,
+                fluidity_cc_rr_age_by_sex$upper_ci_model_1_2014,
+                fluidity_cc_rr_age_by_sex$upper_ci_model_2_2014
+  ),
   
-  ci_column = c( 3, 6 ),
+  ci_column = c( 3, 6, 9 ),
   sizes = 0.4,
   
   ref_line = 1,
@@ -4911,18 +5663,19 @@ p_cc_fluidity_rr <- forest(
   ticks_at = c( 0, 1, 2, 3, 4 ),
   
   xlab = "Risk Ratio (95% CI)",
-  nudge_y = 0.4,
+  nudge_y = 0.33,
   theme = tm
 )
 
-p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
-                               row = c( 1, 6 ),
-                               col = 1,
-                               gp = gpar( fontface = "bold" ) )
+p_cc_pr_poisson_sexual_fluidity <- edit_plot( p_cc_pr_poisson_sexual_fluidity,
+                                              row = c( 1, 6, 10, 13, 16 ),
+                                              col = 1,
+                                              gp = gpar( fontface = "bold" ) 
+)
 
-p_cc_fluidity_rr <- add_text(
-  p_cc_fluidity_rr,
-  text = "Risk Ratio (95% CI)",
+p_cc_pr_poisson_sexual_fluidity <- add_text(
+  p_cc_pr_poisson_sexual_fluidity,
+  text = "Crude Risk Ratio (95% CI)",
   col = c( 3:4 ),
   row = 1,
   part = "header",
@@ -4933,9 +5686,9 @@ p_cc_fluidity_rr <- add_text(
   )
 )
 
-p_cc_fluidity_rr <- add_text(
-  p_cc_fluidity_rr,
-  text = "Risk Ratio (95% CI)",
+p_cc_pr_poisson_sexual_fluidity <- add_text(
+  p_cc_pr_poisson_sexual_fluidity,
+  text = "Model 1, Risk Ratio (95% CI)ᵇ",
   col = c( 6:7 ),
   row = 1,
   part = "header",
@@ -4946,50 +5699,52 @@ p_cc_fluidity_rr <- add_text(
   )
 )
 
-p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
-                               row = c( 1, 6 ), 
-                               which = "background",
-                               gp = gpar( fill = "white" ) )
-
-p_cc_fluidity_rr <- edit_plot( p_cc_fluidity_rr,
-                               row = c( 2:5, 7:10 ), 
-                               which = "background",
-                               gp = gpar( fill = "#eff3f2" ) )
-
-p_cc_fluidity_rr <- add_border(
-  p_cc_fluidity_rr,
-  part = "header",
+p_cc_pr_poisson_sexual_fluidity <- add_text(
+  p_cc_pr_poisson_sexual_fluidity,
+  text = "Model 2, Risk Ratio (95% CI)ᶜ",
+  col = c( 9:10 ),
   row = 1,
-  col = c( 3:4, 6:7 ),
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_sexual_fluidity <- insert_text(
+  p_cc_pr_poisson_sexual_fluidity,
+  text = "Changes in Sexual Identityᵃ",
+  col = c( 3:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_sexual_fluidity <- edit_plot( p_cc_pr_poisson_sexual_fluidity,
+                                              row = c( 1, 6, 10, 13, 16 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "white" )
+)
+
+p_cc_pr_poisson_sexual_fluidity <- edit_plot( p_cc_pr_poisson_sexual_fluidity,
+                                              row = c( 2:5, 7:9, 11, 12, 14, 15, 17:19 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "#eff3f2" )
+)
+
+p_cc_pr_poisson_sexual_fluidity <- add_border(
+  p_cc_pr_poisson_sexual_fluidity,
+  part = "header",
+  row = 2,
+  col = c( 3:10 ),
   where = "top",
   gp = gpar(lwd = 1)
 )
 
-p_cc_fluidity_rr <- insert_text(
-  p_cc_fluidity_rr,
-  text = "SPHC-B 2010 with SPHC-F 2014–2021ᵃ",
-  col = 3:4,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-p_cc_fluidity_rr <- add_text(
-  p_cc_fluidity_rr,
-  text = "SPHC-B 2014 with SPHC-F 2021ᵇ",
-  col = 6:7,
-  row = 1,
-  part = "header",
-  gp = gpar(
-    fontface = "bold",
-    fontsize = 10,
-    fontfamily = "Arial"
-  )
-)
-
-plot( p_cc_fluidity_rr )
+plot( p_cc_pr_poisson_sexual_fluidity )
 ```
