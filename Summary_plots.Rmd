@@ -5025,25 +5025,31 @@ fluidity_cc_rr <- fluidity_cc_rr %>%
   add_row( Exposure = "Age group", .before = 3 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
-  add_row( Exposure = "Country of birth", .before = 13 )
+  add_row( Exposure = "Male", .before = 7 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
-  add_row( Exposure = "Education years", .before = 16 )
+  add_row( Exposure = "Female", .before = 11 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
-  add_row( Exposure = "Income (100 kr/yr)ᶠ", .before = 19 )
+  add_row( Exposure = "Country of birth", .before = 15 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
-  add_row( Exposure = "Marital statusᵍ", .before = 23 )
+  add_row( Exposure = "Education years", .before = 18 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
-  add_row( Exposure = "Living alone", .before = 26 )
+  add_row( Exposure = "Income (100 kr/yr)ᶠ", .before = 21 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
-  add_row( Exposure = "Personal support", .before = 28 )
+  add_row( Exposure = "Marital statusᵍ", .before = 25 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
-  add_row( Exposure = "Cohort yearʰ", .before = 30 )
+  add_row( Exposure = "Living alone", .before = 28 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = "Personal support", .before = 30 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = "Cohort yearʰ", .before = 32 )
 
 fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "year_expSPHC 2006" ] <- paste0( "   ", "SPHC 2006\n\n" )
 fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "year_expSPHC 2010" ] <- paste0( "   ", "SPHC 2010\n\n" )
@@ -5051,6 +5057,12 @@ fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "sex_expFemale" ] <- paste0(
 fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp16-29" ] <- paste0( "   ", "16–29 yrsᵈ\n\n" )
 fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp30-44" ] <- paste0( "   ", "30–44 yrs\n\n" )
 fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp>=60" ] <- paste0( "   ", "\u2265 60 yrs\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp16-29_Male" ] <- paste0( "   ", "16–29 yrsᵈ\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp30-44_Male" ] <- paste0( "   ", "30–44 yrs\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp>=60_Male" ] <- paste0( "   ", "\u2265 60 yrs\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp16-29_Female" ] <- paste0( "   ", "16–29 yrsᵈ\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp30-44_Female" ] <- paste0( "   ", "30–44 yrs\n\n" )
+fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "age_exp>=60_Female" ] <- paste0( "   ", "\u2265 60 yrs\n\n" )
 fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "country_of_birth_expEurope" ] <- paste0( "   ", "Europeᵉ\n\n" )
 fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "country_of_birth_expOutside Europe" ] <- paste0( "   ", "Outside Europe\n\n" )
 fluidity_cc_rr$Exposure[ fluidity_cc_rr$Exposure == "education_exp<=9 years" ] <- paste0( "   ", "\u2264 9 yrs\n\n" )
@@ -5191,53 +5203,67 @@ fluidity_cc_rr <- fluidity_cc_rr %>%
            .before = 7 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = paste0( "   ", "45–59 yrs" ), 
+           Sexual_fluidity_crude = "Reference",
+           Sexual_fluidity_model_1 = "Reference",
+           Sexual_fluidity_model_2 = "Reference",
+           .before = 12 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
+  add_row( Exposure = paste0( "   ", "45–59 yrs" ), 
+           Sexual_fluidity_crude = "Reference",
+           Sexual_fluidity_model_1 = "Reference",
+           Sexual_fluidity_model_2 = "Reference",
+           .before = 17 )
+
+fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "Sweden" ), 
            Sexual_fluidity_crude = "Reference",
            Sexual_fluidity_model_1 = "Reference",
            Sexual_fluidity_model_2 = "Reference",
-           .before = 16 )
+           .before = 20 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "\u2265 13 yrs" ), 
            Sexual_fluidity_crude = "Reference",
            Sexual_fluidity_model_1 = "Reference",
            Sexual_fluidity_model_2 = "Reference",
-           .before = 22 )
+           .before = 26 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "> 4,500" ), 
            Sexual_fluidity_crude = "Reference",
            Sexual_fluidity_model_1 = "Reference",
            Sexual_fluidity_model_2 = "Reference",
-           .before = 27 )
+           .before = 31 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "Currently married" ), 
            Sexual_fluidity_crude = "Reference",
            Sexual_fluidity_model_1 = "Reference",
            Sexual_fluidity_model_2 = "Reference",
-           .before = 29 )
+           .before = 33 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "No" ), 
            Sexual_fluidity_crude = "Reference",
            Sexual_fluidity_model_1 = "Reference",
            Sexual_fluidity_model_2 = "Reference",
-           .before = 34 )
+           .before = 38 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "Yes" ), 
            Sexual_fluidity_crude = "Reference",
            Sexual_fluidity_model_1 = "Reference",
            Sexual_fluidity_model_2 = "Reference",
-           .before = 36 )
+           .before = 40 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_row( Exposure = paste0( "   ", "SPHC 2002" ), 
            Sexual_fluidity_crude = "Reference",
            Sexual_fluidity_model_1 = "Reference",
            Sexual_fluidity_model_2 = "Reference",
-           .before = 39 )
+           .before = 43 )
 
 fluidity_cc_rr <- fluidity_cc_rr %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -5273,7 +5299,7 @@ tm <- forest_theme(
   refline_col = "grey20"
 )
 
-fluidity_cc_rr_part_1 <- fluidity_cc_rr[ -c( 9:14, 23:41 ), ]
+fluidity_cc_rr_part_1 <- fluidity_cc_rr[ -c( 9:18, 27:45 ), ]
 
 p_cc_pr_poisson_sexual_fluidity <- forest(
   fluidity_cc_rr_part_1[ , c( 1:10 ) ],
@@ -5426,7 +5452,7 @@ tm <- forest_theme(
   refline_col = "grey20"
 )
 
-fluidity_cc_rr_part_2 <- fluidity_cc_rr[ -c( 9:14, 1:22 ), ]
+fluidity_cc_rr_part_2 <- fluidity_cc_rr[ -c( 1:26 ), ]
 
 p_cc_pr_poisson_sexual_fluidity <- forest(
   fluidity_cc_rr_part_2[ , c( 1:10 ) ],
@@ -5567,38 +5593,6 @@ plot( p_cc_pr_poisson_sexual_fluidity )
 
 ###### 5.1.2.3. Part 3 (age by sex)
 ```{r}
-fluidity_cc_rr_age_by_sex <- fluidity_cc_rr[ c( 9:14 ), ]
-
-colnames(fluidity_cc_rr_age_by_sex)[1:10] <- c("Exposure", paste0("temp", 1:9))
-
-fluidity_cc_rr_age_by_sex <- fluidity_cc_rr_age_by_sex %>% 
-  add_row( Exposure = "Male", .before = 1 )
-
-fluidity_cc_rr_age_by_sex <- fluidity_cc_rr_age_by_sex %>% 
-  add_row( Exposure = "Female", .before = 5 )
-
-fluidity_cc_rr_age_by_sex$Exposure[ fluidity_cc_rr_age_by_sex$Exposure == "age_exp16-29_Male" ] <- paste0( "   ", "16–29 yrsᵈ\n\n" )
-fluidity_cc_rr_age_by_sex$Exposure[ fluidity_cc_rr_age_by_sex$Exposure == "age_exp30-44_Male" ] <- paste0( "   ", "30–44 yrs\n\n" )
-fluidity_cc_rr_age_by_sex$Exposure[ fluidity_cc_rr_age_by_sex$Exposure == "age_exp>=60_Male" ] <- paste0( "   ", "\u2265 60 yrs\n\n" )
-
-fluidity_cc_rr_age_by_sex$Exposure[ fluidity_cc_rr_age_by_sex$Exposure == "age_exp16-29_Female" ] <- paste0( "   ", "16–29 yrsᵈ\n\n" )
-fluidity_cc_rr_age_by_sex$Exposure[ fluidity_cc_rr_age_by_sex$Exposure == "age_exp30-44_Female" ] <- paste0( "   ", "30–44 yrs\n\n" )
-fluidity_cc_rr_age_by_sex$Exposure[ fluidity_cc_rr_age_by_sex$Exposure == "age_exp>=60_Female" ] <- paste0( "   ", "\u2265 60 yrs\n\n" )
-
-fluidity_cc_rr_age_by_sex <- fluidity_cc_rr_age_by_sex %>% 
-  add_row( Exposure = paste0( "   ", "45–59 yrs" ), 
-           Sexual_fluidity_crude = "Reference",
-           Sexual_fluidity_model_1 = "Reference",
-           Sexual_fluidity_model_2 = "Reference",
-           .before = 4 )
-
-fluidity_cc_rr_age_by_sex <- fluidity_cc_rr_age_by_sex %>% 
-  add_row( Exposure = paste0( "   ", "45–59 yrs" ), 
-           Sexual_fluidity_crude = "Reference",
-           Sexual_fluidity_model_1 = "Reference",
-           Sexual_fluidity_model_2 = "Reference",
-           .before = 9 )
-
 tm <- forest_theme(
   base_size = 10,
   colhead = list( fg_params = list( fontsize = 10 ) ),
@@ -5611,6 +5605,7 @@ tm <- forest_theme(
   refline_col = "grey20"
 )
 
+fluidity_cc_rr_age_by_sex <- fluidity_cc_rr[ c( 9:18 ), ]
 
 p_cc_pr_poisson_sexual_fluidity <- forest(
   fluidity_cc_rr_age_by_sex[ , c( 1:10 ) ],
@@ -5668,7 +5663,7 @@ p_cc_pr_poisson_sexual_fluidity <- forest(
 )
 
 p_cc_pr_poisson_sexual_fluidity <- edit_plot( p_cc_pr_poisson_sexual_fluidity,
-                                              row = c( 1, 6, 10, 13, 16 ),
+                                              row = c( 1, 6 ),
                                               col = 1,
                                               gp = gpar( fontface = "bold" ) 
 )
@@ -5726,13 +5721,13 @@ p_cc_pr_poisson_sexual_fluidity <- insert_text(
 )
 
 p_cc_pr_poisson_sexual_fluidity <- edit_plot( p_cc_pr_poisson_sexual_fluidity,
-                                              row = c( 1, 6, 10, 13, 16 ), 
+                                              row = c( 1, 6 ), 
                                               which = "background",
                                               gp = gpar( fill = "white" )
 )
 
 p_cc_pr_poisson_sexual_fluidity <- edit_plot( p_cc_pr_poisson_sexual_fluidity,
-                                              row = c( 2:5, 7:9, 11, 12, 14, 15, 17:19 ), 
+                                              row = c( 2:5, 7:10 ), 
                                               which = "background",
                                               gp = gpar( fill = "#eff3f2" )
 )
