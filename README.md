@@ -9,7 +9,7 @@ The R scripts include:
 * **SPHC-F-2010-2021.Rmd:** analyses of changes in sexual identity from 2010 to 2021.
 * **Summary_plots.Rmd:** drawing summary plots.
 
-<small>_Notes:_ SPHC, Stockholm Public Health Cohort.<small>
+<small>_Notes:_ SPHC, Stockholm Public Health Cohort.‘SPHC-B + YEAR’ refers to the baseline survey; for example, SPHC-B 2010 represents the baseline survey conducted in 2010. ‘SPHC-F + YEAR’ refers to the follow-up survey; for example, SPHC-F 2014 represents all the follow-up surveys conducted in 2014. ‘SPHC + YEAR’ refers to both baseline and follow-up surveys; for example, SPHC 2010 denotes the baseline survey in 2010 and subsequent follow-up surveys in 2014 and 2021. See Figure 1 below for an overview of SPHC surveys.<small>
 
 <br>
 <br>

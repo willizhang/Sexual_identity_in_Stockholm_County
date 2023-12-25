@@ -20,121 +20,9 @@ library(ggbreak)
 library(naniar)
 ```
 
-### 2. Plots for Response Rates
-```{r}
-# datasets for response rates
-sampling_frame_2002_males <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2002_males.xlsx")
-sampling_frame_2002_females <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2002_females.xlsx")
-sampling_frame_2006 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2006.xlsx")
-sampling_frame_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2010.xlsx")
-sampling_frame_2014 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2014.xlsx")
-sampling_frame_2021 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/sampling_frame_2021.xlsx")
-
-combined_response_rate <- sampling_frame_2002_males[, c( 1, 6:8 ) ] %>%
-  full_join( sampling_frame_2002_females[, c( 1, 6:8 ) ], by = "sampling_strata_region" ) %>%
-  full_join( sampling_frame_2006[, c( 1, 7:9 ) ], by = "sampling_strata_region" ) %>%
-  full_join( sampling_frame_2010[, c( 1, 6:8 ) ], by = "sampling_strata_region" ) %>%
-  full_join( sampling_frame_2014[, c( 1, 6:8 ) ], by = "sampling_strata_region" ) %>%
-  full_join( sampling_frame_2021[, c( 1, 6:8 ) ], by = "sampling_strata_region" )
-
-colnames( combined_response_rate ) <- c( "Municipality",
-                                         "unitresponse_rate_2002_male",
-                                         "itemresponse_rate_2002_male",
-                                         "overallresponse_rate_2002_male",
-                                         "unitresponse_rate_2002_female",
-                                         "itemresponse_rate_2002_female",
-                                         "overallresponse_rate_2002_female",
-                                         "unitresponse_rate_2006",
-                                         "itemresponse_rate_2006",
-                                         "overallresponse_rate_2006",
-                                         "unitresponse_rate_2010",
-                                         "itemresponse_rate_2010",
-                                         "overallresponse_rate_2010",
-                                         "unitresponse_rate_2014",
-                                         "itemresponse_rate_2014",
-                                         "overallresponse_rate_2014",
-                                         "unitresponse_rate_2021",
-                                         "itemresponse_rate_2021",
-                                         "overallresponse_rate_2021"
-                                         )
-
-combined_response_rate$Municipality[ combined_response_rate$Municipality == "Additional_stratum_male" ] <- "Unknown"
-combined_response_rate$Municipality[ combined_response_rate$Municipality == "Additional_stratum_female" ] <- "Unknown"
-
-combined_response_rate_merged <- combined_response_rate %>%
-  group_by( Municipality ) %>%
-  summarize( across( everything(), ~ ifelse( all (is.na(.) ), NA, na.omit(.) ) ) )
-
-combined_response_rate_merged <- combined_response_rate_merged %>%
-  mutate( missing_count = rowSums(is.na(select(., -Municipality)))) %>%
-  arrange(missing_count, Municipality)
-
-combined_response_rate_merged$Municipality <- factor(combined_response_rate_merged$Municipality, levels = unique(combined_response_rate_merged$Municipality))
-
-ordered_levels <- combined_response_rate$Municipality[ order( combined_response_rate$overallresponse_rate_2010, 
-                                                              decreasing = TRUE ) ]
-ordered_levels <- as.character( ordered_levels[ ordered_levels != "Älvsjö" & 
-                                                  ordered_levels != "Hägersten-Liljeholmen" &
-                                                  ordered_levels != "Hägersten-Älvsjö" ] )
-ordered_levels <- c( "Hägersten-Älvsjö", ordered_levels, "Älvsjö", "Hägersten-Liljeholmen" )
-
-combined_response_rate$Municipality <- factor( combined_response_rate$Municipality, 
-                                               levels = ordered_levels )
-
-df_long <- combined_response_rate_merged %>%
-  pivot_longer(
-    cols = -Municipality,
-    names_to = c( ".value", "year" ),
-    names_pattern = "(.*response_rate)_(\\d+.*$)"
-    ) %>%
-  gather( key = "response_type", value = "response_rate", unitresponse_rate, itemresponse_rate, overallresponse_rate )
-
-df_long$response_type <- factor( df_long$response_type, 
-                                 levels = c( "unitresponse_rate", "itemresponse_rate", "overallresponse_rate" ) )
-
-
-# plot
-year_labels <- c( `2002_male` = "SPHC-B 2002, Males",
-                  `2002_female` = "SPHC-B 2002, Females",
-                  `2006` = "SPHC-B 2006",
-                  `2010` = "SPHC-B 2010", 
-                  `2014` = "SPHC-B 2014", 
-                  `2021` = "SPHC-B 2021" )
-
-ggplot( df_long ) +
-  geom_line( aes( x = Municipality, 
-                  y = response_rate, 
-                  group = interaction( year, response_type ), 
-                  color = year, 
-                  linetype = response_type ) ) +
-  
-  scale_linetype_manual( values = c( "unitresponse_rate" = "dashed", 
-                                     "itemresponse_rate" = "dotdash", 
-                                     "overallresponse_rate" = "solid" ),
-                         labels = c( "Unit response rate", "Item response rate", "Overall response rate" ),
-                         name = "Response type" ) +
-  
-  scale_color_discrete( labels = year_labels,
-                        name = "Year" ) +
-  
-  scale_y_continuous( labels = scales::percent ) +
-
-  theme_minimal() +
-  
-  labs( x = NULL, y = "Response Rate (%)" ) +
-  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
-         axis.title.y = element_text( family = "Arial", size = 12 ),
-         axis.text.x = element_text( angle = 45, hjust = 1, family = "Arial", size = 11 ),
-         legend.text = element_text( family = "Arial", size = 10 ),
-         legend.position = "right",
-         legend.title = element_text( family = "Arial", size = 11 ),
-         plot.margin = margin( 0.1, 0.1, 0.1, 0.5, "cm" )
-         )
-```
-
-### 3. Plots for Proportion of Sexual Identity
-#### 3.1. Complete-case analysis
-##### 3.1.1. Prepare dataset for plotting
+### 2. Plots for Proportion of Sexual Identity
+#### 2.1. Complete-case analysis
+##### 2.1.1. Prepare dataset for plotting
 ```{r}
 # datasets for proportion of sexual identity
 prop_cc_summary_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_summary_2010.xlsx")
@@ -237,7 +125,7 @@ prop_cc_summary$sample_size_2021 <- ifelse( is.na( prop_cc_summary$sample_size_2
                                                     prop_cc_summary$sample_size_2021 ) )
 ```
 
-##### 3.1.2. Heterosexual group
+##### 2.1.2. Heterosexual group
 ```{r}
 prop_cc_summary_heterosexual <- prop_cc_summary[ -c( 9:17 ), c( 1:4, 14:17, 27:30, 40 ) ]
   
@@ -517,7 +405,7 @@ p_cc_heterosexual <- edit_plot( p_cc_heterosexual,
 plot( p_cc_heterosexual )
 ```
 
-##### 3.1.3. Homosexual group
+##### 2.1.3. Homosexual group
 ```{r}
 prop_cc_summary_homosexual <- prop_cc_summary[ -c( 9:17 ), c( 1, 5:7, 14, 18:20, 27, 31:33, 40 ) ]
 
@@ -797,7 +685,7 @@ p_cc_homosexual <- edit_plot( p_cc_homosexual,
 plot( p_cc_homosexual )
 ```
 
-##### 3.1.4. Bisexual group
+##### 2.1.4. Bisexual group
 ```{r}
 prop_cc_summary_bisexual <- prop_cc_summary[ -c( 9:17 ), c( 1, 8:10, 14, 21:23, 27, 34:36, 40 ) ]
 
@@ -1077,7 +965,7 @@ p_cc_bisexual <- edit_plot( p_cc_bisexual,
 plot( p_cc_bisexual )
 ```
 
-##### 3.1.5. Other group
+##### 2.1.5. Other group
 ```{r}
 prop_cc_summary_other <- prop_cc_summary[ -c( 9:17 ), c( 1, 11:13, 14, 24:26, 27, 37:39, 40 ) ]
 
@@ -1363,7 +1251,7 @@ p_cc_other <- edit_plot( p_cc_other,
 plot( p_cc_other )
 ```
 
-##### 3.1.6. Age by sex
+##### 2.1.6. Age by sex
 ```{r}
 prop_cc_summary_age_sex <- prop_cc_summary[ c( 10:17 ), ]
 
@@ -1767,9 +1655,9 @@ p_cc_age_sex <- add_border(
 plot( p_cc_age_sex )
 ```
 
-### 4. Plots for Relation between Sexual Identity and Demographic Factors
-#### 4.1. Complete-case analysis
-##### 4.1.1. Prepare dataset for plotting
+### 3. Plots for Relation between Sexual Identity and Demographic Factors
+#### 3.1. Complete-case analysis
+##### 3.1.1. Prepare dataset for plotting
 ```{r}
 results_cc_pr_poisson_2010 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_cc_pr_poisson_2010.xlsx")
 
@@ -2378,8 +2266,8 @@ results_cc_pr_poisson <- results_cc_pr_poisson %>%
            .before = 36 )
 ```
 
-##### 4.1.2. Sexual minority group
-###### 4.1.2.1. Part 1
+##### 3.1.2. Sexual minority group
+###### 3.1.2.1. Part 1
 ```{r}
 selected_cols <- grep( "exposure|sexual_minority", colnames( results_cc_pr_poisson ), ignore.case = TRUE )
 
@@ -2552,7 +2440,7 @@ p_cc_pr_poisson_sexual_minority <- add_border(
 plot( p_cc_pr_poisson_sexual_minority )
 ```
 
-###### 4.1.2.2. Part 2
+###### 3.1.2.2. Part 2
 ```{r}
 results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson[ -c( 1:22 ), selected_cols ]
 
@@ -2723,8 +2611,8 @@ p_cc_pr_poisson_sexual_minority <- add_border(
 plot( p_cc_pr_poisson_sexual_minority )
 ```
 
-##### 4.1.3. Homosexual group
-###### 4.1.3.1. Part 1
+##### 3.1.3. Homosexual group
+###### 3.1.3.1. Part 1
 ```{r}
 selected_cols <- grep( "exposure|homosexual", colnames( results_cc_pr_poisson ), ignore.case = TRUE )
 
@@ -2897,7 +2785,7 @@ p_cc_pr_poisson_homosexual <- add_border(
 plot( p_cc_pr_poisson_homosexual )
 ```
 
-###### 4.1.3.2. Part 2
+###### 3.1.3.2. Part 2
 ```{r}
 results_cc_pr_poisson_homosexual <- results_cc_pr_poisson[ -c( 1:22 ), selected_cols ]
 
@@ -3068,8 +2956,8 @@ p_cc_pr_poisson_homosexual <- add_border(
 plot( p_cc_pr_poisson_homosexual )
 ```
 
-##### 4.1.4. Bisexual group
-###### 4.1.4.1. Part 1
+##### 3.1.4. Bisexual group
+###### 3.1.4.1. Part 1
 ```{r}
 selected_cols <- grep( "exposure|bisexual", colnames( results_cc_pr_poisson ), ignore.case = TRUE )
 
@@ -3242,7 +3130,7 @@ p_cc_pr_poisson_bisexual <- add_border(
 plot( p_cc_pr_poisson_bisexual )
 ```
 
-###### 4.1.4.2. Part 2
+###### 3.1.4.2. Part 2
 ```{r}
 results_cc_pr_poisson_bisexual <- results_cc_pr_poisson[ -c( 1:22 ), selected_cols ]
 
@@ -3413,8 +3301,8 @@ p_cc_pr_poisson_bisexual <- add_border(
 plot( p_cc_pr_poisson_bisexual )
 ```
 
-##### 4.1.5. Other group
-###### 4.1.5.1. Part 1
+##### 3.1.5. Other group
+###### 3.1.5.1. Part 1
 ```{r}
 selected_cols <- grep( "exposure|other", colnames( results_cc_pr_poisson ), ignore.case = TRUE )
 
@@ -3587,7 +3475,7 @@ p_cc_pr_poisson_other <- add_border(
 plot( p_cc_pr_poisson_other )
 ```
 
-###### 4.1.5.2. Part 2
+###### 3.1.5.2. Part 2
 ```{r}
 results_cc_pr_poisson_other <- results_cc_pr_poisson[ -c( 1:22 ), selected_cols ]
 
@@ -3758,8 +3646,8 @@ p_cc_pr_poisson_other <- add_border(
 plot( p_cc_pr_poisson_other )
 ```
 
-##### 4.1.6. Age by sex
-###### 4.1.6.1. Prepare dataset for plotting
+##### 3.1.6. Age by sex
+###### 3.1.6.1. Prepare dataset for plotting
 ```{r}
 results_cc_pr_poisson_age_sex <- results_cc_pr_poisson[ c( 9:14 ), ]
 
@@ -3846,7 +3734,7 @@ results_cc_pr_poisson_age_sex$Other_model_2 <- ifelse( is.na( results_cc_pr_pois
                                                       results_cc_pr_poisson_age_sex$Other_model_2 )
 ```
 
-###### 4.1.6.2. Sexual minority group
+###### 3.1.6.2. Sexual minority group
 ```{r}
 selected_cols <- grep( "exposure|sexual_minority", colnames( results_cc_pr_poisson_age_sex ), ignore.case = TRUE )
 
@@ -4019,7 +3907,7 @@ p_cc_pr_poisson_sexual_minority <- add_border(
 plot( p_cc_pr_poisson_sexual_minority )
 ```
 
-###### 4.1.6.3. Homosexual group
+###### 3.1.6.3. Homosexual group
 ```{r}
 selected_cols <- grep( "exposure|homosexual", colnames( results_cc_pr_poisson_age_sex ), ignore.case = TRUE )
 
@@ -4192,7 +4080,7 @@ p_cc_pr_poisson_homosexual <- add_border(
 plot( p_cc_pr_poisson_homosexual )
 ```
 
-###### 4.1.6.4. Bisexual group
+###### 3.1.6.4. Bisexual group
 ```{r}
 selected_cols <- grep( "exposure|bisexual", colnames( results_cc_pr_poisson_age_sex ), ignore.case = TRUE )
 
@@ -4365,7 +4253,7 @@ p_cc_pr_poisson_bisexual <- add_border(
 plot( p_cc_pr_poisson_bisexual )
 ```
 
-###### 4.1.6.5. Other group
+###### 3.1.6.5. Other group
 ```{r}
 selected_cols <- grep( "exposure|other", colnames( results_cc_pr_poisson_age_sex ), ignore.case = TRUE )
 
@@ -4538,8 +4426,8 @@ p_cc_pr_poisson_other <- add_border(
 plot( p_cc_pr_poisson_other )
 ```
 
-##### 4.1.7. Proportion and proportion ratio by varing age cut-offs
-###### 4.1.7.1. Prepare dataset for plotting
+##### 3.1.7. Proportion and proportion ratio by varing age cut-offs
+###### 3.1.7.1. Prepare dataset for plotting
 ```{r}
 prop_cc_age_iteration_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_age_iteration_2010.xlsx") %>%
   select( "cut_off", "Heterosexual_young", "Homosexual_young", "Bisexual_young", "Uncertain_young", "Heterosexual_pr_2010", "Homosexual_pr_2010", "Bisexual_pr_2010", "Uncertain_pr_2010" ) %>%
@@ -4584,7 +4472,7 @@ long_data <- prop_cc_age_iteration_merged %>%
   )
 ```
 
-###### 4.1.7.2. Proportion
+###### 3.1.7.2. Proportion
 ```{r}
 ggplot( long_data[ long_data$Age_Group == "prop", ], 
         aes( x = cut_off, y = Value, color = Sexuality, linetype = Year ) 
@@ -4632,7 +4520,7 @@ ggplot( long_data[ long_data$Age_Group == "prop", ],
          )
 ```
 
-###### 4.1.7.3. Proportion ratio
+###### 3.1.7.3. Proportion ratio
 ```{r}
 ggplot( long_data[ long_data$Age_Group == "pr", ], 
         aes( x = cut_off, y = Value, color = Sexuality, linetype = Year ) 
@@ -4675,8 +4563,8 @@ ggplot( long_data[ long_data$Age_Group == "pr", ],
          )
 ```
 
-##### 4.1.8. Compare across models
-###### 4.1.8.1. SPHC-B 2010
+##### 3.1.8. Compare across models
+###### 3.1.8.1. SPHC-B 2010
 ```{r}
 results_cc_pr_all_models_2010 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_cc_pr_all_models_2010.xlsx")
 
@@ -4779,7 +4667,7 @@ ggplot( long_data_2010,
          )
 ```
 
-###### 4.1.8.2. SPHC-B 2014
+###### 3.1.8.2. SPHC-B 2014
 ```{r}
 results_cc_pr_all_models_2014 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_cc_pr_all_models_2014.xlsx")
 
@@ -4883,7 +4771,7 @@ ggplot( long_data_2014,
   )
 ```
 
-###### 4.1.8.3. SPHC-B 2021
+###### 3.1.8.3. SPHC-B 2021
 ```{r}
 results_cc_pr_all_models_2021 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_cc_pr_all_models_2021.xlsx")
 
@@ -4984,9 +4872,10 @@ ggplot( long_data_2021,
          strip.text = element_text( family = "Arial", size = 9 )
   )
 ```
-### 5. Plots for Relation between Changes in Sexual Identity and Demographic Factors
-#### 5.1. Complete-case analysis
-##### 5.1.1. Prepare dataset for plotting
+
+### 4. Plots for Relation between Changes in Sexual Identity and Demographic Factors
+#### 4.1. Complete-case analysis
+##### 4.1.1. Prepare dataset for plotting
 ```{r}
 fluidity_cc_rr_2010 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_cc_rr_2010.xlsx")
 fluidity_cc_rr_2014 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_cc_rr_2014.xlsx")
@@ -5284,8 +5173,8 @@ colnames( fluidity_cc_rr )[1] <- "Demographic Factor"
 names( fluidity_cc_rr )[ names( fluidity_cc_rr ) %in% c( "temp1", "temp2", "temp3", "Sexual_fluidity_crude", "Sexual_fluidity_model_1", "Sexual_fluidity_model_2" ) ] <- ""
 ```
 
-##### 5.1.2. Plotting
-###### 5.1.2.1. Part 1
+##### 4.1.2. Plotting
+###### 4.1.2.1. Part 1
 ```{r}
 tm <- forest_theme(
   base_size = 10,
@@ -5438,7 +5327,7 @@ p_cc_pr_poisson_sexual_fluidity <- add_border(
 plot( p_cc_pr_poisson_sexual_fluidity )
 ```
 
-###### 5.1.2.2. Part 2
+###### 4.1.2.2. Part 2
 ```{r}
 tm <- forest_theme(
   base_size = 10,
@@ -5591,7 +5480,7 @@ p_cc_pr_poisson_sexual_fluidity <- add_border(
 plot( p_cc_pr_poisson_sexual_fluidity )
 ```
 
-###### 5.1.2.3. Part 3 (age by sex)
+###### 4.1.2.3. Part 3 (age by sex)
 ```{r}
 tm <- forest_theme(
   base_size = 10,
