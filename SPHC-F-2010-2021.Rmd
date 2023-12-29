@@ -632,14 +632,19 @@ d_sexual_identity_fluidity <- d_2002_2006_2010_follow_up[
 nrow( d_sexual_identity_fluidity ) # 34,815 provided data on sexual identity in 2010-2021
 
 d_fluidity_model <- subset( d_2002_2006_2010_follow_up, 
-                            select = -c( sexual_identity_2010, sexual_identity_2014, sexual_identity_2021 ) ) %>%
+                            select = -c( sexual_identity_2014, sexual_identity_2021 ) ) %>%
   filter( !is.na( sexual_identity_fluidity ) )
 miss_case_summary( d_fluidity_model ) # no cases had missing data on all variables
 nrow( d_fluidity_model ) # 36,398 participants with (incomplete) follow-up data on demographic variables
 
+# sexual identity in 2010
+summary( d_fluidity_model$sexual_identity_2010 )
+d_fluidity_model$sexual_identity_2010_exp <- relevel( d_fluidity_model$sexual_identity_2010, ref = "Heterosexual" )
+d_fluidity_model$sexual_identity_2010_conf <- d_fluidity_model$sexual_identity_2010
+
 
 # make characteristics table by changes in sexual identity
-explanatory =  c( "year_exp", "sex_exp", "age_exp", "country_of_birth_exp", "education_exp", "income_exp", "marital_status_exp", "living_status_exp", "personal_support_exp" )
+explanatory =  c( "year_exp", "sex_exp", "age_exp", "country_of_birth_exp", "education_exp", "income_exp", "marital_status_exp", "living_status_exp", "personal_support_exp", "sexual_identity_2010" )
 dependent = "sexual_identity_fluidity"
 
 d_follow_up_table <- d_fluidity_model %>% 
@@ -687,6 +692,10 @@ format( round( fisher.test( x8, simulate.p.value = TRUE )$p.value, 3 ), nsmall =
 x9 <- table( d_fluidity_model$personal_support_exp, d_fluidity_model$sexual_identity_fluidity )
 x9
 format( round( fisher.test( x9, simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
+
+x10 <- table( d_fluidity_model$sexual_identity_2010, d_fluidity_model$sexual_identity_fluidity )
+x10
+format( round( fisher.test( x10, simulate.p.value = TRUE )$p.value, 3 ), nsmall = 3 )
 ```
 
 ### 3. Make Fluidity Plots
@@ -913,7 +922,7 @@ ggplot( m123_all_long,
                    segment.linetype = 3,
                    segment.size = 0.55,
                    direction = "y",
-                   nudge_x = 0.25,
+                   nudge_x = 0.45,
                    box.padding = 0.5,
                    point.padding = 0,
                    show.legend = FALSE,
@@ -983,7 +992,7 @@ ggplot( x123_all_long,
                    segment.linetype = 3,
                    segment.size = 0.55,
                    direction = "y",
-                   nudge_x = 0.25,
+                   nudge_x = 0.45,
                    box.padding = 0.5,
                    point.padding = 0,
                    show.legend = FALSE,
@@ -1281,7 +1290,7 @@ ggplot( m123_age_60_long,
 
 fml_year_crude <- sexual_identity_fluidity ~ year_exp
 fml_year_model_1 <- sexual_identity_fluidity ~ year_exp + age_conf + sex_conf + country_of_birth_conf
-fml_year_model_2 <- sexual_identity_fluidity ~ year_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
+fml_year_model_2 <- sexual_identity_fluidity ~ year_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_year <- list(
@@ -1291,11 +1300,25 @@ fml_list_year <- list(
   )
 
 
+##### exposure of interest: sexual identity in 2010 #####
+
+fml_sexual_identity_crude <- sexual_identity_fluidity ~ sexual_identity_2010_exp
+fml_sexual_identity_model_1 <- sexual_identity_fluidity ~ sexual_identity_2010_exp + age_conf + sex_conf + country_of_birth_conf + year_conf
+fml_sexual_identity_model_2 <- sexual_identity_fluidity ~ sexual_identity_2010_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf
+
+# list of formulas
+fml_list_sexual_identity <- list(
+  fml_sexual_identity_crude = fml_sexual_identity_crude,
+  fml_sexual_identity_model_1 = fml_sexual_identity_model_1,
+  fml_sexual_identity_model_2 = fml_sexual_identity_model_2
+)
+
+
 ##### exposure of interest: age #####
 
 fml_age_crude <- sexual_identity_fluidity ~ age_exp
-fml_age_model_1 <- sexual_identity_fluidity ~ age_exp + sex_conf + country_of_birth_conf
-fml_age_model_2 <- sexual_identity_fluidity ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
+fml_age_model_1 <- sexual_identity_fluidity ~ age_exp + sex_conf + country_of_birth_conf + year_conf
+fml_age_model_2 <- sexual_identity_fluidity ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_age <- list(
@@ -1308,8 +1331,8 @@ fml_list_age <- list(
 ##### exposure of interest: age by sex #####
 
 fml_age_by_sex_crude <- sexual_identity_fluidity ~ age_exp*sex_exp
-fml_age_by_sex_model_1 <- sexual_identity_fluidity ~ age_exp*sex_exp + country_of_birth_conf
-fml_age_by_sex_model_2 <- sexual_identity_fluidity ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
+fml_age_by_sex_model_1 <- sexual_identity_fluidity ~ age_exp*sex_exp + country_of_birth_conf + year_conf
+fml_age_by_sex_model_2 <- sexual_identity_fluidity ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_age_by_sex <- list(
@@ -1322,8 +1345,8 @@ fml_list_age_by_sex <- list(
 ##### exposure of interest: sex #####
 
 fml_sex_crude <- sexual_identity_fluidity ~ sex_exp
-fml_sex_model_1 <- sexual_identity_fluidity ~ sex_exp + age_conf + country_of_birth_conf
-fml_sex_model_2 <- sexual_identity_fluidity ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
+fml_sex_model_1 <- sexual_identity_fluidity ~ sex_exp + age_conf + country_of_birth_conf + year_conf
+fml_sex_model_2 <- sexual_identity_fluidity ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_sex <- list(
@@ -1336,8 +1359,8 @@ fml_list_sex <- list(
 ##### exposure of interest: country of birth #####
 
 fml_country_of_birth_crude <- sexual_identity_fluidity ~ country_of_birth_exp
-fml_country_of_birth_model_1 <- sexual_identity_fluidity ~ country_of_birth_exp + age_conf + sex_conf
-fml_country_of_birth_model_2 <- sexual_identity_fluidity ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
+fml_country_of_birth_model_1 <- sexual_identity_fluidity ~ country_of_birth_exp + age_conf + sex_conf + year_conf
+fml_country_of_birth_model_2 <- sexual_identity_fluidity ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_country_of_birth <- list(
@@ -1350,8 +1373,8 @@ fml_list_country_of_birth <- list(
 ##### exposure of interest: education #####
 
 fml_education_crude <- sexual_identity_fluidity ~ education_exp
-fml_education_model_1 <- sexual_identity_fluidity ~ education_exp + age_conf + sex_conf + country_of_birth_conf
-fml_education_model_2 <- sexual_identity_fluidity ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
+fml_education_model_1 <- sexual_identity_fluidity ~ education_exp + age_conf + sex_conf + country_of_birth_conf + year_conf
+fml_education_model_2 <- sexual_identity_fluidity ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_education <- list(
@@ -1364,8 +1387,8 @@ fml_list_education <- list(
 ##### exposure of interest: income #####
 
 fml_income_crude <- sexual_identity_fluidity ~ income_exp
-fml_income_model_1 <- sexual_identity_fluidity ~ income_exp + age_conf + sex_conf + country_of_birth_conf
-fml_income_model_2 <- sexual_identity_fluidity ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
+fml_income_model_1 <- sexual_identity_fluidity ~ income_exp + age_conf + sex_conf + country_of_birth_conf + year_conf
+fml_income_model_2 <- sexual_identity_fluidity ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_income <- list(
@@ -1378,8 +1401,8 @@ fml_list_income <- list(
 ##### exposure of interest: marital status #####
 
 fml_marital_status_crude <- sexual_identity_fluidity ~ marital_status_exp
-fml_marital_status_model_1 <- sexual_identity_fluidity ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
-fml_marital_status_model_2 <- sexual_identity_fluidity ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + living_status_conf + personal_support_conf + place_of_residence_conf
+fml_marital_status_model_1 <- sexual_identity_fluidity ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + year_conf
+fml_marital_status_model_2 <- sexual_identity_fluidity ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_marital_status <- list(
@@ -1392,8 +1415,8 @@ fml_list_marital_status <- list(
 ##### exposure of interest: living status #####
 
 fml_living_status_crude <- sexual_identity_fluidity ~ living_status_exp
-fml_living_status_model_1 <- sexual_identity_fluidity ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf
-fml_living_status_model_2 <- sexual_identity_fluidity ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + personal_support_conf + place_of_residence_conf
+fml_living_status_model_1 <- sexual_identity_fluidity ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + year_conf
+fml_living_status_model_2 <- sexual_identity_fluidity ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_living_status <- list(
@@ -1406,8 +1429,8 @@ fml_list_living_status <- list(
 ##### exposure of interest: personal support #####
 
 fml_personal_support_crude <- sexual_identity_fluidity ~ personal_support_exp
-fml_personal_support_model_1 <- sexual_identity_fluidity ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf
-fml_personal_support_model_2 <- sexual_identity_fluidity ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + place_of_residence_conf
+fml_personal_support_model_1 <- sexual_identity_fluidity ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + year_conf
+fml_personal_support_model_2 <- sexual_identity_fluidity ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_personal_support <- list(
@@ -1416,7 +1439,7 @@ fml_list_personal_support <- list(
   fml_personal_support_model_2 = fml_personal_support_model_2
   )
 
-exposures <- c( "year", "age", "age_by_sex", "sex", "country_of_birth", "education", "income", "marital_status", "living_status", "personal_support" )
+exposures <- c( "year", "sexual_identity", "age", "age_by_sex", "sex", "country_of_birth", "education", "income", "marital_status", "living_status", "personal_support" )
 ```
 
 ##### 4.1.2. Crude and adjusted analyses
@@ -1470,6 +1493,27 @@ for ( name in names( fml_list_year ) ) {
 
 # extract risk ratio and 95% CI
 fluidity_cc_year_rr <- extract_rr_fluidity( fluidity_cc_year_coef )
+
+
+##### exposure of interest: sexual identity in 2010 #####
+
+exposures_sexual_identity <- c( "sexual_identity_2010_expHomosexual", "sexual_identity_2010_expBisexual", "sexual_identity_2010_expOther"  )
+
+# extract coefficient and 95% CI
+fluidity_cc_sexual_identity_coef <- list()
+
+for ( name in names( fml_list_sexual_identity ) ) {
+  
+    fluidity_cc_sexual_identity_coef[[ name ]] <- extract_results_coef_fluidity(
+      all_models_list = models_fluidity_cc, 
+      exposure = "sexual_identity", 
+      model_type = name, 
+      variables = exposures_sexual_identity
+    )
+}
+
+# extract risk ratio and 95% CI
+fluidity_cc_sexual_identity_rr <- extract_rr_fluidity( fluidity_cc_sexual_identity_coef )
 
 
 ##### exposure of interest: age #####
@@ -1690,6 +1734,7 @@ fluidity_cc_personal_support_rr <- extract_rr_fluidity( fluidity_cc_personal_sup
 ##### combine results #####
 
 fluidity_cc_rr <- rbind( fluidity_cc_year_rr,
+                         fluidity_cc_sexual_identity_rr,
                          fluidity_cc_age_rr,
                          fluidity_cc_age_by_sex_rr,
                          fluidity_cc_sex_rr,
