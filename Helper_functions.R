@@ -217,3 +217,33 @@ extract_rr_fluidity <- function( model_results ) {
   
   return( combined_df )
 }
+
+
+##### Function for Estimation of Proportion of Changes in Sexual Identity #####
+
+calculate_proportions <- function( data, variable, design ) {
+  prop_var <- svyby( 
+    formula = ~I( sexual_identity_fluidity == "changed" ),
+    by = ~get( variable ),
+    design = subset( design, !is.na( sexual_identity_fluidity ) & !is.na( get( variable ) ) ),
+    FUN = svyciprop,
+    vartype = "ci",
+    method = "beta"
+    )
+  
+  colnames( prop_var ) <- c( "subgroup", "changed_point_estimate", "changed_lower_ci", "changed_upper_ci" )
+  
+  prop_var <- left_join(
+    prop_var,
+    data %>% 
+      filter( !is.na( sexual_identity_fluidity ) & !is.na( get( variable ) ) ) %>%
+      group_by( subgroup = get( variable ) ) %>%
+      summarise( sample_size = n() ),
+    by = "subgroup"
+  ) %>%
+    mutate(
+      sample_size = prettyNum( sample_size, big.mark = ",", preserve.width = "none" )
+    )
+  
+  return( prop_var )
+}
