@@ -4873,9 +4873,878 @@ ggplot( long_data_2021,
   )
 ```
 
-### 4. Plots for Relation between Changes in Sexual Identity and Demographic Factors
-#### 4.1. Complete-case analysis
-##### 4.1.1. Prepare dataset for plotting
+### 4. Plots for Proportion of Changes in Sexual Identity
+#### 4.1. Prepare dataset for plotting
+```{r}
+fluidity_cc_prop_summary_2010_2021 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_cc_prop_summary_SPHC-F_2010-2021.xlsx")
+fluidity_cc_prop_summary_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_cc_prop_summary_2010.xlsx")
+fluidity_cc_prop_summary_2014 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_cc_prop_summary_2014.xlsx")
+
+fluidity_cc_prop_summary_2010_2021[ 4,1 ] <- "Other_identity"
+fluidity_cc_prop_summary_2010_2021 <- fluidity_cc_prop_summary_2010_2021 %>%
+  rename( changed_point_estimate = proportion,
+          sample_size = count ) %>%
+  select( -c( fluid_count ) )
+colnames(fluidity_cc_prop_summary_2010_2021)[-1] <- paste0(colnames(fluidity_cc_prop_summary_2010_2021)[-1], "_2010_2021")
+
+colnames(fluidity_cc_prop_summary_2010)[-1] <- paste0(colnames(fluidity_cc_prop_summary_2010)[-1], "_2010")
+colnames(fluidity_cc_prop_summary_2014)[-1] <- paste0(colnames(fluidity_cc_prop_summary_2014)[-1], "_2014")
+
+# to make it easier to combine across datasets
+# a note on these changes will be added on the graph later
+fluidity_cc_prop_summary_2010_2021$subgroup[ fluidity_cc_prop_summary_2010_2021$subgroup == "<=29" ] <- "16-29"
+fluidity_cc_prop_summary_2010_2021$subgroup[ fluidity_cc_prop_summary_2010_2021$subgroup == "<=29.Male" ] <- "16-29.Male"
+fluidity_cc_prop_summary_2010_2021$subgroup[ fluidity_cc_prop_summary_2010_2021$subgroup == "<=29.Female" ] <- "16-29.Female"
+
+fluidity_cc_prop_summary_2010$subgroup[ fluidity_cc_prop_summary_2010$subgroup == "Uncertain" ] <- "Other_identity"
+fluidity_cc_prop_summary_2010$subgroup[ fluidity_cc_prop_summary_2010$subgroup == "18-29" ] <- "16-29"
+fluidity_cc_prop_summary_2010$subgroup[ fluidity_cc_prop_summary_2010$subgroup == "18-29.Male" ] <- "16-29.Male"
+fluidity_cc_prop_summary_2010$subgroup[ fluidity_cc_prop_summary_2010$subgroup == "18-29.Female" ] <- "16-29.Female"
+
+fluidity_cc_prop_summary_2014$subgroup[ fluidity_cc_prop_summary_2014$subgroup == "None of the above" ] <- "Other_identity"
+
+# merge datasets
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary_2010_2021 %>%
+  full_join( fluidity_cc_prop_summary_2010, by = "subgroup" ) %>%
+  full_join( fluidity_cc_prop_summary_2014, by = "subgroup" )
+
+# modify table format
+desired_order <- c( "Heterosexual", "Homosexual", "Bisexual", "Other_identity", "Male", "Female", "16-29", "30-44", "45-59", ">=60", "16-29.Male", "30-44.Male", "45-59.Male", ">=60.Male", "16-29.Female", "30-44.Female", "45-59.Female", ">=60.Female", "Sweden", "Europe", "Outside Europe", "<=9 years", "10-12 years", ">=13 years", "Manual and field trades", "Service and support", "Expertise and leadership", "<=2,500", "(2,500, 3,500]", "(3,500, 4,500]", ">4,500", "Currently married", "Never married", "Other", "living_alone_yes", "living_alone_no", "personal_support_yes", "personal_support_no", "SPHC 2002", "SPHC 2006", "SPHC 2010", "Stockholm County" )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>%
+  mutate( subgroup = factor( subgroup, levels = desired_order ) ) %>%
+  arrange( subgroup )
+
+fluidity_cc_prop_summary[ 4,1 ] <- "Other"
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_row( subgroup = "Sexual identityᵇ", .before = 1 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_row( subgroup = "Sex", .before = 6 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_row( subgroup = "Age group", .before = 9 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_row( subgroup = "Male", .before = 14 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_row( subgroup = "Female", .before = 19 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_row( subgroup = "Country of birth", .before = 24 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_row( subgroup = "Education years", .before = 28 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_row( subgroup = "Occupationᵉ", .before = 32 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_row( subgroup = "Income (100 kr/yr)ᶠ", .before = 36 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_row( subgroup = "Marital statusʰ", .before = 41 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_row( subgroup = "Living alone", .before = 45 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_row( subgroup = "Personal support", .before = 48 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_row( subgroup = "Cohort yearⁱ", .before = 51 )
+
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "16-29" ] <- "16–29 yrsᶜ"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "30-44" ] <- "30–44 yrs"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "45-59" ] <- "45–59 yrs"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == ">=60" ] <- "\u2265 60 yrs"
+
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "16-29.Male" ] <- "16–29 yrsᵇ"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "30-44.Male" ] <- "30–44 yrs"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "45-59.Male" ] <- "45–59 yrs"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == ">=60.Male" ] <- "\u2265 60 yrs"
+
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "16-29.Female" ] <- "16–29 yrsᵇ"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "30-44.Female" ] <- "30–44 yrs"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "45-59.Female" ] <- "45–59 yrs"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == ">=60.Female" ] <- "\u2265 60 yrs"
+
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "<=9 years" ] <- "\u2264 9 yrs"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "10-12 years" ] <- "10–12 yrs"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == ">=13 years" ] <- "\u2265 13 yrs"
+
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "Europe" ] <- "Europeᵈ"
+
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "<=2,500" ] <- "\u2264 2,500"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == ">4,500" ] <- "> 4,500"
+
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "living_alone_no" ] <- "No"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "living_alone_yes" ] <- "Yes"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "personal_support_no" ] <- "No"
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "personal_support_yes" ] <- "Yes"
+
+fluidity_cc_prop_summary$subgroup <- ifelse( ( is.na( fluidity_cc_prop_summary$changed_point_estimate_2010_2021 ) &
+                                                 is.na( fluidity_cc_prop_summary$changed_point_estimate_2010 ) ) | 
+                                      fluidity_cc_prop_summary$subgroup == "Stockholm County", 
+                                    fluidity_cc_prop_summary$subgroup,
+                                    paste0( "   ", fluidity_cc_prop_summary$subgroup ) )
+
+fluidity_cc_prop_summary$subgroup[ fluidity_cc_prop_summary$subgroup == "Stockholm County" ] <- "Stockholm Countyᵍ"
+colnames( fluidity_cc_prop_summary )[ colnames( fluidity_cc_prop_summary ) == "subgroup" ] <- "Subgroup"
+
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_column( "SPHC-F 2010-2021" = paste0(
+    sprintf( "%.1f", fluidity_cc_prop_summary$changed_point_estimate_2010_2021*100 ), " (", 
+    sprintf( "%.1f", fluidity_cc_prop_summary$changed_lower_ci_2010_2021*100 ), ", ", 
+    sprintf( "%.1f", fluidity_cc_prop_summary$changed_upper_ci_2010_2021*100 ), ")" ),
+    .before = 3 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 8 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_column( "SPHC 2010" = paste0(
+    sprintf( "%.1f", fluidity_cc_prop_summary$changed_point_estimate_2010*100 ), " (", 
+    sprintf( "%.1f", fluidity_cc_prop_summary$changed_lower_ci_2010*100 ), ", ", 
+    sprintf( "%.1f", fluidity_cc_prop_summary$changed_upper_ci_2010*100 ), ")" ),
+    .before = 9 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 14 )
+
+fluidity_cc_prop_summary <- fluidity_cc_prop_summary %>% 
+  add_column( "SPHC 2014" = paste0(
+    sprintf( "%.1f", fluidity_cc_prop_summary$changed_point_estimate_2014*100 ), " (", 
+    sprintf( "%.1f", fluidity_cc_prop_summary$changed_lower_ci_2014*100 ), ", ", 
+    sprintf( "%.1f", fluidity_cc_prop_summary$changed_upper_ci_2014*100 ), ")"  ),
+    .before = 15 )
+
+fluidity_cc_prop_summary$`SPHC-F 2010-2021` <- ifelse( 
+  is.na( fluidity_cc_prop_summary$changed_point_estimate_2010_2021 ) &
+    is.na( fluidity_cc_prop_summary$changed_point_estimate_2010 ), "",
+  fluidity_cc_prop_summary$`SPHC-F 2010-2021` )
+fluidity_cc_prop_summary$`SPHC-F 2010-2021`[ fluidity_cc_prop_summary$`SPHC-F 2010-2021` == "NA (NA, NA)" ] <- "\u2013"
+
+fluidity_cc_prop_summary$`SPHC 2010` <- ifelse( 
+  is.na( fluidity_cc_prop_summary$changed_point_estimate_2010_2021 ) &
+    is.na( fluidity_cc_prop_summary$changed_point_estimate_2010 ), "",
+  fluidity_cc_prop_summary$`SPHC 2010` )
+fluidity_cc_prop_summary$`SPHC 2010`[ fluidity_cc_prop_summary$`SPHC 2010` == "NA (NA, NA)" ] <- "\u2013"
+
+fluidity_cc_prop_summary$`SPHC 2014` <- ifelse( 
+  is.na( fluidity_cc_prop_summary$changed_point_estimate_2010_2021 ) &
+    is.na( fluidity_cc_prop_summary$changed_point_estimate_2010 ), "",
+  fluidity_cc_prop_summary$`SPHC 2014` )
+fluidity_cc_prop_summary$`SPHC 2014`[ fluidity_cc_prop_summary$`SPHC 2014` == "NA (NA, NA)" ] <- "\u2013"
+
+fluidity_cc_prop_summary$sample_size_2010_2021 <- prettyNum( fluidity_cc_prop_summary$sample_size_2010_2021, big.mark = ",", preserve.width = "none" )
+
+fluidity_cc_prop_summary$sample_size_2010_2021 <- ifelse(
+  is.na( fluidity_cc_prop_summary$changed_point_estimate_2010_2021 ) &
+    is.na( fluidity_cc_prop_summary$changed_point_estimate_2010 ), "",
+  fluidity_cc_prop_summary$sample_size_2010_2021
+)
+fluidity_cc_prop_summary$sample_size_2010_2021[ fluidity_cc_prop_summary$sample_size_2010_2021 == "NA" ] <- "\u2013"
+
+fluidity_cc_prop_summary$sample_size_2010 <- ifelse(
+  is.na( fluidity_cc_prop_summary$changed_point_estimate_2010_2021 ) &
+    is.na( fluidity_cc_prop_summary$changed_point_estimate_2010 ), "",
+  fluidity_cc_prop_summary$sample_size_2010
+)
+fluidity_cc_prop_summary$sample_size_2010[ is.na( fluidity_cc_prop_summary$sample_size_2010 ) ] <- "\u2013"
+
+fluidity_cc_prop_summary$sample_size_2014 <- ifelse(
+  is.na( fluidity_cc_prop_summary$changed_point_estimate_2010_2021 ) &
+    is.na( fluidity_cc_prop_summary$changed_point_estimate_2010 ), "",
+  fluidity_cc_prop_summary$sample_size_2014
+)
+fluidity_cc_prop_summary$sample_size_2014[ is.na( fluidity_cc_prop_summary$sample_size_2014 ) ] <- "\u2013"
+
+
+fluidity_cc_prop_summary_updated <- fluidity_cc_prop_summary %>%
+  select( 1:4, 8, 9, 13, 14, 15, 19, everything() )
+
+fluidity_cc_prop_summary_updated <- fluidity_cc_prop_summary_updated %>%
+  add_column( temp1 = " ", .before = 2 ) %>%
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 7 ) %>%
+  add_column( temp4 = " ", .before = 10 ) %>%
+  add_column( temp5 = " ", .before = 12 ) %>%
+  add_column( temp6 = " ", .before = 15 )
+
+names( fluidity_cc_prop_summary_updated )[ names( fluidity_cc_prop_summary_updated ) %in% c( "temp1", "temp2", "temp3", "temp4", "temp5", "temp6" ) ] <- ""
+
+colnames( fluidity_cc_prop_summary_updated )[ colnames( fluidity_cc_prop_summary_updated ) == "SPHC-F 2010-2021" ] <- ""
+colnames( fluidity_cc_prop_summary_updated )[ colnames( fluidity_cc_prop_summary_updated ) == "SPHC 2010" ] <- ""
+colnames( fluidity_cc_prop_summary_updated )[ colnames( fluidity_cc_prop_summary_updated ) == "SPHC 2014" ] <- ""
+
+colnames( fluidity_cc_prop_summary_updated )[ colnames( fluidity_cc_prop_summary_updated ) == "sample_size_2010_2021" ] <- ""
+colnames( fluidity_cc_prop_summary_updated )[ colnames( fluidity_cc_prop_summary_updated ) == "sample_size_2010" ] <- ""
+colnames( fluidity_cc_prop_summary_updated )[ colnames( fluidity_cc_prop_summary_updated ) == "sample_size_2014" ] <- ""
+```
+
+#### 4.2. Plotting
+##### 4.2.1. Part 1
+```{r}
+tm <- forest_theme(
+  base_size = 10,
+  colhead = list( fg_params = list( fontsize = 10 ) ), 
+  base_family = "Arial",
+  ci_col = "red",
+  refline_lty = "dotted",
+  refline_lwd = 1,
+  refline_col = "steelblue",
+  vertline_lty = "dashed",
+  vertline_lwd = 1,
+  vertline_col = "steelblue",
+  summary_col = "#4575b4",
+  summary_fill = "#4575b4"
+)
+
+fluidity_cc_prop_summary_updated_part_1 <- fluidity_cc_prop_summary_updated[ c( 1:13, 24:40, 55 ), ]
+
+p_prop_cc_fluidity <- forest(
+  fluidity_cc_prop_summary_updated_part_1[ , c( 1:16 ) ],
+  
+  est = list( fluidity_cc_prop_summary_updated_part_1$changed_point_estimate_2010_2021*100,
+              fluidity_cc_prop_summary_updated_part_1$changed_point_estimate_2010*100,
+              fluidity_cc_prop_summary_updated_part_1$changed_point_estimate_2014*100
+  ),
+  
+  lower = list( fluidity_cc_prop_summary_updated_part_1$changed_lower_ci_2010_2021*100,
+                fluidity_cc_prop_summary_updated_part_1$changed_lower_ci_2010*100,
+                fluidity_cc_prop_summary_updated_part_1$changed_lower_ci_2014*100
+  ),
+  
+  upper = list( fluidity_cc_prop_summary_updated_part_1$changed_upper_ci_2010_2021*100,
+                fluidity_cc_prop_summary_updated_part_1$changed_upper_ci_2010*100,
+                fluidity_cc_prop_summary_updated_part_1$changed_upper_ci_2014*100
+  ),
+  
+  ci_column = c( 3, 8, 13 ),
+  is_summary = c( rep( FALSE, nrow( fluidity_cc_prop_summary_updated_part_1 ) - 1 ), TRUE ),
+  sizes = 0.4,
+  
+  ref_line = c( fluidity_cc_prop_summary_2010_2021[ fluidity_cc_prop_summary_2010_2021$subgroup == "Stockholm County", ]$changed_point_estimate_2010_2021*100,
+              fluidity_cc_prop_summary_2010[ fluidity_cc_prop_summary_2010$subgroup == "Stockholm County", ]$changed_point_estimate_2010*100,
+              fluidity_cc_prop_summary_2014[ fluidity_cc_prop_summary_2014$subgroup == "Stockholm County", ]$changed_point_estimate_2014*100 ),
+  
+  xlim = list( c( 0, 80 ), c( 0, 80 ), c( 0, 60 ) ),
+  ticks_at = list( c( 0, 20, 40, 60, 80 ), c( 0, 20, 40, 60, 80 ), c( 0, 20, 40, 60 ) ),
+  
+  xlab = "Proportion (%) (95% CI)",
+  theme = tm
+)
+
+p_prop_cc_fluidity <- edit_plot(
+  p_prop_cc_fluidity,
+  row = c( 1, 6, 9, 14, 18, 22, 26, 31 ),
+  gp = gpar(fontface = "bold")
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "Proportion (%) (95% CI)",
+  col = 3:4,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SSᵃ",
+  col = 6,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SSᵃ",
+  col = 11,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SSᵃ",
+  col = 16,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- insert_text(
+  p_prop_cc_fluidity,
+  text = "SPHC-F 2010-2021",
+  col = 3:6,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SPHC 2010",
+  col = 8:11,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "Proportion (%) (95% CI)",
+  col = 8:9,
+  row = 2,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SPHC 2014",
+  col = 13:16,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "Proportion (%) (95% CI)",
+  col = 13:14,
+  row = 2,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_border(
+  p_prop_cc_fluidity,
+  part = "header",
+  row = 1,
+  where = "bottom",
+  col = 3:6,
+  gp = gpar(lwd = 1)
+)
+
+p_prop_cc_fluidity <- add_border(
+  p_prop_cc_fluidity,
+  part = "header",
+  row = 1,
+  where = "bottom",
+  col = 8:11,
+  gp = gpar(lwd = 1)
+)
+
+p_prop_cc_fluidity <- add_border(
+  p_prop_cc_fluidity,
+  part = "header",
+  row = 1,
+  where = "bottom",
+  col = 13:16,
+  gp = gpar(lwd = 1)
+)
+
+p_prop_cc_fluidity <- edit_plot( p_prop_cc_fluidity,
+                                row = c( 1, 6, 9, 14, 18, 22, 26, 31 ), 
+                                which = "background",
+                                gp = gpar( fill = "white" )
+)
+
+p_prop_cc_fluidity <- edit_plot( p_prop_cc_fluidity,
+                                row = c( 2:5, 7, 8, 10:13, 15:17, 19:21, 23:25, 27:30 ), 
+                                which = "background",
+                                gp = gpar( fill = "#eff3f2" )
+)
+
+plot( p_prop_cc_fluidity )
+```
+
+##### 4.2.2. Part 2
+```{r}
+tm <- forest_theme(
+  base_size = 10,
+  colhead = list( fg_params = list( fontsize = 10 ) ), 
+  base_family = "Arial",
+  ci_col = "red",
+  refline_lty = "dotted",
+  refline_lwd = 1,
+  refline_col = "steelblue",
+  vertline_lty = "dashed",
+  vertline_lwd = 1,
+  vertline_col = "steelblue",
+  summary_col = "#4575b4",
+  summary_fill = "#4575b4"
+)
+
+fluidity_cc_prop_summary_updated_part_2 <- fluidity_cc_prop_summary_updated[ c( 41:55 ), ]
+
+p_prop_cc_fluidity <- forest(
+  fluidity_cc_prop_summary_updated_part_2[ , c( 1:16 ) ],
+  
+  est = list( fluidity_cc_prop_summary_updated_part_2$changed_point_estimate_2010_2021*100,
+              fluidity_cc_prop_summary_updated_part_2$changed_point_estimate_2010*100,
+              fluidity_cc_prop_summary_updated_part_2$changed_point_estimate_2014*100
+  ),
+  
+  lower = list( fluidity_cc_prop_summary_updated_part_2$changed_lower_ci_2010_2021*100,
+                fluidity_cc_prop_summary_updated_part_2$changed_lower_ci_2010*100,
+                fluidity_cc_prop_summary_updated_part_2$changed_lower_ci_2014*100
+  ),
+  
+  upper = list( fluidity_cc_prop_summary_updated_part_2$changed_upper_ci_2010_2021*100,
+                fluidity_cc_prop_summary_updated_part_2$changed_upper_ci_2010*100,
+                fluidity_cc_prop_summary_updated_part_2$changed_upper_ci_2014*100
+  ),
+  
+  ci_column = c( 3, 8, 13 ),
+  is_summary = c( rep( FALSE, nrow( fluidity_cc_prop_summary_updated_part_2 ) - 1 ), TRUE ),
+  sizes = 0.4,
+  
+  ref_line = c( fluidity_cc_prop_summary_2010_2021[ fluidity_cc_prop_summary_2010_2021$subgroup == "Stockholm County", ]$changed_point_estimate_2010_2021*100,
+              fluidity_cc_prop_summary_2010[ fluidity_cc_prop_summary_2010$subgroup == "Stockholm County", ]$changed_point_estimate_2010*100,
+              fluidity_cc_prop_summary_2014[ fluidity_cc_prop_summary_2014$subgroup == "Stockholm County", ]$changed_point_estimate_2014*100 ),
+  
+  xlim = list( c( 5, 25 ), c( 5, 25 ), c( 5, 15 ) ),
+  ticks_at = list( c( 5, 10, 15, 20, 25 ), c( 5, 10, 15, 20, 25 ), c( 5, 10, 15 ) ),
+  
+  xlab = "Proportion (%) (95% CI)",
+  theme = tm
+)
+
+p_prop_cc_fluidity <- edit_plot(
+  p_prop_cc_fluidity,
+  row = c( 1, 5, 8, 11, 15 ),
+  gp = gpar(fontface = "bold")
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "Proportion (%) (95% CI)",
+  col = 3:4,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SSᵃ",
+  col = 6,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SSᵃ",
+  col = 11,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SSᵃ",
+  col = 16,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- insert_text(
+  p_prop_cc_fluidity,
+  text = "SPHC-F 2010-2021",
+  col = 3:6,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SPHC 2010",
+  col = 8:11,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "Proportion (%) (95% CI)",
+  col = 8:9,
+  row = 2,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SPHC 2014",
+  col = 13:16,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "Proportion (%) (95% CI)",
+  col = 13:14,
+  row = 2,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_border(
+  p_prop_cc_fluidity,
+  part = "header",
+  row = 1,
+  where = "bottom",
+  col = 3:6,
+  gp = gpar(lwd = 1)
+)
+
+p_prop_cc_fluidity <- add_border(
+  p_prop_cc_fluidity,
+  part = "header",
+  row = 1,
+  where = "bottom",
+  col = 8:11,
+  gp = gpar(lwd = 1)
+)
+
+p_prop_cc_fluidity <- add_border(
+  p_prop_cc_fluidity,
+  part = "header",
+  row = 1,
+  where = "bottom",
+  col = 13:16,
+  gp = gpar(lwd = 1)
+)
+
+p_prop_cc_fluidity <- edit_plot( p_prop_cc_fluidity,
+                                row = c( 1, 5, 8, 11, 15 ), 
+                                which = "background",
+                                gp = gpar( fill = "white" )
+)
+
+p_prop_cc_fluidity <- edit_plot( p_prop_cc_fluidity,
+                                row = c( 2:4, 6, 7, 9, 10, 12:14 ), 
+                                which = "background",
+                                gp = gpar( fill = "#eff3f2" )
+)
+
+plot( p_prop_cc_fluidity )
+```
+
+##### 4.2.3. Part 3
+```{r}
+tm <- forest_theme(
+  base_size = 10,
+  colhead = list( fg_params = list( fontsize = 10 ) ), 
+  base_family = "Arial",
+  ci_col = "red",
+  refline_lty = "dotted",
+  refline_lwd = 1,
+  refline_col = "steelblue",
+  vertline_lty = "dashed",
+  vertline_lwd = 1,
+  vertline_col = "steelblue",
+  summary_col = "#4575b4",
+  summary_fill = "#4575b4"
+)
+
+fluidity_cc_prop_summary_updated_part_3 <- fluidity_cc_prop_summary_updated[ c( 14:23, 55 ), ]
+fluidity_cc_prop_summary_updated_part_3$Subgroup[ fluidity_cc_prop_summary_updated_part_3$Subgroup == "Stockholm Countyᵍ" ] <- "Stockholm Countyᶜ"
+
+p_prop_cc_fluidity <- forest(
+  fluidity_cc_prop_summary_updated_part_3[ , c( 1:16 ) ],
+  
+  est = list( fluidity_cc_prop_summary_updated_part_3$changed_point_estimate_2010_2021*100,
+              fluidity_cc_prop_summary_updated_part_3$changed_point_estimate_2010*100,
+              fluidity_cc_prop_summary_updated_part_3$changed_point_estimate_2014*100
+  ),
+  
+  lower = list( fluidity_cc_prop_summary_updated_part_3$changed_lower_ci_2010_2021*100,
+                fluidity_cc_prop_summary_updated_part_3$changed_lower_ci_2010*100,
+                fluidity_cc_prop_summary_updated_part_3$changed_lower_ci_2014*100
+  ),
+  
+  upper = list( fluidity_cc_prop_summary_updated_part_3$changed_upper_ci_2010_2021*100,
+                fluidity_cc_prop_summary_updated_part_3$changed_upper_ci_2010*100,
+                fluidity_cc_prop_summary_updated_part_3$changed_upper_ci_2014*100
+  ),
+  
+  ci_column = c( 3, 8, 13 ),
+  is_summary = c( rep( FALSE, nrow( fluidity_cc_prop_summary_updated_part_3 ) - 1 ), TRUE ),
+  sizes = 0.4,
+  
+  ref_line = c( fluidity_cc_prop_summary_2010_2021[ fluidity_cc_prop_summary_2010_2021$subgroup == "Stockholm County", ]$changed_point_estimate_2010_2021*100,
+              fluidity_cc_prop_summary_2010[ fluidity_cc_prop_summary_2010$subgroup == "Stockholm County", ]$changed_point_estimate_2010*100,
+              fluidity_cc_prop_summary_2014[ fluidity_cc_prop_summary_2014$subgroup == "Stockholm County", ]$changed_point_estimate_2014*100 ),
+  
+  xlim = list( c( 5, 25 ), c( 5, 25 ), c( 0, 15 ) ),
+  ticks_at = list( c( 5, 10, 15, 20, 25 ), c( 5, 10, 15, 20, 25 ), c( 0, 5, 10, 15 ) ),
+  
+  xlab = "Proportion (%) (95% CI)",
+  theme = tm
+)
+
+p_prop_cc_fluidity <- edit_plot(
+  p_prop_cc_fluidity,
+  row = c( 1, 6, 11 ),
+  gp = gpar(fontface = "bold")
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "Proportion (%) (95% CI)",
+  col = 3:4,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SSᵃ",
+  col = 6,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SSᵃ",
+  col = 11,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SSᵃ",
+  col = 16,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- insert_text(
+  p_prop_cc_fluidity,
+  text = "SPHC-F 2010-2021",
+  col = 3:6,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SPHC 2010",
+  col = 8:11,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "Proportion (%) (95% CI)",
+  col = 8:9,
+  row = 2,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "SPHC 2014",
+  col = 13:16,
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_text(
+  p_prop_cc_fluidity,
+  text = "Proportion (%) (95% CI)",
+  col = 13:14,
+  row = 2,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_prop_cc_fluidity <- add_border(
+  p_prop_cc_fluidity,
+  part = "header",
+  row = 1,
+  where = "bottom",
+  col = 3:6,
+  gp = gpar(lwd = 1)
+)
+
+p_prop_cc_fluidity <- add_border(
+  p_prop_cc_fluidity,
+  part = "header",
+  row = 1,
+  where = "bottom",
+  col = 8:11,
+  gp = gpar(lwd = 1)
+)
+
+p_prop_cc_fluidity <- add_border(
+  p_prop_cc_fluidity,
+  part = "header",
+  row = 1,
+  where = "bottom",
+  col = 13:16,
+  gp = gpar(lwd = 1)
+)
+
+p_prop_cc_fluidity <- edit_plot( p_prop_cc_fluidity,
+                                row = c( 1, 6, 11 ), 
+                                which = "background",
+                                gp = gpar( fill = "white" )
+)
+
+p_prop_cc_fluidity <- edit_plot( p_prop_cc_fluidity,
+                                row = c( 2:5, 7:10 ), 
+                                which = "background",
+                                gp = gpar( fill = "#eff3f2" )
+)
+
+plot( p_prop_cc_fluidity )
+```
+
+### 5. Plots for Relation between Changes in Sexual Identity and Demographic Factors
+#### 5.1. Complete-case analysis
+##### 5.1.1. Prepare dataset for plotting
 ```{r}
 fluidity_cc_rr_2010 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_cc_rr_2010.xlsx")
 fluidity_cc_rr_2014 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_cc_rr_2014.xlsx")
@@ -5198,8 +6067,8 @@ colnames( fluidity_cc_rr )[1] <- "Demographic Factor"
 names( fluidity_cc_rr )[ names( fluidity_cc_rr ) %in% c( "temp1", "temp2", "temp3", "Sexual_fluidity_crude", "Sexual_fluidity_model_1", "Sexual_fluidity_model_2" ) ] <- ""
 ```
 
-##### 4.1.2. Plotting
-###### 4.1.2.1. Part 1
+##### 5.1.2. Plotting
+###### 5.1.2.1. Part 1
 ```{r}
 tm <- forest_theme(
   base_size = 10,
@@ -5352,7 +6221,7 @@ p_cc_pr_poisson_sexual_fluidity <- add_border(
 plot( p_cc_pr_poisson_sexual_fluidity )
 ```
 
-###### 4.1.2.2. Part 2
+###### 5.1.2.2. Part 2
 ```{r}
 tm <- forest_theme(
   base_size = 10,
@@ -5505,7 +6374,7 @@ p_cc_pr_poisson_sexual_fluidity <- add_border(
 plot( p_cc_pr_poisson_sexual_fluidity )
 ```
 
-###### 4.1.2.3. Part 3
+###### 5.1.2.3. Part 3
 ```{r}
 tm <- forest_theme(
   base_size = 10,
@@ -5658,7 +6527,7 @@ p_cc_pr_poisson_sexual_fluidity <- add_border(
 plot( p_cc_pr_poisson_sexual_fluidity )
 ```
 
-###### 4.1.2.4. Part 4 (age by sex)
+###### 5.1.2.4. Part 4 (age by sex)
 ```{r}
 tm <- forest_theme(
   base_size = 10,

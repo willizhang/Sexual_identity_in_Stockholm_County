@@ -2106,8 +2106,8 @@ survey_design_cc_fluidity <- svydesign( ids = ~ 1,
 ##### 5.1.2. Caculate proportions
 ```{r}
 # among different demographic subgroups
-demographic_variables <- c( "sex", "age_cat", "age_sex", "country_of_birth", "education", "occupation", "income",
-                            "marital_status", "living_alone", "personal_support" )
+demographic_variables <- c( "sexual_identity_2010", "sex", "age_cat", "age_sex", "country_of_birth", "education", 
+                            "occupation", "income", "marital_status", "living_alone", "personal_support" )
 
 results_list <- list()
 
