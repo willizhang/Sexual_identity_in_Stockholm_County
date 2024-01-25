@@ -401,6 +401,7 @@ table( d_2010$education, useNA = "always" )
 
 # disposable income
 summary( d_2010$dispink2010, useNA = "always" )
+d_2010$dispink2010 <- d_2010$dispink2010*( 1960/1733 ) # Consumer Price Index (CPI)-adjusted income
 d_2010$income <- factor( ifelse( d_2010$dispink2010 <= 2500, "<=2,500",
                                  ifelse( d_2010$dispink2010 > 2500 & d_2010$dispink2010 <= 3500, "(2,500, 3,500]",
                                          ifelse( d_2010$dispink2010 > 3500 & d_2010$dispink2010 <= 4500, "(3,500, 4,500]", ">4,500" ) ) ),
@@ -502,6 +503,7 @@ table( m12_updated$education_exp, useNA = "always" )
 
 # disposable income
 summary( m12_updated$dispink2010, useNA = "always" )
+m12_updated$dispink2010 <- m12_updated$dispink2010*( 1960/1733 ) # Consumer Price Index (CPI)-adjusted income
 m12_updated$income_conf <- m12_updated$dispink2010
 m12_updated$income_exp <- factor( ifelse( m12_updated$dispink2010 <= 2500, "<=2,500",
                                           ifelse( m12_updated$dispink2010 > 2500 & m12_updated$dispink2010 <= 3500, "(2,500, 3,500]",

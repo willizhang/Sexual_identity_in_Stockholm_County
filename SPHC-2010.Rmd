@@ -186,6 +186,7 @@ table( d_2010$occupation, useNA = "always" )
 
 # disposable income
 summary( d_2010$dispink2010, useNA = "always" )
+d_2010$dispink2010 <- d_2010$dispink2010*( 1960/1733 ) # Consumer Price Index (CPI)-adjusted income
 d_2010$income <- factor( ifelse( d_2010$dispink2010 <= 2500, "<=2,500",
                                  ifelse( d_2010$dispink2010 > 2500 & d_2010$dispink2010 <= 3500, "(2,500, 3,500]",
                                          ifelse( d_2010$dispink2010 > 3500 & d_2010$dispink2010 <= 4500, "(3,500, 4,500]", ">4,500" ) ) ),
@@ -898,9 +899,65 @@ prop_cc_summary_2010 <- rbind( prop_cc_sex,
 writexl::write_xlsx( prop_cc_summary_2010, "prop_cc_summary_2010.xlsx" )
 ```
 
-#### 3.2. Multiple impuation and inverse probability weighting
+#### 3.2. Multiple imputation and survey weights
+##### 3.2.1. Multiple imputation
+###### 3.2.1.1. Obtain incomplete dataset
 ```{r}
+summary( d_2010 )
+selected_variables <- c( "sampling_strata_region", "no.of.population", "sample_size", "calibrated_weight", "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "age", "sex", "country_of_birth", "utbniva2010", "dispink2010", "marital_status", "living_alone", "F10U57G62" )
 
+d_2010_incomplete <- d_2010 %>% 
+  select( all_of( selected_variables ) ) %>%
+  mutate( utbniva2010 = as.factor( utbniva2010 ),
+          F10U57G62 = as.factor( F10U57G62 ) ) %>%
+  rename( education = utbniva2010,
+          income = dispink2010,
+          personal_support = F10U57G62
+          )
+
+summary( d_2010_incomplete )
+sapply( d_2010_incomplete, class ) # all continuous variables are numeric, and all categorical variables are factor
+```
+
+###### 3.2.1.2. Visualize missing pattern
+```{r}
+# identify missing variables
+vis_miss( d_2010_incomplete )
+n_miss( d_2010_incomplete )
+miss_var_summary( d_2010_incomplete ) # 58.0% missing in sexual_identity_2021, 41.2% in sexual_identity_2014,
+# 3.8% in sexual_identity_2010, 1.3% in personal_support, 1.1% in living_alone, 0.7% in education
+```
+
+###### 3.2.1.3. Two-level multivariate normal imputation with latent normal variables approach
+```{r}
+# use multiple imputation to account for item non-response
+# assume Missing At Random (MAR)
+
+# create weight strata
+d_2010_incomplete$weight_strata <- as.factor( cut( d_2010_incomplete$calibrated_weight,
+                                                   breaks = quantile( d_2010_incomplete$calibrated_weight, 
+                                                                      probs = seq( 0, 1, length.out = 40 ) ),
+                                                   labels = 1:39,
+                                                   include.lowest = TRUE,
+                                                   right = TRUE ) )
+
+ggplot( d_2010_incomplete %>% 
+          group_by( weight_strata ) %>% 
+          summarise( mean_weight = mean( calibrated_weight ), sd_weight = sd( calibrated_weight ) ),
+        aes( y = reorder( weight_strata, -mean_weight ), x = mean_weight ) ) +
+  geom_line( aes( group = 1 ) ) +
+  geom_point() +
+  geom_errorbarh( aes( xmin = mean_weight - sd_weight, xmax = mean_weight + sd_weight ), height = 0.4, alpha = 0.5 ) +
+  scale_x_continuous( limits = c( 0, 205 ), 
+                      breaks = c( 0, 50, 100, 150, 200 ), 
+                      expand = c( 0, 0 ) ) +
+  labs( y = "Calibrated Weight Strata", x = "Mean and Standard Deviation of Calibrated Weights" ) +
+  theme_classic() +
+  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.title.x = element_text( family = "Arial", size = 11 )
+  )
 ```
 
 ### 4. Relation between Sexual Identity and Demographic Factors
