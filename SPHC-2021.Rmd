@@ -718,71 +718,51 @@ prop_cc_summary_2021 <- rbind( prop_cc_sex,
 writexl::write_xlsx( prop_cc_summary_2021, "prop_cc_summary_2021.xlsx" )
 ```
 
-#### 3.2. Multiple imputation and inverse probability weighting
+#### 3.2. Multiple imputation and survey weights
 ##### 3.2.1. Multiple imputation
 ###### 3.2.1.1. Obtain incomplete dataset
 ```{r}
-d_2021_ic <- as.data.frame( d_2021 %>% 
-                              select( "sampling_strata", "sampling_strata_region", "no.of.population", "calibrated_weight", "sexual_identity_2021", "age", "sex", "fodelseland", "utbniva2021", "dispink2021", "marital_status" ) ) %>%
-  rename(
-    country_of_birth = fodelseland, 
-    education = utbniva2021, 
-    income = dispink2021 
+summary( d_2021 )
+selected_variables <- c( "sampling_strata_region", "no.of.population", "sample_size", "calibrated_weight", "sexual_identity_2021", "age", "sex", "country_of_birth", "utbniva2021", "occupation", "dispink2021", "marital_status" )
+  
+d_2021_incomplete <- d_2021 %>% 
+  select( all_of( selected_variables ) ) %>%
+  mutate( utbniva2021 = as.factor( utbniva2021 ) ) %>%
+  rename( 
+    education = utbniva2021,
+    income = dispink2021,
+    place_of_residence = sampling_strata_region
     )
 
-summary( d_2021_ic )
-d_2021_ic <- within( d_2021_ic, country_of_birth <- factor( country_of_birth ) )
-d_2021_ic <- within( d_2021_ic, education <- factor( education ) )
+# visualize the distribution of income (semi-continuous)
+ggplot( d_2021_incomplete, aes( x = income ) ) +
+  geom_histogram( binwidth = 10, fill = "steelblue", color = "steelblue" ) +
+  xlim( c( 0, 20000 ) )
 
-sapply( d_2021_ic, class ) # all continuous variables are numeric, and all categorical variables are factor
-```
+ggplot( d_2021_incomplete, aes( x = log( income ) ) ) +
+  geom_histogram( binwidth = 0.01, fill = "steelblue", color = "steelblue" ) +
+  xlim( c( log( 1 ), log( 20000 ) ) )
 
-###### 3.2.1.2. Visualize missing pattern and select auxiliary variables
-```{r}
-# identify missing variables
-vis_miss( d_2021_ic )
-n_miss( d_2021_ic )
-md.pattern( d_2021_ic )
-miss_var_summary( d_2021_ic ) # 2.2% missing in sexual_identity_2021, 2.1% in education, and 0.2% in income
+# generate two variables for income
+d_2021_incomplete$income_cat <- as.factor( ifelse( d_2021_incomplete$income == 0, 0, 1 ) )
+d_2021_incomplete$income_log_con <- ifelse( d_2021_incomplete$income == 0, NA, log( d_2021_incomplete$income ) )
+d_2021_incomplete <- d_2021_incomplete %>% select( -c( income ) )
 
-# select auxiliary variables for sexual identity
-# check whether potential auxiliary variables are correlated with sexual identity
-names( d_2021_ic )
-plot( d_2021_ic$sampling_strata_region, d_2021_ic$sexual_identity_2021 )
-plot( d_2021_ic$sexual_identity_2021, d_2021_ic$age )
-plot( d_2021_ic$sex, d_2021_ic$sexual_identity_2021 )
-plot( d_2021_ic$country_of_birth, d_2021_ic$sexual_identity_2021 )
-plot( d_2021_ic$education, d_2021_ic$sexual_identity_2021 )
-plot( d_2021_ic$sexual_identity_2021, d_2021_ic$income )
-plot( d_2021_ic$marital_status, d_2021_ic$sexual_identity_2021 )
+summary( d_2021_incomplete )
+sapply( d_2021_incomplete, class ) # all continuous variables are numeric, and all categorical variables are factor
 
-# check whether potential auxiliary variables are related to sexual identity being missing
-{
-  explanatory = c( "sampling_strata_region", "age", "sex", "country_of_birth", "education", "income", "marital_status" )
-  dependent = "sexual_identity_2021"
-  d_2021_ic %>% missing_pairs( dependent, explanatory, position = "fill", showYAxisPlotLabels = TRUE )
-  }
+# create weight strata for two-level multivariate normal imputation
+d_2021_incomplete$weight_strata <- as.factor( cut( d_2021_incomplete$calibrated_weight,
+                                                   breaks = quantile( d_2021_incomplete$calibrated_weight, 
+                                                                      probs = seq( 0, 1, length.out = 31 ) ),
+                                                   labels = 1:30,
+                                                   include.lowest = TRUE,
+                                                   right = TRUE ) )
 
-# finally, include all the variables as auxiliary variables for sexual identity, including sampling strata, age, sex, country of birth, education, income, and marital status
-```
-
-###### 3.2.1.3. Two-level multivariate normal imputation with latent normal variable approach
-```{r}
-# use multiple imputation to account for item non-response
-# assume Missing At Random (MAR)
-
-# create calibrated weight strata
-d_2021_ic$calibrated_weight_strata <- as.factor( cut( d_2021_ic$calibrated_weight,
-                                                      breaks = quantile( d_2021_ic$calibrated_weight, probs = seq( 0, 1, length.out = 39 ) ),
-                                                      labels = 1:38,
-                                                      include.lowest = TRUE,
-                                                      right = TRUE ) )
-
-# visualize calibrated weight strata
-ggplot( d_2021_ic %>% 
-          group_by( calibrated_weight_strata ) %>% 
+ggplot( d_2021_incomplete %>% 
+          group_by( weight_strata ) %>% 
           summarise( mean_weight = mean( calibrated_weight ), sd_weight = sd( calibrated_weight ) ),
-        aes( y = reorder( calibrated_weight_strata, -mean_weight ), x = mean_weight ) ) +
+        aes( y = reorder( weight_strata, -mean_weight ), x = mean_weight ) ) +
   geom_line( aes( group = 1 ) ) +
   geom_point() +
   geom_errorbarh( aes( xmin = mean_weight - sd_weight, xmax = mean_weight + sd_weight ), height = 0.4, alpha = 0.5 ) +
@@ -796,51 +776,70 @@ ggplot( d_2021_ic %>%
          axis.text.x = element_text( family = "Arial", size = 11 ),
          axis.title.x = element_text( family = "Arial", size = 11 )
          )
+```
 
-summary( d_2021_ic )
-sapply( d_2021_ic, class ) # all continuous variables are numeric, and all categorical variables are factor
+###### 3.2.1.2. Visualize missing pattern
+```{r}
+# identify missing variables
+vis_miss( d_2021_incomplete )
+n_miss( d_2021_incomplete )
+miss_var_summary( d_2021_incomplete ) # 31.6% missing in occupation, 2.2% in sexual_identity_2021, 2.1% in education, and 0.2% in income
+```
 
+###### 3.2.1.3. Two-level multivariate normal imputation
+```{r}
+# use multiple imputation to account for item non-response
+# assume Missing At Random (MAR)
 
-# add random effects in intercepts and predictors
-fml_imp <- sexual_identity_2021 + education + income ~ 1 + age + sex + age*sex + country_of_birth + marital_status + sampling_strata_region + ( 1 + age + sex + country_of_birth + marital_status + sampling_strata_region | calibrated_weight_strata )
+# introduce random intercepts
+fml_imp <- sexual_identity_2021 + education + income_cat + income_log_con ~ 1 + age + sex + age*sex + country_of_birth + occupation + marital_status + place_of_residence ( 1 | weight_strata )
 
 # perform a "dry run"
-ini <- jomoImpute( data = d_2021_ic,
-                   formula = fml, 
+ini <- jomoImpute( data = d_2021_incomplete, # incomplete dataset
+                   formula = fml_imp, # imputation model
                    random.L1 = "full", # random covariance matrix of residuals
-                   n.burn = 500,
-                   n.iter = 2,
-                   m = 2,
-                   seed = 12345 # set the seed so that results can be reproduced
+                   n.burn = 2, # number of burn-in iterations
+                   n.iter = 10, # number of between-imputation iterations
+                   m = 2, # number of imputation
+                   seed = 12345 # set the seed so that  results can be reproduced
                    )
 
 summary( ini ) # summarize model and display convergence statistics
-plot( ini ) # display convergence and autocorrelation plots
 
-# generate imputation
-imp <- jomoImpute( data = d_2021_ic,
-                   formula = fml, 
-                   random.L1 = "full",
-                   n.burn = 2000,
-                   n.iter = 1000,
-                   m = 50,
-                   seed = 12345
-                   )
+# check trace plot and autocorrelation plots
+# to determine the number of burn-in and between-imputation iterations for the final imputation
+imp_preliminary <- jomoImpute( data = d_2021_incomplete,
+                               formula = fml_imp,
+                               random.L1 = "full",
+                               n.burn = 5000,
+                               n.iter = 1000,
+                               m = 2,
+                               seed = 12345
+                               )
 
-save.image( file = "working_environment_2021.RData" )
-```
+summary( imp_preliminary )
+plot( imp_preliminary ) # display convergence and autocorrelation plots
 
-###### 3.2.1.4. Validate imputations
-```{r}
+
+# final imputation with the chosen number of iterations
+imp_final <- jomoImpute( data = d_2021_incomplete,
+                               formula = fml_imp,
+                               random.L1 = "full",
+                               n.burn = 5000,
+                               n.iter = 100,
+                               m = 2,
+                               seed = 12345
+                               )
+
 # validate imputation
-summary( imp ) # summarize model and display convergence statistics
-plot( imp ) # display convergence plots and autocorrelation plot
+summary( imp_final ) # summarize model and display convergence statistics
+plot( imp_final ) # display convergence plots and autocorrelation plot
 
 # extract list of imputed datasets
-implist <- mitmlComplete( imp, "all" )
+implist <- mitmlComplete( imp_final, "all" )
 ```
 
-##### 3.2.2. Inverse probability weighting
+##### 3.2.2. Analyses using survey weights
 ```{r}
 # use inverse probability weighting to account for unit non-response
 
@@ -880,49 +879,6 @@ survey_design_imp <- svydesign( ids = ~ 1,
                                weights = ~ calibrated_weight,
                                fpc = ~ no.of.population,
                                data = imputationList( implist ) )
-
-# calculate proportion of each sexual identity across sampling strata
-categories <- c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" )
-list_of_df <- list()
-
-for ( cat in categories ) {
-  prop_cc_stratum <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
-                            by = ~ sampling_strata_region, # equivalent to calculating the proportion separately for each stratum 
-                            design = survey_design_cc,
-                            FUN = svyciprop,
-                            vartype = "ci",
-                            method = "beta" )
-  
-  colnames( prop_cc_stratum ) <- c( "sampling_strata_region", paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
-  list_of_df[[cat]] <- prop_cc_stratum
-}
-
-prop_cc_summary <- Reduce( function( df1, df2 ) { 
-  merge( df1, df2, by = "sampling_strata_region" ) 
-  }, 
-  list_of_df )
-
-# calculate overall proportions of each sexual identity
-list_of_df <- list()
-
-for ( cat in categories ) {
-  prop_cc_overall <- svyciprop( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
-                                design = survey_design_cc,
-                                vartype = "ci",
-                                method = "beta" )
-  
-  prop_cc_overall <- data.frame( prop_cc_overall[ 1 ], confint( prop_cc_overall )[ 1 ], confint( prop_cc_overall )[ 2 ] )
-  colnames( prop_cc_overall ) <- c( paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
-  list_of_df[[cat]] <- prop_cc_overall
-}
-
-df_overall <- Reduce( function( df1, df2 ) {
-  cbind( df1, df2 )
-  }, 
-  list_of_df )
-
-df_overall$sampling_strata_region <- "Stockholm County"
-prop_cc_summary_2021 <- rbind( prop_cc_summary, df_overall )
 ```
 
 ### 4. Relation between Sexual Identity and Demographic Factors

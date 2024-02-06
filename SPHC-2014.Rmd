@@ -938,7 +938,7 @@ miss_var_summary( d_2014_incomplete ) # 37.6% missing in sexual_identity_2021, 9
 # 8.2% in personal_support, 7.5% in living_alone, 0.7% in education, 0.2% in income
 ```
 
-###### 3.2.1.3. Two-level multivariate normal imputation with latent normal variables approach
+###### 3.2.1.3. Two-level multivariate normal imputation
 ```{r}
 # use multiple imputation to account for item non-response
 # assume Missing At Random (MAR)
