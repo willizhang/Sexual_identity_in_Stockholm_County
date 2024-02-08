@@ -126,6 +126,23 @@ table( d_2014$age_cat, useNA = "always" )
 # interaction term between age and sex
 d_2014$age_sex <- interaction( d_2014$age_cat, d_2014$sex )
 
+# generation
+d_2014$birth_year <- 2014 - d_2014$age
+d_2014 <- d_2014 %>%
+  mutate( generation = case_when(
+    birth_year >= 1997 & birth_year <= 2012 ~ "Generation Z (1997–2012)",
+    birth_year >= 1981 & birth_year <= 1996 ~ "Millennials (1981–1996)",
+    birth_year >= 1965 & birth_year <= 1980 ~ "Generation X (1965–1980)",
+    birth_year >= 1946 & birth_year <= 1964 ~ "Baby Boomers (1946–1964)",
+    birth_year >= 1928 & birth_year <= 1945 ~ "Silent Generation (1928–1945)",
+    birth_year >= 1901 & birth_year <= 1927 ~ "Greatest Generation (1901–1927)"
+  ) )
+
+d_2014$generation <- factor( 
+  d_2014$generation, 
+  levels = c( "Generation Z (1997–2012)", "Millennials (1981–1996)", "Generation X (1965–1980)", "Baby Boomers (1946–1964)", "Silent Generation (1928–1945)", "Greatest Generation (1901–1927)" ) )
+summary( d_2014$generation )
+
 # country of birth
 table( d_2014$fodelseland, useNA = "always" )
 d_2014$country_of_birth <- factor( ifelse( d_2014$fodelseland == "Afrika", "Africa",
@@ -596,6 +613,37 @@ results_wide$`None of the above_pr_2014`[ is.infinite( results_wide$`None of the
 writexl::write_xlsx( results_wide, "prop_cc_age_iteration_2014.xlsx" )
 ```
 
+###### 3.1.3.3. Calculate proportion by generation
+```{r}
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_generation <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2014 == '", cat, "' )" ) ),
+                        by = ~ generation,
+                        design = subset( survey_design_cc, !is.na( sexual_identity_2014 ) & !is.na( generation ) ),
+                        FUN = svyciprop,
+                        vartype = "ci",
+                        method = "beta" )
+  
+  colnames( prop_cc_generation ) <- c( "subgroup", paste0( cat, "_point_estimate_2014" ), paste0( cat, "_lower_ci_2014" ), paste0( cat, "_upper_ci_2014" ) )
+  
+  list_of_df[[cat]] <- prop_cc_generation
+}
+
+prop_cc_generation <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+prop_cc_generation <- left_join( prop_cc_generation,
+                          d_2014_complete_cc[ !is.na( d_2014_complete_cc$sexual_identity_2014 ) &
+                                                !is.na( d_2014_complete_cc$generation ), ] %>% 
+                            group_by( subgroup = generation ) %>% 
+                            summarise( sample_size_2014 = n() ),
+                          by = "subgroup" ) %>%
+  mutate( sample_size_2014 = prettyNum( sample_size_2014, big.mark = ",", preserve.width = "none" ) )
+```
+
 ##### 3.1.4. By sex*age group
 ```{r}
 list_of_df <- list()
@@ -881,6 +929,7 @@ prop_cc_overall <- bind_cols( prop_cc_overall,
 ```{r}
 prop_cc_summary_2014 <- rbind( prop_cc_sex, 
                                prop_cc_age,
+                               prop_cc_generation,
                                prop_cc_age_sex,
                                prop_cc_education,
                                prop_cc_occupation,
@@ -900,7 +949,7 @@ writexl::write_xlsx( prop_cc_summary_2014, "prop_cc_summary_2014.xlsx" )
 ###### 3.2.1.1. Obtain incomplete dataset
 ```{r}
 summary( d_2014 )
-selected_variables <- c( "sampling_strata_region", "no.of.population", "sample_size", "calibrated_weight", "sexual_identity_2014", "sexual_identity_2021", "age", "sex", "country_of_birth", "utbniva2014", "dispink2014", "marital_status", "living_alone", "F14U56G66" )
+selected_variables <- c( "sampling_strata_region", "no.of.population", "sample_size", "calibrated_weight", "sexual_identity_2014", "sexual_identity_2021", "age", "sex", "country_of_birth", "utbniva2014", "occupation", "dispink2014", "marital_status", "living_alone", "F14U56G66" )
 
 d_2014_incomplete <- d_2014 %>% 
   select( all_of( selected_variables ) ) %>%
@@ -946,8 +995,8 @@ miss_var_summary( d_2014_incomplete ) # 37.6% missing in sexual_identity_2021, 9
 # create weight strata
 d_2014_incomplete$weight_strata <- as.factor( cut( d_2014_incomplete$calibrated_weight,
                                                    breaks = quantile( d_2014_incomplete$calibrated_weight, 
-                                                                      probs = seq( 0, 1, length.out = 40 ) ),
-                                                   labels = 1:39,
+                                                                      probs = seq( 0, 1, length.out = 26 ) ),
+                                                   labels = 1:25,
                                                    include.lowest = TRUE,
                                                    right = TRUE ) )
 

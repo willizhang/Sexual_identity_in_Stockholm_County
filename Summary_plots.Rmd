@@ -18,6 +18,7 @@ library(tibble)
 library(ggplot2)
 library(ggbreak)
 library(naniar)
+library(ggh4x)
 ```
 
 ### 2. Plots for Proportion of Sexual Identity
@@ -28,6 +29,10 @@ library(naniar)
 prop_cc_summary_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_summary_2010.xlsx")
 prop_cc_summary_2014 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_summary_2014.xlsx")
 prop_cc_summary_2021 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_summary_2021.xlsx")
+
+prop_cc_summary_2010 <- prop_cc_summary_2010 %>% slice( -c( 7:11 ) )
+prop_cc_summary_2014 <- prop_cc_summary_2014 %>% slice( -c( 7:12 ) )
+prop_cc_summary_2021 <- prop_cc_summary_2021 %>% slice( -c( 7:12 ) )
 
 # to make it easier to combine across datasets
 # a note on these changes will be added on the graph later
@@ -1653,6 +1658,88 @@ p_cc_age_sex <- add_border(
 )
 
 plot( p_cc_age_sex )
+```
+
+##### 2.1.7. By generation
+```{r}
+# datasets for proportion of sexual identity
+prop_cc_summary_2010_generation <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_summary_2010.xlsx")
+prop_cc_summary_2014_generation <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_summary_2014.xlsx")
+prop_cc_summary_2021_generation <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_summary_2021.xlsx")
+
+prop_cc_summary_2010_generation <- prop_cc_summary_2010_generation %>% slice( 7:11 )
+prop_cc_summary_2014_generation <- prop_cc_summary_2014_generation %>% slice( 7:12 )
+prop_cc_summary_2021_generation <- prop_cc_summary_2021_generation %>% slice( 7:12 )
+
+# merge datasets
+prop_cc_summary_generation <- prop_cc_summary_2010_generation %>%
+  full_join( prop_cc_summary_2014_generation, by = "subgroup" ) %>%
+  full_join( prop_cc_summary_2021_generation, by = "subgroup" )
+
+# modify table format
+desired_order <- c( "Generation Z (1997–2012)", "Millennials (1981–1996)", "Generation X (1965–1980)", "Baby Boomers (1946–1964)", "Silent Generation (1928–1945)", "Greatest Generation (1901–1927)" )
+
+prop_cc_summary_generation <- prop_cc_summary_generation %>%
+  mutate( subgroup = factor( subgroup, levels = desired_order ) ) %>%
+  arrange( subgroup )
+
+# convert to long format
+long_data_generation <- prop_cc_summary_generation %>%
+  select( subgroup, contains( "point_estimate" ) ) %>%
+  pivot_longer(
+    cols = -subgroup,
+    names_to = "year_identity",
+    values_to = "proportion"
+    ) %>%
+  separate( year_identity, into = c( "identity", "year" ), sep = "_point_estimate_" )
+
+long_data_generation <- long_data_generation %>%
+  mutate( identity = if_else( identity %in% c( "Uncertain", "None of the above" ), "Other", identity ) ) %>%
+  mutate( identity = factor( identity, levels = c( "Heterosexual", "Homosexual", "Bisexual", "Other" ) ) )
+
+# plot
+ggplot( long_data_generation, 
+        aes( x = year, y = proportion, color = subgroup, group = subgroup ) ) +
+  
+  geom_line( linewidth = 0.5 ) + 
+  geom_point( size = 2 ) +
+  
+  scale_x_discrete( expand = c( 0.05, 0 ) ) +
+  scale_y_continuous( labels = scales::percent ) +
+  
+  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D", "orange", "brown" ),
+                      breaks = c( "Generation Z (1997–2012)", "Baby Boomers (1946–1964)", "Millennials (1981–1996)", "Silent Generation (1928–1945)", "Generation X (1965–1980)", "Greatest Generation (1901–1927)" ),
+                      labels = c( "Generation Z (1997–2012)ᵇ", "Baby Boomers (1946–1964)", "Millennials (1981–1996)", "Silent Generation (1928–1945)", "Generation X (1965–1980)", "Greatest Generation (1901–1927)" ) ) +
+  
+  labs(
+    x = "Survey Year",
+    y = "Proportion" ) +
+  
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_blank(),
+         legend.position = "bottom",
+         strip.background = element_blank(),
+         strip.text = element_text( family = "Arial", size = 12 ),
+         panel.spacing = unit( 2, "lines" ) ) +
+  
+  facet_wrap( ~ identity, 
+              ncol = 2, 
+              scales = "free_y",
+              labeller = labeller( identity = c( "Heterosexual" = "Heterosexual Identity",
+                                                 "Homosexual" = "Homosexual Identity",
+                                                 "Bisexual" = "Bisexual Identity",
+                                                 "Other" = "Other Identitiesᵃ" ) ) ) +
+  ggh4x::facetted_pos_scales( y = list(
+    identity == "Heterosexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0.7, 1 ), breaks = c( 0.7, 0.8, 0.9, 1 ) ),
+    identity == "Homosexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.03 ), breaks = c( 0, 0.01, 0.02, 0.03 ) ),
+    identity == "Bisexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.1 ), breaks = c( 0, 0.05, 0.1 ) ),
+    identity == "Other" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.3 ), breaks = c( 0, 0.1, 0.2, 0.3 ) ) 
+    ) )
 ```
 
 ### 3. Plots for Relation between Sexual Identity and Demographic Factors

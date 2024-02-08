@@ -107,6 +107,23 @@ table( d_2021$age_cat, useNA = "always" )
 # interaction term between age and sex
 d_2021$age_sex <- interaction( d_2021$age_cat, d_2021$sex )
 
+# generation
+d_2021$birth_year <- 2021 - d_2021$age
+d_2021 <- d_2021 %>%
+  mutate( generation = case_when(
+    birth_year >= 1997 & birth_year <= 2012 ~ "Generation Z (1997–2012)",
+    birth_year >= 1981 & birth_year <= 1996 ~ "Millennials (1981–1996)",
+    birth_year >= 1965 & birth_year <= 1980 ~ "Generation X (1965–1980)",
+    birth_year >= 1946 & birth_year <= 1964 ~ "Baby Boomers (1946–1964)",
+    birth_year >= 1928 & birth_year <= 1945 ~ "Silent Generation (1928–1945)",
+    birth_year >= 1901 & birth_year <= 1927 ~ "Greatest Generation (1901–1927)"
+  ) )
+
+d_2021$generation <- factor( 
+  d_2021$generation, 
+  levels = c( "Generation Z (1997–2012)", "Millennials (1981–1996)", "Generation X (1965–1980)", "Baby Boomers (1946–1964)", "Silent Generation (1928–1945)", "Greatest Generation (1901–1927)" ) )
+summary( d_2021$generation )
+
 # country of birth
 table( d_2021$fodelseland, useNA = "always" )
 d_2021$country_of_birth <- factor( ifelse( d_2021$fodelseland == "Afrika", "Africa",
@@ -484,6 +501,37 @@ results_wide$`None of the above_pr_2021`[ is.infinite( results_wide$`None of the
 writexl::write_xlsx( results_wide, "prop_cc_age_iteration_2021.xlsx" )
 ```
 
+###### 3.1.3.3. Calculate proportion by generation
+```{r}
+list_of_df <- list()
+
+for ( cat in categories ) {
+  prop_cc_generation <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                        by = ~ generation,
+                        design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( generation ) ),
+                        FUN = svyciprop,
+                        vartype = "ci",
+                        method = "beta" )
+  
+  colnames( prop_cc_generation ) <- c( "subgroup", paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
+  
+  list_of_df[[cat]] <- prop_cc_generation
+}
+
+prop_cc_generation <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+prop_cc_generation <- left_join( prop_cc_generation,
+                          d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
+                                                !is.na( d_2021_complete_cc$generation ), ] %>% 
+                            group_by( subgroup = generation ) %>% 
+                            summarise( sample_size_2021 = n() ),
+                          by = "subgroup" ) %>%
+  mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
+```
+
 ##### 3.1.4. By sex*age group
 ```{r}
 list_of_df <- list()
@@ -706,6 +754,7 @@ prop_cc_overall <- bind_cols( prop_cc_overall,
 ```{r}
 prop_cc_summary_2021 <- rbind( prop_cc_sex, 
                                prop_cc_age,
+                               prop_cc_generation,
                                prop_cc_age_sex,
                                prop_cc_education,
                                prop_cc_occupation,
@@ -730,32 +779,17 @@ d_2021_incomplete <- d_2021 %>%
   mutate( utbniva2021 = as.factor( utbniva2021 ) ) %>%
   rename( 
     education = utbniva2021,
-    income = dispink2021,
-    place_of_residence = sampling_strata_region
+    income = dispink2021
     )
-
-# visualize the distribution of income (semi-continuous)
-ggplot( d_2021_incomplete, aes( x = income ) ) +
-  geom_histogram( binwidth = 10, fill = "steelblue", color = "steelblue" ) +
-  xlim( c( 0, 20000 ) )
-
-ggplot( d_2021_incomplete, aes( x = log( income ) ) ) +
-  geom_histogram( binwidth = 0.01, fill = "steelblue", color = "steelblue" ) +
-  xlim( c( log( 1 ), log( 20000 ) ) )
-
-# generate two variables for income
-d_2021_incomplete$income_cat <- as.factor( ifelse( d_2021_incomplete$income == 0, 0, 1 ) )
-d_2021_incomplete$income_log_con <- ifelse( d_2021_incomplete$income == 0, NA, log( d_2021_incomplete$income ) )
-d_2021_incomplete <- d_2021_incomplete %>% select( -c( income ) )
 
 summary( d_2021_incomplete )
 sapply( d_2021_incomplete, class ) # all continuous variables are numeric, and all categorical variables are factor
 
-# create weight strata for two-level multivariate normal imputation
+# create weight strata (n = 25) for two-level multivariate normal imputation
 d_2021_incomplete$weight_strata <- as.factor( cut( d_2021_incomplete$calibrated_weight,
                                                    breaks = quantile( d_2021_incomplete$calibrated_weight, 
-                                                                      probs = seq( 0, 1, length.out = 31 ) ),
-                                                   labels = 1:30,
+                                                                      probs = seq( 0, 1, length.out = 26 ) ),
+                                                   labels = 1:25,
                                                    include.lowest = TRUE,
                                                    right = TRUE ) )
 
@@ -766,7 +800,7 @@ ggplot( d_2021_incomplete %>%
   geom_line( aes( group = 1 ) ) +
   geom_point() +
   geom_errorbarh( aes( xmin = mean_weight - sd_weight, xmax = mean_weight + sd_weight ), height = 0.4, alpha = 0.5 ) +
-  scale_x_continuous( limits = c( 0, 280 ), 
+  scale_x_continuous( limits = c( 0, 260 ), 
                       breaks = c( 0, 50, 100, 150, 200, 250 ), 
                       expand = c( 0, 0 ) ) +
   labs( y = "Calibrated Weight Strata", x = "Mean and Standard Deviation of Calibrated Weights" ) +
@@ -792,7 +826,7 @@ miss_var_summary( d_2021_incomplete ) # 31.6% missing in occupation, 2.2% in sex
 # assume Missing At Random (MAR)
 
 # introduce random intercepts
-fml_imp <- sexual_identity_2021 + education + income_cat + income_log_con ~ 1 + age + sex + age*sex + country_of_birth + occupation + marital_status + place_of_residence ( 1 | weight_strata )
+fml_imp <- occupation + sexual_identity_2021 + education + income ~ 1 + age + sex + age*sex + country_of_birth + marital_status + ( 1 | weight_strata )
 
 # perform a "dry run"
 ini <- jomoImpute( data = d_2021_incomplete, # incomplete dataset
@@ -806,8 +840,8 @@ ini <- jomoImpute( data = d_2021_incomplete, # incomplete dataset
 
 summary( ini ) # summarize model and display convergence statistics
 
-# check trace plot and autocorrelation plots
-# to determine the number of burn-in and between-imputation iterations for the final imputation
+# increase the number of iterations and check trace and autocorrelation plots
+# to determine the number of burn-in iterations for the final imputation
 imp_preliminary <- jomoImpute( data = d_2021_incomplete,
                                formula = fml_imp,
                                random.L1 = "full",
