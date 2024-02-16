@@ -1,6 +1,6 @@
 ### This repository contains the R scripts for:
 
-[Author list]. **Population Trends and Individual Fluidity of Self-Reported Sexual Identity in Stockholm County, 2010 to 2021.** 2024. _In Preparation._
+[Author list]. **Population Trends and Individual Fluidity of Sexual Identity in Stockholm County, 2010 to 2021.** 2024. _In Preparation._
 
 The R scripts include:
 * **SPHC-2010.Rmd:** analyses of sexual identity using SPHC 2010.
