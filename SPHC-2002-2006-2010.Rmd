@@ -8,11 +8,11 @@ editor_options:
 
 Notes:
 
-This R Notebook presents the analyses among participants in SPHC-B 2002, 2006, and 2010 who provided data on sexual identity in at least two of the three follow-up surveys (SPHC-F 2010, 2014, and 2021). The analyses include:
+This R Notebook presents the analyses among the participants from the pooled cohort across SPHC 2002, 2006, and 2010, who provided data on sexual identity in at least two of the three follow-up surveys (SPHC-F 2010, 2014, and 2021). The analyses include:
 - Visual presentation of changes in sexual identity in 2010-2021.
-- Relationship between changes in sexual identity and key demographic factors.
+- Relationship between change in sexual identity and key demographic factors.
 
-The analyses of relationship between changes in sexual identity and key demographic factors in SPHC 2010 and 2014 are available, respectively, in the R Notebooks "SPHC-2010" and "SPHC-2014".
+The analyses of relationship between change in sexual identity and key demographic factors in SPHC 2010 and 2014 are available, respectively, in the R Notebooks "SPHC-2010.Rmd" and "SPHC-2014.Rmd".
 
 ### 1. Load Packages
 ```{r}
@@ -32,7 +32,7 @@ source("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/
 ```
 
 ### 2. The Stockholm Public Health Cohort
-#### 2.1. SPHC-B 2002 with SPHC-F 2010-2021
+#### 2.1. SPHC 2002
 ```{r}
 d_2002 <- read_sas("/Volumes/LGBT Project data/sphc02_07_10_14_21.sas7bdat")
 
@@ -210,7 +210,7 @@ round( sum( sampling_frame_2002_females$itemresponse )/( sum( sampling_frame_200
 writexl::write_xlsx( sampling_frame_2002_females, "sampling_frame_2002_females.xlsx" )
 ```
 
-#### 2.2. SPHC-B 2006 with SPHC-F 2010-2021
+#### 2.2. SPHC 2006
 ```{r}
 d_2006 <- read_sas("/Volumes/LGBT Project data/sphc06_10_14_21.sas7bdat")
 
@@ -339,7 +339,7 @@ round( sum( sampling_frame_2006$itemresponse )/( sum( sampling_frame_2006$sample
 writexl::write_xlsx( sampling_frame_2006, "sampling_frame_2006.xlsx" )
 ```
 
-#### 2.3. SPHC-B 2010 with SPHC-F 2014-2021
+#### 2.3. SPHC 2010
 ```{r}
 load("/Volumes/LGBT Project data/d_2010.RData")
 
@@ -946,7 +946,7 @@ ggplot( m123_all_long,
                    )
 ```
 
-###### 3.2.1.2. Sexual identity in 2021 based on 2010 and 2014
+###### 3.2.1.2. Changes in sexual identity from 2014 to 2021
 ```{r}
 all_colors <- c( "#00BFC4", "#7CAE00", "#FFA500", "#F8766D", 
                  "yellow2", "#0092FF", "#00FF00", "#4B0082", 
@@ -1019,8 +1019,9 @@ ggplot( x123_all_long,
 ```
 
 ##### 3.2.2. By sex
+###### 3.2.2.1. Among males
 ```{r}
-# among males
+# 2010-2021
 ggplot( m123_male_long,
         aes( x = year,
              stratum = sexual_identity, 
@@ -1058,15 +1059,17 @@ ggplot( m123_male_long,
                    segment.linetype = 3,
                    segment.size = 0.55,
                    direction = "y",
-                   nudge_x = 0.25,
+                   nudge_x = 0.45,
                    box.padding = 0.5,
                    point.padding = 0,
                    show.legend = FALSE,
                    seed = 123
                    )
+```
 
-
-# among females
+###### 3.2.2.2. Among females
+```{r}
+# 2010-2021
 ggplot( m123_female_long,
         aes( x = year,
              stratum = sexual_identity, 
@@ -1104,7 +1107,7 @@ ggplot( m123_female_long,
                    segment.linetype = 3,
                    segment.size = 0.55,
                    direction = "y",
-                   nudge_x = 0.25,
+                   nudge_x = 0.45,
                    box.padding = 0.5,
                    point.padding = 0,
                    show.legend = FALSE,

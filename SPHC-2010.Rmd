@@ -952,36 +952,21 @@ writexl::write_xlsx( prop_cc_summary_2010, "prop_cc_summary_2010.xlsx" )
 ###### 3.2.1.1. Obtain incomplete dataset
 ```{r}
 summary( d_2010 )
-selected_variables <- c( "sampling_strata_region", "no.of.population", "sample_size", "calibrated_weight", "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "age", "sex", "country_of_birth", "utbniva2010", "occupation", "dispink2010", "marital_status", "living_alone", "F10U57G62" )
+
+selected_variables <- c( "sampling_strata_region", "no.of.population", "calibrated_weight", "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "age", "sex", "country_of_birth", "education", "dispink2010", "marital_status", "living_alone", "personal_support" )
 
 d_2010_incomplete <- d_2010 %>% 
   select( all_of( selected_variables ) ) %>%
-  mutate( utbniva2010 = as.factor( utbniva2010 ),
-          F10U57G62 = as.factor( F10U57G62 ) ) %>%
-  rename( education = utbniva2010,
-          income = dispink2010,
-          personal_support = F10U57G62
-          )
+  mutate( country_of_birth = as.factor( 
+    case_when(
+      country_of_birth == "Africa" | country_of_birth == "Americas" | country_of_birth == "Asia" ~ "Outside Europe",
+      country_of_birth == "Sweden" ~ "Sweden",
+      country_of_birth == "Europe" ~ "Europe" ) ) ) %>%
+  rename( 
+    income = dispink2010
+  )
 
-summary( d_2010_incomplete )
-sapply( d_2010_incomplete, class ) # all continuous variables are numeric, and all categorical variables are factor
-```
-
-###### 3.2.1.2. Visualize missing pattern
-```{r}
-# identify missing variables
-vis_miss( d_2010_incomplete )
-n_miss( d_2010_incomplete )
-miss_var_summary( d_2010_incomplete ) # 58.0% missing in sexual_identity_2021, 41.2% in sexual_identity_2014,
-# 3.8% in sexual_identity_2010, 1.3% in personal_support, 1.1% in living_alone, 0.7% in education
-```
-
-###### 3.2.1.3. Two-level multivariate normal imputation
-```{r}
-# use multiple imputation to account for item non-response
-# assume Missing At Random (MAR)
-
-# create weight strata
+# create weight strata (n = 25) for two-level multivariate normal imputation
 d_2010_incomplete$weight_strata <- as.factor( cut( d_2010_incomplete$calibrated_weight,
                                                    breaks = quantile( d_2010_incomplete$calibrated_weight, 
                                                                       probs = seq( 0, 1, length.out = 26 ) ),
@@ -1006,6 +991,127 @@ ggplot( d_2010_incomplete %>%
          axis.text.x = element_text( family = "Arial", size = 11 ),
          axis.title.x = element_text( family = "Arial", size = 11 )
   )
+
+summary( d_2010_incomplete )
+sapply( d_2010_incomplete, class ) # all continuous variables are numeric, and all categorical variables are factor
+```
+
+###### 3.2.1.2. Visualize missing pattern
+```{r}
+# identify missing variables
+vis_miss( d_2010_incomplete )
+n_miss( d_2010_incomplete )
+miss_var_summary( d_2010_incomplete ) # 58.0% missing in sexual_identity_2021, 41.2% in sexual_identity_2014, 3.8% in sexual_identity_2010, 1.3% in personal_support, 1.1% in living_alone, 0.7% in education
+```
+
+###### 3.2.1.3. Two-level multivariate normal imputation
+```{r}
+# use multiple imputation to account for item non-response
+# assume Missing At Random (MAR)
+
+# specify imputation model
+fml_imp_2010 <- sexual_identity_2021 + sexual_identity_2014 + sexual_identity_2010 + personal_support + living_alone + education ~ 1 + age*sex + country_of_birth + income + marital_status + ( 1 | weight_strata )
+
+# perform a "dry run"
+imp_ini_2010 <- jomoImpute( data = d_2010_incomplete, # incomplete dataset
+                            formula = fml_imp_2010, # imputation model
+                            random.L1 = "full", # random covariance matrix of residuals
+                            n.burn = 2, # number of burn-in iterations
+                            n.iter = 10, # number of between-imputation iterations
+                            m = 2, # number of imputation
+                            seed = 12345 # set the seed so that results can be reproduced
+                            )
+
+summary( imp_ini_2010 ) # check output
+
+
+# increase the number of burn-in and between-imputation iterations
+# to determine the number of iterations for the final imputation
+imp_preliminary_2010 <- jomoImpute( data = d_2010_incomplete,
+                                    formula = fml_imp_2010,
+                                    random.L1 = "full",
+                                    n.burn = 1500,
+                                    n.iter = 1000,
+                                    m = 2,
+                                    seed = 12345
+                                    ) # took around 3 hours
+
+# save( imp_preliminary_2010, file = "imp_preliminary_2010.RData" )
+summary( imp_preliminary_2010 ) # summarize model and display convergence statistics
+# plot( imp_preliminary_2010, trace = "all", print = "beta" ) # check trace and autocorrelation plots
+
+
+# final imputation with the chosen number of iterations
+imp_final_2010 <- jomoImpute( data = d_2010_incomplete,
+                              formula = fml_imp_2010,
+                              random.L1 = "full",
+                              n.burn = 1000,
+                              n.iter = 1000,
+                              m = 70,
+                              seed = 12345
+                              ) # took around ? hours
+
+# save( imp_final_2010, file = "imp_final_2010.RData" )
+summary( imp_final_2010 )
+# plot( imp_final_2010, trace = "all", print = "beta" )
+```
+
+###### 3.2.1.4. Validate imputed data
+```{r}
+# extract imputed datasets
+original_data_2010 <- mitmlComplete( imp_final_2010, print = 0 ) # extract original incomplete dataset
+implist_2010 <- mitmlComplete( imp_final_2010, print = "all" ) # extract all imputed datasets
+
+original_data_2010$imputation <- "0"
+all_data_2010 <- bind_rows( original_data_2010, 
+                            bind_rows( implist_2010, .id = "imputation" ) ) # merge datasets
+all_data_2010$imputation <- as.numeric( all_data_2010$imputation )
+summary( all_data_2010 )
+
+# sexual identity in 2010
+ggplot( all_data_2010[ !is.na( all_data_2010$sexual_identity_2010 ), ],
+        aes( fill = sexual_identity_2010, x = imputation ) ) + 
+  geom_bar( position = "fill" ) + 
+  scale_y_continuous( labels = scales::percent ) + 
+  labs(
+    x = "Imputation number",
+    y = "Proportion",
+    caption = "Notes: Imputation number 0 represents the original incomplete dataset." ) +
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_blank(),
+         legend.position = "bottom",
+         plot.caption = element_text( family = "Arial", size = 10, hjust = 0 ) 
+  )
+
+# education
+ggplot( all_data_2010[ !is.na( all_data_2010$education ), ],
+        aes( fill = education, x = imputation ) ) + 
+  geom_bar( position = "fill" ) + 
+  scale_y_continuous( labels = scales::percent ) + 
+  labs(
+    x = "Imputation number",
+    y = "Proportion",
+    caption = "Notes: Imputation number 0 represents the original incomplete dataset." ) +
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_blank(),
+         legend.position = "bottom",
+         plot.caption = element_text( family = "Arial", size = 10, hjust = 0 ) 
+  )
+
+# income
+summary( all_data_2010$income )
+nrow( all_data_2010[ all_data_2010$income < 0 & !is.na( all_data_2010$income ), ] ) # 170 imputed values are negative
+all_data_2010$income <-ifelse( all_data_2010$income < 0, 0, all_data_2010$income )
 ```
 
 ### 4. Relation between Sexual Identity and Demographic Factors
