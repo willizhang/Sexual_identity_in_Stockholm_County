@@ -10,27 +10,23 @@ editor_options:
 ### 1. Load Packages
 ```{r}
 library(haven)
-library(data.table)
-library(naniar)
+library(tidyr)
 library(tidyverse)
+library(dplyr)
+library(finalfit)
+library(ggplot2)
+library(naniar)
 library(jomo)
 library(mitml)
 library(mitools)
-library(ggplot2)
-library(ggbreak)
-library(mice)
-library(ggrepel)
-library(ggpubr)
-library(ggmosaic)
-library(tidyr)
-library(dplyr)
-library(finalfit)
 library(survey)
 library(svyVGAM)
+library(vcd)
+library(rcompanion)
 source("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/Helper_functions.R") # helper function
 ```
 
-### 2. Import and Visualise Data
+### 2. Import and Prepare Data
 ```{r}
 load("/Volumes/LGBT Project data/d_2021.RData")
 
@@ -253,6 +249,10 @@ summary( d_2021$F21dvikt )
 d_2021$design_weight <- d_2021$F21dvikt
 
 
+##### calibrated weights #####
+d_2021$calibrated_weight <- d_2021$F21kalvikt
+
+
 ##### non-response #####
 
 # unit non-response
@@ -302,26 +302,6 @@ round( sum( sampling_frame_2021$itemresponse )/( sum( sampling_frame_2021$unitre
 round( sum( sampling_frame_2021$itemresponse )/( sum( sampling_frame_2021$sample_size ) ), 3 ) # overall response rate
 
 writexl::write_xlsx( sampling_frame_2021, "sampling_frame_2021.xlsx" )
-
-
-##### calibrated weights #####
-
-d_2021$calibrated_weight <- d_2021$F21kalvikt
-
-# visualize calibrated weights across sampling strata
-ggplot( d_2021 %>% 
-          group_by( sampling_strata_region ) %>% 
-          summarise( mean_weight = mean( calibrated_weight ), sd_weight = sd( calibrated_weight ) ),
-        aes( y = reorder( sampling_strata_region, -mean_weight ), x = mean_weight ) ) +
-  geom_line( aes( group = 1 ) ) +
-  geom_point() +
-  geom_errorbarh( aes( xmin = mean_weight - sd_weight, xmax = mean_weight + sd_weight ), height = 0.4, alpha = 0.5 ) +
-  scale_x_continuous( limits = c( 0, 230 ), breaks = c( 0, 50, 100, 150, 200 ), expand = c( 0, 0 ) ) +
-  labs( y = NULL, x = "Mean and Standard Deviation of Calibrated Weights" ) +
-  theme_classic() +
-  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
-         axis.title.x = element_text( family = "Arial", size = 11 ),
-         axis.text.x = element_text( family = "Arial", size = 11 ) )
 
 
 ##### replicating non-respondent rows for sampling design #####
@@ -767,34 +747,110 @@ prop_cc_summary_2021 <- rbind( prop_cc_sex,
 writexl::write_xlsx( prop_cc_summary_2021, "prop_cc_summary_2021.xlsx" )
 ```
 
-#### 3.2. Multiple imputation and survey weights
+#### 3.2. Multiple imputation and survey analyses
 ##### 3.2.1. Multiple imputation
-###### 3.2.1.1. Obtain incomplete dataset
+###### 3.2.1.1. Check calibrated weights and proxy auxiliary variables
+```{r}
+survey_design_calibrated <- svydesign( ids = ~ 1, 
+                                       strata = ~ sampling_strata_region,
+                                       weights = ~ calibrated_weight,
+                                       fpc = ~ no.of.population,
+                                       data = d_2021 )
+
+# we were unable to re-calibrate the weights as recommended (https://cran.r-project.org/web/packages/survey/vignettes/precalibrated.pdf), because the original auxiliary variables used for calibration were not available anymore
+
+svytable( ~ sampling_strata_region, survey_design_calibrated ) # calculate population totals for each sampling stratum
+
+round( summary( d_2021$calibrated_weight ), 2 ) # check the distribution of calibrated weights
+round( summary( d_2021$calibrated_weight / d_2021$design_weight ), 2 ) # check the ratios of weights
+
+ggplot( d_2021, aes( x = calibrated_weight ) ) +
+  geom_histogram( binwidth = 1, fill = "steelblue", color = "steelblue" ) +
+  theme_classic() +
+  scale_x_continuous( breaks = c( 0, 100, 200, 300 ), 
+                      expand = c( 0.005, 0 ) ) +
+  scale_y_continuous( limits = c( 0, 360 ),
+                      breaks = c( 0, 100, 200, 300 ), 
+                      expand = c( 0, 0 ) ) +
+  labs( x = "Calibrated Weights", y = "Frequency" ) +
+  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.title.x = element_text( family = "Arial", size = 11 )
+         )
+
+# calculate strength of correlation between sexual identity in 2021 and proxy auxiliary variables
+d_2021_correlation <- d_2021 %>% 
+  rename( country_of_birth_auxiliary = fodelseland2 ) %>%
+  mutate( 
+   age_auxiliary = factor( 
+      case_when(
+        age <= 29 ~ "<=29",
+        age >=30 & age <= 44 ~ "30-44",
+        age >=45 & age <= 64 ~ "45-64",
+        age >=65 & age <= 79 ~ "65-79",
+        age >= 80 ~ ">=80" ),
+      levels = c( "<=29", "30-44", "45-64", "65-79", ">=80" ) ),
+   sex_auxiliary = sex,
+   country_of_birth_auxiliary = as.factor( country_of_birth_auxiliary ),
+   marital_status_auxiliary = as.factor(
+     ifelse( marital_status == "Currently married", 
+             "Currently married", 
+             "Other" ) ),
+   education_auxiliary = education,
+   sampling_strata_region_auxiliary = sampling_strata_region
+   )
+  
+summary( d_2021_correlation )
+
+assocstats( table( d_2021_correlation$sexual_identity_2021, d_2021_correlation$sex_auxiliary ) )
+assocstats( table( d_2021_correlation$sexual_identity_2021, d_2021_correlation$country_of_birth_auxiliary ) )
+assocstats( table( d_2021_correlation$sexual_identity_2021, d_2021_correlation$marital_status_auxiliary ) )
+assocstats( table( d_2021_correlation$sexual_identity_2021, d_2021_correlation$sampling_strata_region_auxiliary ) )
+
+freemanTheta( table( d_2021_correlation$sexual_identity_2021, d_2021_correlation$age_auxiliary ), group = "row", digits = 2 )
+
+freemanTheta( table( d_2021_correlation[ d_2021_correlation$sex == "Male", ]$sexual_identity_2021, d_2021_correlation[ d_2021_correlation$sex == "Male", ]$age_auxiliary ), group = "row", digits = 2 )
+
+freemanTheta( table( d_2021_correlation[ d_2021_correlation$sex == "Female", ]$sexual_identity_2021, d_2021_correlation[ d_2021_correlation$sex == "Female", ]$age_auxiliary ), group = "row", digits = 2 )
+
+freemanTheta( table( d_2021_correlation$sexual_identity_2021, d_2021_correlation$education_auxiliary ), group = "row", digits = 2 )
+
+# references
+freemanTheta( table( d_2021_correlation$age_auxiliary, d_2021_correlation$education_auxiliary ), group = "row", digits = 2 )
+freemanTheta( table( d_2021_correlation$age_auxiliary, d_2021_correlation$income ), group = "row", digits = 2 )
+freemanTheta( table( d_2021_correlation$education_auxiliary, d_2021_correlation$income ), group = "row", digits = 2 )
+```
+
+###### 3.2.1.2. Obtain incomplete dataset
 ```{r}
 summary( d_2021 )
 
-selected_variables <- c( "sampling_strata_region", "no.of.population", "calibrated_weight", "sexual_identity_2021", "age", "sex", "country_of_birth", "education", "dispink2021", "marital_status" )
+selected_variables <- c( "sampling_strata_region", "calibrated_weight", "no.of.population", "sexual_identity_2021", "age", "sex", "country_of_birth", "education", "dispink2021", "marital_status" )
   
-d_2021_incomplete <- d_2021 %>% 
+d_2021_incomplete_prop <- d_2021 %>% 
   select( all_of( selected_variables ) ) %>%
-  mutate( country_of_birth = as.factor( 
-    case_when(
-      country_of_birth == "Africa" | country_of_birth == "Americas" | country_of_birth == "Asia" ~ "Outside Europe",
-      country_of_birth == "Sweden" ~ "Sweden",
-      country_of_birth == "Europe" ~ "Europe" ) ) ) %>%
-  rename( 
-    income = dispink2021
+  rename( income = dispink2021 ) %>%
+  mutate( 
+    country_of_birth = factor( 
+      case_when(
+        country_of_birth == "Africa" | country_of_birth == "Americas" | country_of_birth == "Asia" ~ "Outside Europe",
+        country_of_birth == "Sweden" ~ "Sweden",
+        country_of_birth == "Europe" ~ "Europe" ),
+      levels = c( "Sweden", "Europe", "Outside Europe" ) ),
+    education = relevel( education, ref = ">=13 years" ),
+    marital_status = relevel( marital_status, ref = "Currently married" ) 
     )
 
 # create weight strata (n = 25) for two-level multivariate normal imputation
-d_2021_incomplete$weight_strata <- as.factor( cut( d_2021_incomplete$calibrated_weight,
-                                                   breaks = quantile( d_2021_incomplete$calibrated_weight, 
+d_2021_incomplete_prop$weight_strata <- as.factor( cut( d_2021_incomplete_prop$calibrated_weight,
+                                                   breaks = quantile( d_2021_incomplete_prop$calibrated_weight, 
                                                                       probs = seq( 0, 1, length.out = 26 ) ),
                                                    labels = 1:25,
                                                    include.lowest = TRUE,
                                                    right = TRUE ) )
 
-ggplot( d_2021_incomplete %>% 
+ggplot( d_2021_incomplete_prop %>% 
           group_by( weight_strata ) %>% 
           summarise( mean_weight = mean( calibrated_weight ), sd_weight = sd( calibrated_weight ) ),
         aes( y = reorder( weight_strata, -mean_weight ), x = mean_weight ) ) +
@@ -812,84 +868,85 @@ ggplot( d_2021_incomplete %>%
          axis.title.x = element_text( family = "Arial", size = 11 )
          )
 
-summary( d_2021_incomplete )
-sapply( d_2021_incomplete, class ) # all continuous variables are numeric, and all categorical variables are factor
+summary( d_2021_incomplete_prop )
+sapply( d_2021_incomplete_prop, class ) # all continuous variables are numeric, and all categorical variables are factor
+save( d_2021_incomplete_prop, file = "d_2021_incomplete_prop.RData" )
 ```
 
-###### 3.2.1.2. Visualize missing pattern
+###### 3.2.1.3. Visualize missing pattern
 ```{r}
 # identify missing variables
-vis_miss( d_2021_incomplete )
-n_miss( d_2021_incomplete )
-miss_var_summary( d_2021_incomplete ) # 2.2% missing in sexual_identity_2021, 2.1% in education, and 0.2% in income
+vis_miss( d_2021_incomplete_prop )
+n_miss( d_2021_incomplete_prop )
+miss_var_summary( d_2021_incomplete_prop ) # 2.2% missing in sexual_identity_2021, 2.1% in education, and 0.2% in income
 ```
 
-###### 3.2.1.3. Two-level multivariate normal imputation
+###### 3.2.1.4. Two-level multivariate normal imputation
 ```{r}
 # use multiple imputation to account for item non-response
 # assume Missing At Random (MAR)
 
 # specify imputation model
-fml_imp_2021 <- sexual_identity_2021 + education + income ~ 1 + age*sex + country_of_birth + marital_status + ( 1 | weight_strata )
+fml_imp_2021_prop <- sexual_identity_2021 + education + income ~ 1 + age*sex + country_of_birth + marital_status + ( 1 | weight_strata )
 
 # perform a "dry run"
-imp_ini_2021 <- jomoImpute( data = d_2021_incomplete, # incomplete dataset
-                            formula = fml_imp_2021, # imputation model
-                            random.L1 = "full", # random covariance matrix of residuals
-                            n.burn = 2, # number of burn-in iterations
-                            n.iter = 10, # number of between-imputation iterations
-                            m = 2, # number of imputation
-                            seed = 12345 # set the seed so that results can be reproduced
-                            )
+imp_ini_2021_prop <- jomoImpute( data = d_2021_incomplete_prop, # incomplete dataset
+                                 formula = fml_imp_2021_prop, # imputation model
+                                 random.L1 = "full", # random covariance matrix of residuals
+                                 n.burn = 2, # number of burn-in iterations
+                                 n.iter = 10, # number of between-imputation iterations
+                                 m = 2, # number of imputation
+                                 seed = 12345 # set the seed so that results can be reproduced
+                                 )
 
-summary( imp_ini_2021 ) # check output
+summary( imp_ini_2021_prop ) # check output
 
 
 # increase the number of burn-in and between-imputation iterations
 # to determine the number of iterations for the final imputation
-imp_preliminary_2021 <- jomoImpute( data = d_2021_incomplete,
-                                    formula = fml_imp_2021,
-                                    random.L1 = "full",
-                                    n.burn = 5000,
-                                    n.iter = 1000,
-                                    m = 2,
-                                    seed = 12345
-                                    ) # took around 30 minutes
+imp_preliminary_2021_prop <- jomoImpute( data = d_2021_incomplete_prop,
+                                         formula = fml_imp_2021_prop,
+                                         random.L1 = "full",
+                                         n.burn = 5000,
+                                         n.iter = 1000,
+                                         m = 2,
+                                         seed = 12345
+                                         ) # took around 30 minutes
 
-# save( imp_preliminary_2021, file = "imp_preliminary_2021.RData" )
-summary( imp_preliminary_2021 ) # summarize model and display convergence statistics
-# plot( imp_preliminary_2021, trace = "all", print = "beta" ) # check trace and autocorrelation plots
+save( imp_preliminary_2021_prop, file = "imp_preliminary_2021_prop.RData" )
+summary( imp_preliminary_2021_prop ) # summarize model and display convergence statistics
+plot( imp_preliminary_2021_prop, trace = "all", print = "beta" ) # check trace and autocorrelation plots
 
 
 # final imputation with the chosen number of iterations
-imp_final_2021 <- jomoImpute( data = d_2021_incomplete,
-                              formula = fml_imp_2021,
-                              random.L1 = "full",
-                              n.burn = 2000,
-                              n.iter = 1000,
-                              m = 20,
-                              seed = 12345
-                              ) # took around 1 hour and a half
+imp_final_2021_prop <- jomoImpute( data = d_2021_incomplete_prop,
+                                   formula = fml_imp_2021_prop,
+                                   random.L1 = "full",
+                                   n.burn = 2000,
+                                   n.iter = 1000,
+                                   m = 20,
+                                   seed = 12345
+                                   ) # took around 1 hour and a half
 
-# save( imp_final_2021, file = "imp_final_2021.RData" )
-summary( imp_final_2021 )
-# plot( imp_final_2021, trace = "all", print = "beta" )
+save( imp_final_2021_prop, file = "imp_final_2021_prop.RData" )
+summary( imp_final_2021_prop )
+plot( imp_final_2021_prop, trace = "all", print = "beta" )
 ```
 
-###### 3.2.1.4. Validate imputed data
+###### 3.2.1.5. Validate imputed data
 ```{r}
 # extract imputed datasets
-original_data_2021 <- mitmlComplete( imp_final_2021, print = 0 ) # extract original incomplete dataset
-implist_2021 <- mitmlComplete( imp_final_2021, print = "all" ) # extract all imputed datasets
+original_data_2021_prop <- mitmlComplete( imp_final_2021_prop, print = 0 ) # extract original incomplete dataset
+implist_2021_prop <- mitmlComplete( imp_final_2021_prop, print = "all" ) # extract all imputed datasets
 
-original_data_2021$imputation <- "0"
-all_data_2021 <- bind_rows( original_data_2021, 
-                            bind_rows( implist_2021, .id = "imputation" ) ) # merge datasets
-all_data_2021$imputation <- as.numeric( all_data_2021$imputation )
-summary( all_data_2021 )
+original_data_2021_prop$imputation <- "0"
+all_data_2021_prop <- bind_rows( original_data_2021_prop, 
+                                 bind_rows( implist_2021_prop, .id = "imputation" ) ) # merge datasets
+all_data_2021_prop$imputation <- as.numeric( all_data_2021_prop$imputation )
+summary( all_data_2021_prop )
 
 # sexual identity in 2021
-ggplot( all_data_2021[ !is.na( all_data_2021$sexual_identity_2021 ), ],
+ggplot( all_data_2021_prop[ !is.na( all_data_2021_prop$sexual_identity_2021 ), ],
         aes( fill = sexual_identity_2021, x = imputation ) ) + 
   geom_bar( position = "fill" ) + 
   scale_y_continuous( labels = scales::percent ) + 
@@ -909,8 +966,8 @@ ggplot( all_data_2021[ !is.na( all_data_2021$sexual_identity_2021 ), ],
          )
 
 # education
-ggplot( all_data_2021[ !is.na( all_data_2021$education ), ],
-        aes( fill = education, x = imputation ) ) + 
+ggplot( all_data_2021_prop[ !is.na( all_data_2021_prop$education ), ],
+        aes( fill = factor( education, levels = c( "<=9 years", "10-12 years",  ">=13 years" ) ), x = imputation ) ) + 
   geom_bar( position = "fill" ) + 
   scale_y_continuous( labels = scales::percent ) + 
   labs(
@@ -929,20 +986,61 @@ ggplot( all_data_2021[ !is.na( all_data_2021$education ), ],
          )
 
 # income
-summary( all_data_2021$income )
-nrow( all_data_2021[ all_data_2021$income < 0 & !is.na( all_data_2021$income ), ] ) # 168 imputed values are negative
-all_data_2021$income <-ifelse( all_data_2021$income < 0, 0, all_data_2021$income )
+summary( all_data_2021_prop$income )
+nrow( all_data_2021_prop[ all_data_2021_prop$income < 0 & !is.na( all_data_2021_prop$income ), ] ) # 181 imputed values are negative
+all_data_2021_prop$income <-ifelse( all_data_2021_prop$income < 0, 0, all_data_2021_prop$income )
 ```
 
-##### 3.2.2. Analyses using survey weights
+##### 3.2.2. Survey analyses
+###### 3.2.2.1. Define survey design
 ```{r}
-# use inverse probability weighting to account for unit non-response
+# use calibrated weights to account for unit non-response
+# create survey design
+survey_design_imp <- svydesign( ids = ~ 1, 
+                                strata = ~ sampling_strata_region,
+                                weights = ~ calibrated_weight,
+                                fpc = ~ no.of.population,
+                                data = imputationList( implist_2021 )
+                                ) # without pre-calibration
+
+results <- with( 
+  survey_design_imp, svyby( formula = as.formula( ~ I( sexual_identity_2021 == "Heterosexual" ) ),
+                            by = ~ sex,
+                            FUN = svyciprop,
+                            method = "beta" ) 
+  )
+
+MIcombine(results)
+summary(MIcombine(results))
 
 
+list_of_df <- list()
 
-library(lme4)
+for ( cat in categories ) {
+  prop_cc_sex <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", cat, "' )" ) ),
+                        by = ~ sex,
+                        design = subset( survey_design_cc, !is.na( sexual_identity_2021 ) & !is.na( sex ) ),
+                        FUN = svyciprop,
+                        vartype = "ci",
+                        method = "beta" )
+  
+  colnames( prop_cc_sex ) <- c( "subgroup", paste0( cat, "_point_estimate_2021" ), paste0( cat, "_lower_ci_2021" ), paste0( cat, "_upper_ci_2021" ) )
+  
+  list_of_df[[cat]] <- prop_cc_sex
+}
 
-fit <- with(implist, lmer(ReadAchiev ~ 1 + ReadDis + (1|ID)))
+prop_cc_sex <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+}, 
+list_of_df )
+
+prop_cc_sex <- left_join( prop_cc_sex,
+                          d_2021_complete_cc[ !is.na( d_2021_complete_cc$sexual_identity_2021 ) &
+                                             !is.na( d_2021_complete_cc$sex ), ] %>% 
+                            group_by( subgroup = sex ) %>% 
+                            summarise( sample_size_2021 = n() ),
+                          by = "subgroup" ) %>%
+  mutate( sample_size_2021 = prettyNum( sample_size_2021, big.mark = ",", preserve.width = "none" ) )
 
 
 # transform the imputed datasets
