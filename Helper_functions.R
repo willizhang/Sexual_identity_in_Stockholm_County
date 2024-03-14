@@ -247,3 +247,78 @@ calculate_proportions <- function( data, variable, design ) {
   
   return( prop_var )
 }
+
+
+##### Function to Calculate Proportions of Sexual Identities after Imputation #####
+
+### SPHC-B 2021 ###
+# among demographic subgroups
+calc_prop_imp_subgroup_2021 <- function( design, sexual_identities, demog_var ) {
+  
+  # calculate sample size
+  sample_size <- lapply( implist_2021_prop_transformed, function( df ) {
+    table( df[[ demog_var]] ) 
+    } )
+  
+  combined_freqs <- as.data.frame( Reduce( "+", sample_size ) / length( implist_2021_prop_transformed ) )
+  colnames( combined_freqs ) <- c( "subgroup", "sample_size_2021" )
+  combined_freqs$sample_size_2021 <- prettyNum( 
+    round( combined_freqs$sample_size_2021, 0 ), big.mark = ",", preserve.width = "none" )
+  
+  # calculate proportions
+  combined_results_list <- list()
+  
+  for ( identity in sexual_identities ) {
+  combined_summary <- summary( MIcombine( 
+    with( design,
+          svyby( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", identity, "')" ) ),
+                 by = as.formula( paste0( "~", demog_var ) ),
+                 FUN = svyciprop,
+                 method = "beta" ) ) ) )
+  
+  results_df <- rownames_to_column( combined_summary[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
+  colnames( results_df ) <- c( "subgroup", paste0( identity, "_point_estimate_2021" ), paste0( identity, "_lower_ci_2021" ), paste0( identity, "_upper_ci_2021" ) )
+  
+  combined_results_list[[ identity ]] <- results_df
+  }
+
+  final_combined_df <- Reduce( function( x, y ) {
+    merge( x, y, by = "subgroup" ) 
+    }, 
+    combined_results_list )
+  
+  final_combined_df <- merge( final_combined_df, combined_freqs, by = "subgroup" )
+  
+  return( final_combined_df )
+}
+
+# in Stockholm County
+calc_prop_imp_overall_2021 <- function( design, sexual_identities ) {
+  
+  # calculate proportions
+  combined_results_list <- list()
+  
+  for ( identity in sexual_identities ) {
+    combined_summary <- summary( MIcombine( 
+      with( design,
+            svyciprop( formula = as.formula( paste0( "~ I( sexual_identity_2021 == '", identity, "')" ) ),
+                       FUN = svyciprop,
+                       method = "beta" ) ) ) )
+    
+    results_df <- rownames_to_column( combined_summary[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
+    colnames( results_df ) <- c( "subgroup", paste0( identity, "_point_estimate_2021" ), paste0( identity, "_lower_ci_2021" ), paste0( identity, "_upper_ci_2021" ) )
+    results_df[ 1, 1 ] <- "Stockholm County"
+    
+    combined_results_list[[ identity ]] <- results_df
+  }
+  
+  final_combined_df <- Reduce( function( x, y ) {
+    merge( x, y, by = "subgroup" ) 
+  }, 
+  combined_results_list )
+  
+  final_combined_df$sample_size_2021 <- prettyNum( 
+    nrow( d_2021 ), big.mark = ",", preserve.width = "none" )
+  
+  return( final_combined_df )
+}
