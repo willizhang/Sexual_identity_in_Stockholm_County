@@ -3,13 +3,13 @@
 [Author list]. **Population Trends and Individual Fluidity of Sexual Identity in Stockholm County, 2010 to 2021.** 2024. _In Preparation._
 
 The R scripts include:
-* **SPHC-2010.Rmd:** analyses of sexual identity using SPHC 2010.
-* **SPHC-2014.Rmd:** analyses of sexual identity using SPHC 2014.
-* **SPHC-2021.Rmd:** analyses of sexual identity using SPHC 2021.
-* **SPHC-2002-2006-2010.Rmd:** analyses of sexual identity fluidity from 2010 to 2021 using SPHC 2002, 2006, and 2010.
+* **SPHC-2010.Rmd:** analyses of sexual identity using SPHC 2010 dataset.
+* **SPHC-2014.Rmd:** analyses of sexual identity using SPHC 2014 dataset.
+* **SPHC-2021.Rmd:** analyses of sexual identity using SPHC 2021 dataset.
+* **SPHC-2002-2006-2010.Rmd:** analyses of sexual identity fluidity from 2010 to 2021 using the pooled cohort from SPHC 2002, 2006, and 2010.
 * **Summary_plots.Rmd:** drawing summary plots.
 
-<small>_Notes:_ For simplicity, we use the term “SPHC-B + year” for the Stockholm Public Health Cohort (SPHC) baseline surveys and “SPHC-F + year” for follow-up surveys; “SPHC + year” includes both baseline and follow-up surveys for a given cohort. For example, SPHC-B 2010 represents the baseline survey initiated in 2010, SPHC-F 2014 and 2021 denote the follow-up surveys conducted in 2014 and 2021, and SPHC 2010 represents the cohort including the baseline survey in 2010 and the follow-up surveys in 2014 and 2021. See Figure 1 below for an overview of SPHC surveys.<small>
+<small>_Notes:_ For simplicity, we use the term “SPHC-B + year” for the Stockholm Public Health Cohort (SPHC) baseline surveys, and “SPHC + year” for both baseline and follow-up surveys for a given cohort; for example, SPHC-B 2010 represents the baseline survey initiated in 2010, and SPHC 2010 denotes the cohort including SPHC-B 2010 and the follow-up surveys in 2014 and 2021. See Figure 1 below for an overview of SPHC surveys.<small>
 
 <br>
 
