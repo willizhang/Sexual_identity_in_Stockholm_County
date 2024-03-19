@@ -9,25 +9,24 @@ editor_options:
 
 ### 1. Load Packages
 ```{r}
-library(data.table)
-library(readxl)
-library(dplyr)
+library(haven)
+library(tidyr)
 library(tidyverse)
-library(naniar)
-library(ggplot2)
-library(ggbreak)
-library(ggrepel)
-library(ggpubr)
+library(dplyr)
 library(finalfit)
-library(survey)
-library(svyVGAM)
+library(ggplot2)
+library(naniar)
 library(jomo)
 library(mitml)
 library(mitools)
+library(survey)
+library(svyVGAM)
+library(vcd)
+library(rcompanion)
 source("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/Helper_functions.R") # helper function
 ```
 
-### 2. Import and Visualise Data
+### 2. Import and Prepare Data
 ```{r}
 load("/Volumes/LGBT Project data/d_2010.RData")
 
@@ -302,7 +301,7 @@ format( round( fisher.test( x9[, c( 1, 2 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x9[, c( 1, 3 ) ] )$p.value, 3 ), nsmall = 3 )
 format( round( fisher.test( x9[, c( 1, 4 ) ] )$p.value, 3 ), nsmall = 3 )
 
-# make characteristics table by changes of sexual identity
+# make characteristics table by change of sexual identity
 explanatory =  c( "sex", "age_cat", "country_of_birth", "education", "occupation", "income", "marital_status", "living_alone", "personal_support", "sexual_identity_2010" )
 dependent = "sexual_identity_fluidity"
 
@@ -364,6 +363,10 @@ summary( d_2010$F10dvikt )
 d_2010$design_weight <- d_2010$F10dvikt
 
 
+##### calibrated weights #####
+d_2010$calibrated_weight <- d_2010$F10kalvikt
+
+
 ##### non-response #####
 
 # unit non-response
@@ -414,26 +417,6 @@ round( sum( sampling_frame_2010$itemresponse )/( sum( sampling_frame_2010$sample
 writexl::write_xlsx( sampling_frame_2010, "sampling_frame_2010.xlsx" )
 
 
-##### calibrated weights #####
-
-d_2010$calibrated_weight <- d_2010$F10kalvikt
-
-# visualize calibrated weights across sampling strata
-ggplot( d_2010 %>% 
-          group_by( sampling_strata_region ) %>% 
-          summarise( mean_weight = mean( calibrated_weight ), sd_weight = sd( calibrated_weight ) ),
-        aes( y = reorder( sampling_strata_region, -mean_weight ), x = mean_weight ) ) +
-  geom_line( aes( group = 1 ) ) +
-  geom_point() +
-  geom_errorbarh( aes( xmin = mean_weight - sd_weight, xmax = mean_weight + sd_weight ), height = 0.4, alpha = 0.5 ) +
-  scale_x_continuous( limits = c( 0, 210 ), breaks = c( 0, 50, 100, 150, 200 ), expand = c( 0, 0 ) ) +
-  labs( y = NULL, x = "Mean and Standard Deviation of Calibrated Weights" ) +
-  theme_classic() +
-  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
-         axis.title.x = element_text( family = "Arial", size = 11 ),
-         axis.text.x = element_text( family = "Arial", size = 11 ) )
-
-
 ##### replicating non-respondent rows for sampling design #####
 
 # because d_2010 includes data only for respondents (unit response), we need to duplicate rows for non-respondents
@@ -454,9 +437,447 @@ replicated_rows <- rows_to_add[ rep( row.names( rows_to_add ), rows_to_add$to_ad
 d_2010_complete <- bind_rows( d_2010, replicated_rows ) # 55,340 individuals in the original sample
 ```
 
-### 3. Estimation of Proportions of Sexual Identities
-#### 3.1. Complete-case analysis
-##### 3.1.1. Define survey design
+### 3. Check Calibrated Weights and Proxy Auxiliary Variables
+```{r}
+survey_design_calibrated <- svydesign( ids = ~ 1, 
+                                       strata = ~ sampling_strata_region,
+                                       weights = ~ calibrated_weight,
+                                       fpc = ~ no.of.population,
+                                       data = d_2010 )
+
+# we were unable to re-calibrate the weights as recommended (https://cran.r-project.org/web/packages/survey/vignettes/precalibrated.pdf), because the original auxiliary variables used for calibration were not available anymore
+
+svytable( ~ sampling_strata_region, survey_design_calibrated ) # calculate population totals for each sampling stratum
+
+round( summary( d_2010$calibrated_weight ), 2 ) # check the distribution of calibrated weights
+round( summary( d_2010$calibrated_weight / d_2010$design_weight ), 2 ) # check the ratios of weights
+
+ggplot( d_2010, aes( x = calibrated_weight ) ) +
+  geom_histogram( binwidth = 1, fill = "steelblue", color = "steelblue" ) +
+  theme_classic() +
+  scale_x_continuous( breaks = c( 0, 100, 200, 300 ), 
+                      expand = c( 0.005, 0 ) ) +
+  scale_y_continuous( limits = c( 0, 620 ),
+                      breaks = c( 0, 100, 200, 300, 400, 500, 600 ), 
+                      expand = c( 0, 0 ) ) +
+  labs( x = "Calibrated Weights", y = "Frequency" ) +
+  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.title.x = element_text( family = "Arial", size = 11 )
+  )
+
+
+# calculate strength of correlation between sexual identity and proxy auxiliary variables
+d_2010_correlation <- d_2010 %>% 
+  mutate( 
+    age_auxiliary = factor( 
+      case_when(
+        age <= 29 ~ "<=29",
+        age >=30 & age <= 44 ~ "30-44",
+        age >=45 & age <= 64 ~ "45-64",
+        age >= 65 ~ ">=65" ),
+      levels = c( "<=29", "30-44", "45-64", ">=65" ) ),
+    sex_auxiliary = sex,
+    country_of_birth_auxiliary = as.factor( 
+      case_when(
+        country_of_birth == "Africa" | country_of_birth == "Americas" | country_of_birth == "Asia" ~ "Outside Europe",
+        country_of_birth == "Sweden" ~ "Sweden",
+        country_of_birth == "Europe" ~ "Europe" ) ),
+    marital_status_auxiliary = as.factor(
+      ifelse( marital_status == "Currently married", 
+             "Currently married", 
+             "Other" ) ),
+    income_auxiliary = factor( 
+      case_when(
+        dispink2010 < 1500 ~ "<=149,999",
+        dispink2010 >= 1500 & dispink2010 < 3000 ~ "150,000-299,999",
+        dispink2010 >= 3000 ~ ">=300,000" ),
+      levels = c( "<=149,999", "150,000-299,999", ">=300,000" ) ),
+    education_auxiliary = education,
+    sampling_strata_region_auxiliary = sampling_strata_region
+    )
+
+d_2010_correlation$sexual_identity_fluidity <- as.factor( d_2010_correlation$sexual_identity_fluidity )
+
+summary( d_2010_correlation )
+
+# sexual identity in 2010
+assocstats( table( d_2010_correlation$sexual_identity_2010, d_2010_correlation$sex_auxiliary ) )
+assocstats( table( d_2010_correlation$sexual_identity_2010, d_2010_correlation$country_of_birth_auxiliary ) )
+assocstats( table( d_2010_correlation$sexual_identity_2010, d_2010_correlation$marital_status_auxiliary ) )
+assocstats( table( d_2010_correlation$sexual_identity_2010, d_2010_correlation$sampling_strata_region_auxiliary ) )
+
+freemanTheta( table( d_2010_correlation$sexual_identity_2010, d_2010_correlation$age_auxiliary ), group = "row", digits = 2 )
+
+freemanTheta( table( d_2010_correlation[ d_2010_correlation$sex == "Male", ]$sexual_identity_2010, d_2010_correlation[ d_2010_correlation$sex == "Male", ]$age_auxiliary ), group = "row", digits = 2 )
+
+freemanTheta( table( d_2010_correlation[ d_2010_correlation$sex == "Female", ]$sexual_identity_2010, d_2010_correlation[ d_2010_correlation$sex == "Female", ]$age_auxiliary ), group = "row", digits = 2 )
+
+freemanTheta( table( d_2010_correlation$sexual_identity_2010, d_2010_correlation$income_auxiliary ), group = "row", digits = 2 )
+freemanTheta( table( d_2010_correlation$sexual_identity_2010, d_2010_correlation$education_auxiliary ), group = "row", digits = 2 )
+
+# change in sexual identity during 2010-2021
+assocstats( table( d_2010_correlation$sexual_identity_fluidity, d_2010_correlation$sex_auxiliary ) )
+assocstats( table( d_2010_correlation$sexual_identity_fluidity, d_2010_correlation$country_of_birth_auxiliary ) )
+assocstats( table( d_2010_correlation$sexual_identity_fluidity, d_2010_correlation$marital_status_auxiliary ) )
+assocstats( table( d_2010_correlation$sexual_identity_fluidity, d_2010_correlation$sampling_strata_region_auxiliary ) )
+
+freemanTheta( table( d_2010_correlation$sexual_identity_fluidity, d_2010_correlation$age_auxiliary ), group = "row", digits = 2 )
+
+freemanTheta( table( d_2010_correlation[ d_2010_correlation$sex == "Male", ]$sexual_identity_fluidity, d_2010_correlation[ d_2010_correlation$sex == "Male", ]$age_auxiliary ), group = "row", digits = 2 )
+
+freemanTheta( table( d_2010_correlation[ d_2010_correlation$sex == "Female", ]$sexual_identity_fluidity, d_2010_correlation[ d_2010_correlation$sex == "Female", ]$age_auxiliary ), group = "row", digits = 2 )
+
+freemanTheta( table( d_2010_correlation$sexual_identity_fluidity, d_2010_correlation$income_auxiliary ), group = "row", digits = 2 )
+freemanTheta( table( d_2010_correlation$sexual_identity_fluidity, d_2010_correlation$education_auxiliary ), group = "row", digits = 2 )
+
+# references
+freemanTheta( table( d_2010_correlation$age_auxiliary, d_2010_correlation$education_auxiliary ), group = "row", digits = 2 )
+freemanTheta( table( d_2010_correlation$age_auxiliary, d_2010_correlation$income ), group = "row", digits = 2 )
+freemanTheta( table( d_2010_correlation$education_auxiliary, d_2010_correlation$income ), group = "row", digits = 2 )
+```
+
+### 4. Multiple Imputation
+#### 4.1. Obtain incomplete dataset
+```{r}
+summary( d_2010 )
+
+selected_variables <- c( "sampling_strata_region", "calibrated_weight", "no.of.population", "sexual_identity_2010", "sexual_identity_fluidity", "age", "sex", "country_of_birth", "education", "dispink2010", "marital_status", "living_alone", "personal_support" )
+
+d_2010_incomplete <- d_2010 %>% 
+  select( all_of( selected_variables ) ) %>%
+  rename( income = dispink2010 ) %>%
+  mutate( 
+    sexual_identity_fluidity = as.factor( sexual_identity_fluidity ),
+    country_of_birth = factor( 
+      case_when(
+        country_of_birth == "Africa" | country_of_birth == "Americas" | country_of_birth == "Asia" ~ "Outside Europe",
+        country_of_birth == "Sweden" ~ "Sweden",
+        country_of_birth == "Europe" ~ "Europe" ),
+      levels = c( "Sweden", "Europe", "Outside Europe" ) )
+    )
+
+# create weight strata (n = 25) for two-level multivariate normal imputation
+d_2010_incomplete$weight_strata <- as.factor( cut( d_2010_incomplete$calibrated_weight,
+                                                   breaks = quantile( d_2010_incomplete$calibrated_weight, 
+                                                                      probs = seq( 0, 1, length.out = 26 ) ),
+                                                   labels = 1:25,
+                                                   include.lowest = TRUE,
+                                                   right = TRUE ) )
+
+ggplot( d_2010_incomplete %>% 
+          group_by( weight_strata ) %>% 
+          summarise( mean_weight = mean( calibrated_weight ), sd_weight = sd( calibrated_weight ) ),
+        aes( y = reorder( weight_strata, -mean_weight ), x = mean_weight ) ) +
+  geom_line( aes( group = 1 ) ) +
+  geom_point() +
+  geom_errorbarh( aes( xmin = mean_weight - sd_weight, xmax = mean_weight + sd_weight ), height = 0.4, alpha = 0.5 ) +
+  scale_x_continuous( limits = c( 0, 205 ), 
+                      breaks = c( 0, 50, 100, 150, 200 ), 
+                      expand = c( 0, 0 ) ) +
+  labs( y = "Calibrated Weight Strata", x = "Mean and Standard Deviation of Calibrated Weights" ) +
+  theme_classic() +
+  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.title.x = element_text( family = "Arial", size = 11 )
+  )
+
+summary( d_2010_incomplete )
+sapply( d_2010_incomplete, class ) # all continuous variables are numeric, and all categorical variables are factor
+save( d_2010_incomplete, file = "d_2010_incomplete.RData" )
+```
+
+#### 4.2. Visualize missing pattern
+```{r}
+# identify missing variables
+vis_miss( d_2010_incomplete )
+n_miss( d_2010_incomplete )
+miss_var_summary( d_2010_incomplete ) # 57.1% missing in sexual_identity_fluidity, 3.8% in sexual_identity_2010, 1.3% in personal_support, 1.1% in living_alone, and 0.7% in education
+```
+
+#### 4.3. Two-level multivariate normal imputation
+```{r}
+# use multiple imputation to account for item non-response
+# assume Missing At Random (MAR)
+
+# specify imputation model
+fml_imp_2010 <- sexual_identity_fluidity + sexual_identity_2010 + personal_support + living_alone + education ~ 1 + age*sex + country_of_birth + income + marital_status + ( 1 | weight_strata )
+
+# perform a "dry run"
+imp_ini_2010 <- jomoImpute( data = d_2010_incomplete, # incomplete dataset
+                            formula = fml_imp_2010, # imputation model
+                            random.L1 = "full", # random covariance matrix of residuals
+                            n.burn = 2, # number of burn-in iterations
+                            n.iter = 10, # number of between-imputation iterations
+                            m = 2, # number of imputation
+                            seed = 12345 # set the seed so that results can be reproduced
+                            )
+
+summary( imp_ini_2010 ) # check output
+
+
+# increase the number of burn-in and between-imputation iterations
+# to determine the number of iterations for the final imputation
+imp_preliminary_2010 <- jomoImpute( data = d_2010_incomplete,
+                                    formula = fml_imp_2010,
+                                    random.L1 = "full",
+                                    n.burn = 5000,
+                                    n.iter = 2000,
+                                    m = 2,
+                                    seed = 12345
+                                    ) # took around two hours
+
+save( imp_preliminary_2010, file = "imp_preliminary_2010.RData" )
+summary( imp_preliminary_2010 ) # summarize model and display convergence statistics
+plot( imp_preliminary_2010, trace = "all", print = "beta" ) # check trace and autocorrelation plots
+
+
+# final imputation with the chosen number of iterations
+imp_final_2010 <- jomoImpute( data = d_2010_incomplete,
+                              formula = fml_imp_2010,
+                              random.L1 = "full",
+                              n.burn = 2000,
+                              n.iter = 1000,
+                              m = 80,
+                              seed = 12345
+                              ) # took around 20 hours
+
+save( imp_final_2010, file = "imp_final_2010.RData" )
+summary( imp_final_2010 )
+plot( imp_final_2010, trace = "all", print = "beta" )
+```
+
+#### 4.4. Validate imputed data
+```{r}
+# extract imputed datasets
+original_data_2010 <- mitmlComplete( imp_final_2010, print = 0 ) # extract original incomplete dataset
+implist_2010 <- mitmlComplete( imp_final_2010, print = "all" ) # extract all imputed datasets
+
+original_data_2010$imputation <- "0"
+all_data_2010 <- bind_rows( original_data_2010,
+                            bind_rows( implist_2010, .id = "imputation" ) ) # merge datasets
+all_data_2010$imputation <- as.numeric( all_data_2010$imputation )
+summary( all_data_2010 )
+
+# sexual identity in 2010
+ggplot( all_data_2010[ !is.na( all_data_2010$sexual_identity_2010 ), ],
+        aes( fill = sexual_identity_2010, x = imputation ) ) + 
+  geom_bar( position = "fill" ) + 
+  scale_y_continuous( labels = scales::percent ) + 
+  scale_fill_discrete( name = "Sexual identity in 2010" ) +
+  labs(
+    x = "Imputation number",
+    y = "Proportion",
+    caption = "Notes: Imputation number 0 represents the original incomplete dataset." ) +
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_text( family = "Arial", size = 10 ),
+         legend.position = "bottom",
+         plot.caption = element_text( family = "Arial", size = 10, hjust = 0 ) 
+  )
+
+# change in sexual identity during 2010-2021
+ggplot( all_data_2010[ !is.na( all_data_2010$sexual_identity_fluidity ), ],
+        aes( fill = sexual_identity_fluidity, x = imputation ) ) + 
+  geom_bar( position = "fill" ) + 
+  scale_y_continuous( labels = scales::percent ) + 
+  scale_fill_discrete( name = "Change in sexual identity during 2010-2021", labels = c( "No", "Yes" ) ) +
+  labs(
+    x = "Imputation number",
+    y = "Proportion",
+    caption = "Notes: Imputation number 0 represents the original incomplete dataset." ) +
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_text( family = "Arial", size = 10 ),
+         legend.position = "bottom",
+         plot.caption = element_text( family = "Arial", size = 10, hjust = 0 ) 
+  )
+
+# education
+ggplot( all_data_2010[ !is.na( all_data_2010$education ), ],
+        aes( fill = education, x = imputation ) ) + 
+  geom_bar( position = "fill" ) + 
+  scale_y_continuous( labels = scales::percent ) + 
+  scale_fill_discrete( name = "Level of education" ) +
+  labs(
+    x = "Imputation number",
+    y = "Proportion",
+    caption = "Notes: Imputation number 0 represents the original incomplete dataset." ) +
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_text( family = "Arial", size = 10 ),
+         legend.position = "bottom",
+         plot.caption = element_text( family = "Arial", size = 10, hjust = 0 ) 
+  )
+
+# living status
+ggplot( all_data_2010[ !is.na( all_data_2010$living_alone ), ],
+        aes( fill = living_alone, x = imputation ) ) + 
+  geom_bar( position = "fill" ) + 
+  scale_y_continuous( labels = scales::percent ) + 
+  scale_fill_discrete( name = "Living alone", labels = c( "Yes", "No" ) ) +
+  labs(
+    x = "Imputation number",
+    y = "Proportion",
+    caption = "Notes: Imputation number 0 represents the original incomplete dataset." ) +
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_text( family = "Arial", size = 10 ),
+         legend.position = "bottom",
+         plot.caption = element_text( family = "Arial", size = 10, hjust = 0 ) 
+  )
+
+# personal support
+ggplot( all_data_2010[ !is.na( all_data_2010$personal_support ), ],
+        aes( fill = personal_support, x = imputation ) ) + 
+  geom_bar( position = "fill" ) + 
+  scale_y_continuous( labels = scales::percent ) + 
+  scale_fill_discrete( name = "Personal support", labels = c( "Yes", "No" ) ) +
+  labs(
+    x = "Imputation number",
+    y = "Proportion",
+    caption = "Notes: Imputation number 0 represents the original incomplete dataset." ) +
+  theme_classic() +
+  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.title = element_text( family = "Arial", size = 10 ),
+         legend.position = "bottom",
+         plot.caption = element_text( family = "Arial", size = 10, hjust = 0 ) 
+  )
+```
+
+#### 4.5. Prepare for survey analyses
+```{r}
+# transform certain variables in imputed datasets
+implist_2010 <- mitmlComplete( imp_final_2010, print = "all" ) # extract all imputed datasets
+summary( implist_2010[[1]] )
+
+implist_2010_transformed <- lapply( implist_2010, function( df ) {
+  within( df, {
+    
+    # age
+    age_exp <- factor( 
+      case_when( age <= 29 ~ "18-29",
+                 age >= 30 & age <= 44 ~ "30-44",
+                 age >= 45 & age <= 59 ~ "45-59",
+                 age >= 60 ~ ">=60" ),
+      levels = c( "45-59", "18-29", "30-44", ">=60" ) )
+    age_conf <- age
+    
+    # generation
+    birth_year <- 2010 - age
+    generation <- factor( 
+      case_when(
+        birth_year >= 1981 & birth_year <= 1996 ~ "Millennials (1981–1996)",
+        birth_year >= 1965 & birth_year <= 1980 ~ "Generation X (1965–1980)",
+        birth_year >= 1946 & birth_year <= 1964 ~ "Baby Boomers (1946–1964)",
+        birth_year >= 1928 & birth_year <= 1945 ~ "Silent Generation (1928–1945)",
+        birth_year >= 1901 & birth_year <= 1927 ~ "Greatest Generation (1901–1927)" ),
+      levels = c( "Millennials (1981–1996)", "Generation X (1965–1980)", "Baby Boomers (1946–1964)", "Silent Generation (1928–1945)", "Greatest Generation (1901–1927)" ) 
+      )
+    
+    # sex
+    sex_exp <- sex
+    sex_conf <- sex
+  
+    # interaction term between age and sex
+    age_sex <- interaction( age_exp, sex_exp )
+
+    # country of birth
+    country_of_birth_exp <- country_of_birth
+    country_of_birth_conf <- country_of_birth
+  
+    # education
+    education_exp <- relevel( education, ref = ">=13 years"  )
+    education_conf <- education
+  
+    # disposable income
+    income_exp <- factor( 
+      case_when( income <= 2500 ~ "<=2,500",
+                 income > 2500 & income <= 3500 ~ "(2,500, 3,500]",
+                 income > 3500 & income <= 4500 ~ "(3,500, 4,500]", 
+                 income > 4500 ~ ">4,500" ),
+      levels = c( ">4,500", "<=2,500", "(2,500, 3,500]", "(3,500, 4,500]" ) )
+    income_conf <- income
+    
+    # marital status
+    marital_status_exp <- relevel( marital_status, ref = "Currently married" )
+    marital_status_conf <- marital_status
+    
+    # living status
+    living_alone <- as.factor( ifelse( living_alone == "yes", "living_alone_yes", "living_alone_no" ) )
+    living_status_exp <- relevel( living_alone, ref = "living_alone_no" )
+    living_status_conf <- living_alone
+    
+    # personal support
+    personal_support <- as.factor( ifelse( personal_support == "yes", "personal_support_yes", "personal_support_no" ) )
+    personal_support_exp <- relevel( personal_support, ref = "personal_support_yes" )
+    personal_support_conf <- personal_support
+    
+    # sexual identity in 2010
+    levels( sexual_identity_2010 )[ levels( sexual_identity_2010 ) == "Uncertain" ] <- "Other"
+    sexual_identity_2010_exp <- sexual_identity_2010
+    sexual_identity_2010_conf <- sexual_identity_2010
+    
+    # sexual minority
+    sexual_minority <- ifelse( sexual_identity_2010 == "Heterosexual", 0, 1 )
+    
+    # homosexual
+    homosexual <- ifelse( sexual_identity_2010 == "Homosexual", 1, 0 )
+    
+    # bisexual
+    bisexual <- ifelse( sexual_identity_2010 == "Bisexual", 1, 0 )
+    
+    # other
+    other <- ifelse( sexual_identity_2010 == "Other", 1, 0 )
+    
+    # sexual identity fluidity
+    sexual_identity_fluidity_cat <- factor( ifelse( sexual_identity_fluidity == "1", "changed", "unchanged" ),
+                                            levels = c( "changed", "unchanged" ) )
+    sexual_identity_fluidity <- ifelse( sexual_identity_fluidity == "0", 0, 1 )
+    } )
+  } )
+
+imputed_data_2010_transformed <- bind_rows( implist_2010_transformed, .id = "imputation" ) # merge datasets
+imputed_data_2010_transformed$imputation <- as.numeric( imputed_data_2010_transformed$imputation )
+summary( imputed_data_2010_transformed )
+n_miss( imputed_data_2010_transformed ) # 0 missing
+
+
+# use calibrated weights to account for unit non-response
+# create survey design
+survey_design_imp <- svydesign( ids = ~ 1,
+                                strata = ~ sampling_strata_region,
+                                weights = ~ calibrated_weight,
+                                fpc = ~ no.of.population,
+                                data = imputationList( implist_2010_transformed )
+                                ) # without pre-calibration
+```
+
+### 5. Estimation of Proportions of Sexual Identities
+#### 5.1. Complete-case analysis
+##### 5.1.1. Define survey design
 ```{r}
 # prepare dataset
 d_2010_complete_cc <- d_2010_complete
@@ -491,7 +912,7 @@ categories <- c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" )
 # the following analyses assume MCAR
 ``` 
 
-##### 3.1.2. By sex
+##### 5.1.2. By sex
 ```{r}
 list_of_df <- list()
 
@@ -521,8 +942,8 @@ prop_cc_sex <- left_join( prop_cc_sex,
   mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.3. By age group
-###### 3.1.3.1. Calculate proportion by pre-specified age cut-off
+##### 5.1.3. By age group
+###### 5.1.3.1. Calculate proportion by pre-specified age cut-off
 ```{r}
 list_of_df <- list()
 
@@ -552,7 +973,7 @@ prop_cc_age <- left_join( prop_cc_age,
   mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
-###### 3.1.3.2. Calculate proportion and proportion ratio by varying age cut-offs
+###### 5.1.3.2. Calculate proportion and proportion ratio by varying age cut-offs
 ```{r}
 d_2010_iteration_age <- d_2010_complete
 
@@ -621,7 +1042,7 @@ results_wide$Uncertain_pr_2010[ is.infinite( results_wide$Uncertain_pr_2010 ) ] 
 writexl::write_xlsx( results_wide, "prop_cc_age_iteration_2010.xlsx" )
 ```
 
-###### 3.1.3.3. Calculate proportion by generation
+###### 5.1.3.3. Calculate proportion by generation
 ```{r}
 list_of_df <- list()
 
@@ -652,7 +1073,7 @@ prop_cc_generation <- left_join( prop_cc_generation,
   mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.4. By sex*age group
+##### 5.1.4. By sex*age group
 ```{r}
 list_of_df <- list()
 
@@ -682,7 +1103,7 @@ prop_cc_age_sex <- left_join( prop_cc_age_sex,
   mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.5. By education
+##### 5.1.5. By education
 ```{r}
 list_of_df <- list()
 
@@ -712,7 +1133,7 @@ prop_cc_education <- left_join( prop_cc_education,
   mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.6. By occupation
+##### 5.1.6. By occupation
 ```{r}
 list_of_df <- list()
 
@@ -742,7 +1163,7 @@ prop_cc_occupation <- left_join( prop_cc_occupation,
   mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.7. By income
+##### 5.1.7. By income
 ```{r}
 list_of_df <- list()
 
@@ -772,7 +1193,7 @@ prop_cc_income <- left_join( prop_cc_income,
   mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.8. By country of birth
+##### 5.1.8. By country of birth
 ```{r}
 list_of_df <- list()
 
@@ -803,7 +1224,7 @@ prop_cc_country_of_birth <- left_join( prop_cc_country_of_birth,
   mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.9. By marital status
+##### 5.1.9. By marital status
 ```{r}
 list_of_df <- list()
 
@@ -834,7 +1255,7 @@ prop_cc_marital_status <- left_join( prop_cc_marital_status,
   mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.10. By living status
+##### 5.1.10. By living status
 ```{r}
 list_of_df <- list()
 
@@ -865,7 +1286,7 @@ prop_cc_living_alone <- left_join( prop_cc_living_alone,
   mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.11. By personal support
+##### 5.1.11. By personal support
 ```{r}
 list_of_df <- list()
 
@@ -896,7 +1317,7 @@ prop_cc_personal_support <- left_join( prop_cc_personal_support,
   mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.12. Overall proportions of sexual identities in Stockholm County
+##### 5.1.12. Overall proportions of sexual identities in Stockholm County
 ```{r}
 list_of_df <- list()
 
@@ -928,7 +1349,7 @@ prop_cc_overall <- bind_cols( prop_cc_overall,
   mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
-##### 3.1.13. Merge datasets
+##### 5.1.13. Merge datasets
 ```{r}
 prop_cc_summary_2010 <- rbind( prop_cc_sex, 
                                prop_cc_age,
@@ -947,191 +1368,58 @@ prop_cc_summary_2010 <- rbind( prop_cc_sex,
 writexl::write_xlsx( prop_cc_summary_2010, "prop_cc_summary_2010.xlsx" )
 ```
 
-#### 3.2. Multiple imputation and survey weights
-##### 3.2.1. Multiple imputation
-###### 3.2.1.1. Obtain incomplete dataset
+#### 5.2. Survey analyses of imputed datasets
+##### 5.2.1. Calculate proportions of sexual identities
 ```{r}
-summary( d_2010 )
+# among demographic subgroups
+sexual_identities <- c( "Heterosexual", "Homosexual", "Bisexual", "Other" )
+demographic_vars <- c( "age_exp", "generation", "sex_exp", "age_sex", "country_of_birth_exp", "education_exp", "income_exp", "marital_status_exp", "living_status_exp", "personal_support_exp" )
 
-selected_variables <- c( "sampling_strata_region", "no.of.population", "calibrated_weight", "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "age", "sex", "country_of_birth", "education", "dispink2010", "marital_status", "living_alone", "personal_support" )
+prop_imp_list_subgroup_2010 <- list()
 
-d_2010_incomplete <- d_2010 %>% 
-  select( all_of( selected_variables ) ) %>%
-  mutate( country_of_birth = as.factor( 
-    case_when(
-      country_of_birth == "Africa" | country_of_birth == "Americas" | country_of_birth == "Asia" ~ "Outside Europe",
-      country_of_birth == "Sweden" ~ "Sweden",
-      country_of_birth == "Europe" ~ "Europe" ) ) ) %>%
-  rename( 
-    income = dispink2010
-  )
+for( cat in demographic_vars ) {
+  results <- calc_prop_imp_subgroup( implist = implist_2010_transformed,
+                                     design = survey_design_imp,
+                                     sexual_identities = sexual_identities,
+                                     demog_var = cat,
+                                     year = 2010 )
+  
+  prop_imp_list_subgroup_2010[[ cat ]] <- results
+  }
 
-# create weight strata (n = 25) for two-level multivariate normal imputation
-d_2010_incomplete$weight_strata <- as.factor( cut( d_2010_incomplete$calibrated_weight,
-                                                   breaks = quantile( d_2010_incomplete$calibrated_weight, 
-                                                                      probs = seq( 0, 1, length.out = 26 ) ),
-                                                   labels = 1:25,
-                                                   include.lowest = TRUE,
-                                                   right = TRUE ) )
+prop_imp_summary_subgroup_2010 <- do.call( rbind, prop_imp_list_subgroup_2010 )
+rownames( prop_imp_summary_subgroup_2010 ) <- NULL
 
-ggplot( d_2010_incomplete %>% 
-          group_by( weight_strata ) %>% 
-          summarise( mean_weight = mean( calibrated_weight ), sd_weight = sd( calibrated_weight ) ),
-        aes( y = reorder( weight_strata, -mean_weight ), x = mean_weight ) ) +
-  geom_line( aes( group = 1 ) ) +
-  geom_point() +
-  geom_errorbarh( aes( xmin = mean_weight - sd_weight, xmax = mean_weight + sd_weight ), height = 0.4, alpha = 0.5 ) +
-  scale_x_continuous( limits = c( 0, 205 ), 
-                      breaks = c( 0, 50, 100, 150, 200 ), 
-                      expand = c( 0, 0 ) ) +
-  labs( y = "Calibrated Weight Strata", x = "Mean and Standard Deviation of Calibrated Weights" ) +
-  theme_classic() +
-  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
-         axis.title.y = element_text( family = "Arial", size = 11 ),
-         axis.text.x = element_text( family = "Arial", size = 11 ),
-         axis.title.x = element_text( family = "Arial", size = 11 )
-  )
+# in Stockholm County
+prop_imp_summary_overall_2010 <- calc_prop_imp_overall( design = survey_design_imp,
+                                                        sexual_identities = sexual_identities,
+                                                        year = 2010 )
 
-summary( d_2010_incomplete )
-sapply( d_2010_incomplete, class ) # all continuous variables are numeric, and all categorical variables are factor
+# merge results
+prop_imp_summary_2010 <- rbind( prop_imp_summary_subgroup_2010, prop_imp_summary_overall_2010 )
+writexl::write_xlsx( prop_imp_summary_2010, "prop_imp_summary_2010.xlsx" )
 ```
 
-###### 3.2.1.2. Visualize missing pattern
-```{r}
-# identify missing variables
-vis_miss( d_2010_incomplete )
-n_miss( d_2010_incomplete )
-miss_var_summary( d_2010_incomplete ) # 58.0% missing in sexual_identity_2021, 41.2% in sexual_identity_2014, 3.8% in sexual_identity_2010, 1.3% in personal_support, 1.1% in living_alone, 0.7% in education
-```
-
-###### 3.2.1.3. Two-level multivariate normal imputation
-```{r}
-# use multiple imputation to account for item non-response
-# assume Missing At Random (MAR)
-
-# specify imputation model
-fml_imp_2010 <- sexual_identity_2021 + sexual_identity_2014 + sexual_identity_2010 + personal_support + living_alone + education ~ 1 + age*sex + country_of_birth + income + marital_status + ( 1 | weight_strata )
-
-# perform a "dry run"
-imp_ini_2010 <- jomoImpute( data = d_2010_incomplete, # incomplete dataset
-                            formula = fml_imp_2010, # imputation model
-                            random.L1 = "full", # random covariance matrix of residuals
-                            n.burn = 2, # number of burn-in iterations
-                            n.iter = 10, # number of between-imputation iterations
-                            m = 2, # number of imputation
-                            seed = 12345 # set the seed so that results can be reproduced
-                            )
-
-summary( imp_ini_2010 ) # check output
-
-
-# increase the number of burn-in and between-imputation iterations
-# to determine the number of iterations for the final imputation
-imp_preliminary_2010 <- jomoImpute( data = d_2010_incomplete,
-                                    formula = fml_imp_2010,
-                                    random.L1 = "full",
-                                    n.burn = 1500,
-                                    n.iter = 1000,
-                                    m = 2,
-                                    seed = 12345
-                                    ) # took around 3 hours
-
-# save( imp_preliminary_2010, file = "imp_preliminary_2010.RData" )
-summary( imp_preliminary_2010 ) # summarize model and display convergence statistics
-# plot( imp_preliminary_2010, trace = "all", print = "beta" ) # check trace and autocorrelation plots
-
-
-# final imputation with the chosen number of iterations
-imp_final_2010 <- jomoImpute( data = d_2010_incomplete,
-                              formula = fml_imp_2010,
-                              random.L1 = "full",
-                              n.burn = 1000,
-                              n.iter = 1000,
-                              m = 70,
-                              seed = 12345
-                              ) # took around ? hours
-
-# save( imp_final_2010, file = "imp_final_2010.RData" )
-summary( imp_final_2010 )
-# plot( imp_final_2010, trace = "all", print = "beta" )
-```
-
-###### 3.2.1.4. Validate imputed data
-```{r}
-# extract imputed datasets
-original_data_2010 <- mitmlComplete( imp_final_2010, print = 0 ) # extract original incomplete dataset
-implist_2010 <- mitmlComplete( imp_final_2010, print = "all" ) # extract all imputed datasets
-
-original_data_2010$imputation <- "0"
-all_data_2010 <- bind_rows( original_data_2010, 
-                            bind_rows( implist_2010, .id = "imputation" ) ) # merge datasets
-all_data_2010$imputation <- as.numeric( all_data_2010$imputation )
-summary( all_data_2010 )
-
-# sexual identity in 2010
-ggplot( all_data_2010[ !is.na( all_data_2010$sexual_identity_2010 ), ],
-        aes( fill = sexual_identity_2010, x = imputation ) ) + 
-  geom_bar( position = "fill" ) + 
-  scale_y_continuous( labels = scales::percent ) + 
-  labs(
-    x = "Imputation number",
-    y = "Proportion",
-    caption = "Notes: Imputation number 0 represents the original incomplete dataset." ) +
-  theme_classic() +
-  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
-         axis.text.x = element_text( family = "Arial", size = 11 ),
-         axis.text.y = element_text( family = "Arial", size = 11 ),
-         axis.title.y = element_text( family = "Arial", size = 11 ),
-         legend.text = element_text( family = "Arial", size = 10 ),
-         legend.title = element_blank(),
-         legend.position = "bottom",
-         plot.caption = element_text( family = "Arial", size = 10, hjust = 0 ) 
-  )
-
-# education
-ggplot( all_data_2010[ !is.na( all_data_2010$education ), ],
-        aes( fill = education, x = imputation ) ) + 
-  geom_bar( position = "fill" ) + 
-  scale_y_continuous( labels = scales::percent ) + 
-  labs(
-    x = "Imputation number",
-    y = "Proportion",
-    caption = "Notes: Imputation number 0 represents the original incomplete dataset." ) +
-  theme_classic() +
-  theme( axis.title.x = element_text( family = "Arial", size = 11 ),
-         axis.text.x = element_text( family = "Arial", size = 11 ),
-         axis.text.y = element_text( family = "Arial", size = 11 ),
-         axis.title.y = element_text( family = "Arial", size = 11 ),
-         legend.text = element_text( family = "Arial", size = 10 ),
-         legend.title = element_blank(),
-         legend.position = "bottom",
-         plot.caption = element_text( family = "Arial", size = 10, hjust = 0 ) 
-  )
-
-# income
-summary( all_data_2010$income )
-nrow( all_data_2010[ all_data_2010$income < 0 & !is.na( all_data_2010$income ), ] ) # 170 imputed values are negative
-all_data_2010$income <-ifelse( all_data_2010$income < 0, 0, all_data_2010$income )
-```
-
-### 4. Relation between Sexual Identity and Demographic Factors
-#### 4.1. Complete-case analysis
-##### 4.1.1. Define survey design
+### 6. Relation between Sexual Identity and Demographic Factors
+#### 6.1. Complete-case analysis
+##### 6.1.1. Define survey design
 ```{r}
 ##### prepare dataset #####
 
 d_2010_cc_model <- d_2010_complete
+summary( d_2010_cc_model )
 
 # exposures of interest, including age, sex, country of birth, education, income, marital status, living status, and personal support
 d_2010_cc_model$age_exp <- relevel( d_2010_cc_model$age_cat, ref = "45-59" )
 
 d_2010_cc_model$sex_exp <- relevel( d_2010_cc_model$sex, ref = "Male" )
 
-d_2010_cc_model$country_of_birth_exp <- factor( 
+d_2010_cc_model$country_of_birth <- factor( 
   ifelse( d_2010_cc_model$country_of_birth == "Sweden", "Sweden",
           ifelse( d_2010_cc_model$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
   levels = c( "Sweden", "Europe", "Outside Europe" )
   )
+d_2010_cc_model$country_of_birth_exp <- d_2010_cc_model$country_of_birth
 
 d_2010_cc_model$education_exp <- relevel( d_2010_cc_model$education, ref = ">=13 years" )
 
@@ -1154,21 +1442,18 @@ d_2010_cc_model$bisexual <- ifelse( d_2010_cc_model$sexual_identity_2010 == "Bis
 d_2010_cc_model$other <- ifelse( d_2010_cc_model$sexual_identity_2010 == "Uncertain", 1, 0 )
 
 
-# confounding variables, including age, sex, country of birth, education, income, marital status, 
-# and place of residence (i.e., sampling strata)
+# confounding variables, including age, sex, country of birth, education, income, and marital status
 d_2010_cc_model$age_conf <- d_2010_cc_model$age # age
 
 d_2010_cc_model$sex_conf <- d_2010_cc_model$sex # sex
 
-d_2010_cc_model$country_of_birth_conf <- d_2010_cc_model$country_of_birth # country of birth (grouped into five categories due to sparse data)
+d_2010_cc_model$country_of_birth_conf <- d_2010_cc_model$country_of_birth # country of birth
 
-d_2010_cc_model$education_conf <- as.factor( d_2010_cc_model$utbniva2010 ) # education
+d_2010_cc_model$education_conf <- d_2010_cc_model$education # education
 
 d_2010_cc_model$income_conf <- d_2010_cc_model$dispink2010 # disposable income
 
-d_2010_cc_model$marital_status_conf <- d_2010_cc_model$marital_status # marital status (grouped into three categories due to sparse data)
-
-d_2010_cc_model$place_of_residence_conf <- d_2010_cc_model$sampling_strata_region # place of residence
+d_2010_cc_model$marital_status_conf <- d_2010_cc_model$marital_status # marital status
 
 
 ##### create survey design #####
@@ -1181,7 +1466,7 @@ survey_design_cc_model <- svydesign( ids = ~ 1,
 # the following analyses assume MCAR
 ```
 
-##### 4.1.2. Define model formula
+##### 6.1.2. Define model formula
 ```{r}
 ########## formula for crude analyses ##########
 
@@ -1335,19 +1620,19 @@ fml_list_personal_support_crude <- list(
 
 # sexual minority
 fml_sexual_minority_age_model_1 <- sexual_minority ~ age_exp + sex_conf + country_of_birth_conf
-fml_sexual_minority_age_model_2 <- sexual_minority ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_age_model_2 <- sexual_minority ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # homosexual
 fml_homosexual_age_model_1 <- homosexual ~ age_exp + sex_conf + country_of_birth_conf
-fml_homosexual_age_model_2 <- homosexual ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_age_model_2 <- homosexual ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # bisexual
 fml_bisexual_age_model_1 <- bisexual ~ age_exp + sex_conf + country_of_birth_conf
-fml_bisexual_age_model_2 <- bisexual ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_age_model_2 <- bisexual ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # other
 fml_other_age_model_1 <- other ~ age_exp + sex_conf + country_of_birth_conf
-fml_other_age_model_2 <- other ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_age_model_2 <- other ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # list of formulas
 fml_list_age <- list(
@@ -1366,19 +1651,19 @@ fml_list_age <- list(
 
 # sexual minority
 fml_sexual_minority_age_by_sex_model_1 <- sexual_minority ~ age_exp*sex_exp + country_of_birth_conf
-fml_sexual_minority_age_by_sex_model_2 <- sexual_minority ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_age_by_sex_model_2 <- sexual_minority ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # homosexual
 fml_homosexual_age_by_sex_model_1 <- homosexual ~ age_exp*sex_exp + country_of_birth_conf
-fml_homosexual_age_by_sex_model_2 <- homosexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_age_by_sex_model_2 <- homosexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # bisexual
 fml_bisexual_age_by_sex_model_1 <- bisexual ~ age_exp*sex_exp + country_of_birth_conf
-fml_bisexual_age_by_sex_model_2 <- bisexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_age_by_sex_model_2 <- bisexual ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # other
 fml_other_age_by_sex_model_1 <- other ~ age_exp*sex_exp + country_of_birth_conf
-fml_other_age_by_sex_model_2 <- other ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_age_by_sex_model_2 <- other ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # list of formulas
 fml_list_age_by_sex <- list(
@@ -1397,19 +1682,19 @@ fml_list_age_by_sex <- list(
 
 # sexual minority
 fml_sexual_minority_sex_model_1 <- sexual_minority ~ sex_exp + age_conf + country_of_birth_conf
-fml_sexual_minority_sex_model_2 <- sexual_minority ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_sex_model_2 <- sexual_minority ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # homosexual
 fml_homosexual_sex_model_1 <- homosexual ~ sex_exp + age_conf + country_of_birth_conf
-fml_homosexual_sex_model_2 <- homosexual ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_sex_model_2 <- homosexual ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # bisexual
 fml_bisexual_sex_model_1 <- bisexual ~ sex_exp + age_conf + country_of_birth_conf
-fml_bisexual_sex_model_2 <- bisexual ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_sex_model_2 <- bisexual ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # other
 fml_other_sex_model_1 <- other ~ sex_exp + age_conf + country_of_birth_conf
-fml_other_sex_model_2 <- other ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_sex_model_2 <- other ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # list of formulas
 fml_list_sex <- list(
@@ -1428,19 +1713,19 @@ fml_list_sex <- list(
 
 # sexual minority
 fml_sexual_minority_country_of_birth_model_1 <- sexual_minority ~ country_of_birth_exp + age_conf + sex_conf
-fml_sexual_minority_country_of_birth_model_2 <- sexual_minority ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_country_of_birth_model_2 <- sexual_minority ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf 
 
 # homosexual
 fml_homosexual_country_of_birth_model_1 <- homosexual ~ country_of_birth_exp + age_conf + sex_conf
-fml_homosexual_country_of_birth_model_2 <- homosexual ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_country_of_birth_model_2 <- homosexual ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf 
 
 # bisexual
 fml_bisexual_country_of_birth_model_1 <- bisexual ~ country_of_birth_exp + age_conf + sex_conf
-fml_bisexual_country_of_birth_model_2 <- bisexual ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_country_of_birth_model_2 <- bisexual ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf 
 
 # other
 fml_other_country_of_birth_model_1 <- other ~ country_of_birth_exp + age_conf + sex_conf
-fml_other_country_of_birth_model_2 <- other ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_country_of_birth_model_2 <- other ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf 
 
 # list of formulas
 fml_list_country_of_birth <- list(
@@ -1459,19 +1744,19 @@ fml_list_country_of_birth <- list(
 
 # sexual minority
 fml_sexual_minority_education_model_1 <- sexual_minority ~ education_exp + age_conf + sex_conf + country_of_birth_conf
-fml_sexual_minority_education_model_2 <- sexual_minority ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_education_model_2 <- sexual_minority ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf 
 
 # homosexual
 fml_homosexual_education_model_1 <- homosexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf
-fml_homosexual_education_model_2 <- homosexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_education_model_2 <- homosexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf 
 
 # bisexual
 fml_bisexual_education_model_1 <- bisexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf
-fml_bisexual_education_model_2 <- bisexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_education_model_2 <- bisexual ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf 
 
 # other
 fml_other_education_model_1 <- other ~ education_exp + age_conf + sex_conf + country_of_birth_conf
-fml_other_education_model_2 <- other ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_education_model_2 <- other ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf 
 
 # list of formulas
 fml_list_education <- list(
@@ -1490,19 +1775,19 @@ fml_list_education <- list(
 
 # sexual minority
 fml_sexual_minority_income_model_1 <- sexual_minority ~ income_exp + age_conf + sex_conf + country_of_birth_conf
-fml_sexual_minority_income_model_2 <- sexual_minority ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_income_model_2 <- sexual_minority ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf 
 
 # homosexual
 fml_homosexual_income_model_1 <- homosexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf
-fml_homosexual_income_model_2 <- homosexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_income_model_2 <- homosexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf 
 
 # bisexual
 fml_bisexual_income_model_1 <- bisexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf
-fml_bisexual_income_model_2 <- bisexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_income_model_2 <- bisexual ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf 
 
 # other
 fml_other_income_model_1 <- other ~ income_exp + age_conf + sex_conf + country_of_birth_conf
-fml_other_income_model_2 <- other ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + place_of_residence_conf
+fml_other_income_model_2 <- other ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf 
 
 # list of formulas
 fml_list_income <- list(
@@ -1521,19 +1806,19 @@ fml_list_income <- list(
 
 # sexual minority
 fml_sexual_minority_marital_status_model_1 <- sexual_minority ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
-fml_sexual_minority_marital_status_model_2 <- sexual_minority ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
+fml_sexual_minority_marital_status_model_2 <- sexual_minority ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf 
 
 # homosexual
 fml_homosexual_marital_status_model_1 <- homosexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
-fml_homosexual_marital_status_model_2 <- homosexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
+fml_homosexual_marital_status_model_2 <- homosexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf 
 
 # bisexual
 fml_bisexual_marital_status_model_1 <- bisexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
-fml_bisexual_marital_status_model_2 <- bisexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
+fml_bisexual_marital_status_model_2 <- bisexual ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf 
 
 # other
 fml_other_marital_status_model_1 <- other ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
-fml_other_marital_status_model_2 <- other ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + place_of_residence_conf
+fml_other_marital_status_model_2 <- other ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf 
 
 # list of formulas
 fml_list_marital_status <- list(
@@ -1552,19 +1837,19 @@ fml_list_marital_status <- list(
 
 # sexual minority
 fml_sexual_minority_living_status_model_1 <- sexual_minority ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf
-fml_sexual_minority_living_status_model_2 <- sexual_minority ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_living_status_model_2 <- sexual_minority ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # homosexual
 fml_homosexual_living_status_model_1 <- homosexual ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf
-fml_homosexual_living_status_model_2 <- homosexual ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_living_status_model_2 <- homosexual ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # bisexual
 fml_bisexual_living_status_model_1 <- bisexual ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf
-fml_bisexual_living_status_model_2 <- bisexual ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_living_status_model_2 <- bisexual ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # other
 fml_other_living_status_model_1 <- other ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf
-fml_other_living_status_model_2 <- other ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_living_status_model_2 <- other ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # list of formulas
 fml_list_living_status <- list(
@@ -1583,19 +1868,19 @@ fml_list_living_status <- list(
 
 # sexual minority
 fml_sexual_minority_personal_support_model_1 <- sexual_minority ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf
-fml_sexual_minority_personal_support_model_2 <- sexual_minority ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_sexual_minority_personal_support_model_2 <- sexual_minority ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # homosexual
 fml_homosexual_personal_support_model_1 <- homosexual ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf
-fml_homosexual_personal_support_model_2 <- homosexual ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_homosexual_personal_support_model_2 <- homosexual ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # bisexual
 fml_bisexual_personal_support_model_1 <- bisexual ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf
-fml_bisexual_personal_support_model_2 <- bisexual ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_bisexual_personal_support_model_2 <- bisexual ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # other
 fml_other_personal_support_model_1 <- other ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf
-fml_other_personal_support_model_2 <- other ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + place_of_residence_conf
+fml_other_personal_support_model_2 <- other ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf 
 
 # list of formulas
 fml_list_personal_support <- list(
@@ -1612,7 +1897,7 @@ fml_list_personal_support <- list(
 exposures <- c( "age", "age_by_sex", "sex", "country_of_birth", "education", "income", "marital_status", "living_status", "personal_support" )
 ```
 
-##### 4.1.3. Unadjusted analyses
+##### 6.1.3. Unadjusted analyses
 ```{r}
 # fit Poisson regression model for each exposure and each outcome
 all_models_cc_crude <- list()
@@ -1646,7 +1931,7 @@ for ( name in names( fml_list_age_by_sex_crude ) ) {
 }
 ```
 
-##### 4.1.4. Adjusted analyses
+##### 6.1.4. Adjusted analyses
 ```{r}
 # fit Poisson, log-binomial, and logistic regression models for each exposure and each outcome
 all_models_cc <- list()
@@ -1672,7 +1957,7 @@ for ( name in names( fml_list_age_by_sex ) ) {
 }
 ```
 
-##### 4.1.5. Extract results
+##### 6.1.5. Extract results
 ```{r}
 identities <- c( "sexual_minority", "homosexual", "bisexual", "other" )
 models <- c( "poisson", "log_binomial", "logistic" )
@@ -2274,9 +2559,14 @@ results_cc_pr_all_models_2010 <- results_cc_pr_poisson %>%
 writexl::write_xlsx( results_cc_pr_all_models_2010, "results_cc_pr_all_models_2010.xlsx" )
 ```
 
-### 5. Estimation of Proportion of Changes in Sexual Identity
-#### 5.1. Complete-case analysis
-##### 5.1.1. Define survey design
+#### 6.2. Survey analyses of imputed datasets
+```{r}
+
+```
+
+### 7. Estimation of Proportion of Change in Sexual Identity
+#### 7.1. Complete-case analysis
+##### 7.1.1. Define survey design
 ```{r}
 # prepare dataset
 d_2010_complete_cc_fluidity <- d_2010_complete
@@ -2314,7 +2604,7 @@ survey_design_cc_fluidity <- svydesign( ids = ~ 1,
 # the following analyses assume MCAR
 ```
 
-##### 5.1.2. Caculate proportions
+##### 7.1.2. Caculate proportions
 ```{r}
 # among different demographic subgroups
 demographic_variables <- c( "sexual_identity_2010", "sex", "age_cat", "age_sex", "country_of_birth", "education", 
@@ -2356,15 +2646,21 @@ fluidity_cc_prop_summary_2010 <- rbind( combined_results, prop_cc_overall )
 writexl::write_xlsx( fluidity_cc_prop_summary_2010, "fluidity_cc_prop_summary_2010.xlsx" )
 ```
 
-### 6. Relation between Changes in Sexual Identity and Demographic Factors
-#### 6.1. Complete-case analysis
-##### 6.1.1. Define survey design
+#### 7.2. Survey analyses of imputed datasets
+```{r}
+
+```
+
+### 8. Relation between Change in Sexual Identity and Demographic Factors
+#### 8.1. Complete-case analysis
+##### 8.1.1. Define survey design
 ```{r}
 ##### prepare dataset #####
 
 d_2010_cc_model_fluidity <- d_2010_complete
 
-# exposures of interest, including sexual identity in 2010, age, sex, country of birth, education, income, marital status, living status, and personal support
+# exposures of interest, including sexual identity in 2010, age, sex, country of birth, education, income, marital status,
+# living status, and personal support
 levels( d_2010_cc_model_fluidity$sexual_identity_2010 )[ levels( d_2010_cc_model_fluidity$sexual_identity_2010 ) == "Uncertain"] <- "Other"
 d_2010_cc_model_fluidity$sexual_identity_2010_exp <- relevel( d_2010_cc_model_fluidity$sexual_identity_2010, 
                                                               ref = "Heterosexual" )
@@ -2373,11 +2669,12 @@ d_2010_cc_model_fluidity$age_exp <- relevel( d_2010_cc_model_fluidity$age_cat, r
 
 d_2010_cc_model_fluidity$sex_exp <- relevel( d_2010_cc_model_fluidity$sex, ref = "Male" )
 
-d_2010_cc_model_fluidity$country_of_birth_exp <- factor( 
+d_2010_cc_model_fluidity$country_of_birth <- factor( 
   ifelse( d_2010_cc_model_fluidity$country_of_birth == "Sweden", "Sweden",
           ifelse( d_2010_cc_model_fluidity$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
   levels = c( "Sweden", "Europe", "Outside Europe" )
   )
+d_2010_cc_model_fluidity$country_of_birth_exp <- d_2010_cc_model_fluidity$country_of_birth
 
 d_2010_cc_model_fluidity$education_exp <- relevel( d_2010_cc_model_fluidity$education, ref = ">=13 years" )
 
@@ -2391,26 +2688,24 @@ d_2010_cc_model_fluidity$personal_support_exp <- relevel( d_2010_cc_model_fluidi
 
 
 # confounding variables, including sexual identity in 2010, age, sex, country of birth, education, income, marital status, 
-# living status, personal support, and place of residence (i.e., sampling strata)
+# living status, and personal support
 d_2010_cc_model_fluidity$sexual_identity_2010_conf <- d_2010_cc_model_fluidity$sexual_identity_2010
 
 d_2010_cc_model_fluidity$age_conf <- d_2010_cc_model_fluidity$age # age
 
 d_2010_cc_model_fluidity$sex_conf <- d_2010_cc_model_fluidity$sex # sex
 
-d_2010_cc_model_fluidity$country_of_birth_conf <- d_2010_cc_model_fluidity$country_of_birth # country of birth (grouped into five categories due to sparse data)
+d_2010_cc_model_fluidity$country_of_birth_conf <- d_2010_cc_model_fluidity$country_of_birth # country of birth
 
-d_2010_cc_model_fluidity$education_conf <- as.factor( d_2010_cc_model_fluidity$utbniva2010 ) # education
+d_2010_cc_model_fluidity$education_conf <- d_2010_cc_model_fluidity$education # education
 
 d_2010_cc_model_fluidity$income_conf <- d_2010_cc_model_fluidity$dispink2010 # disposable income
 
-d_2010_cc_model_fluidity$marital_status_conf <- d_2010_cc_model_fluidity$marital_status # marital status (grouped into three categories due to sparse data)
+d_2010_cc_model_fluidity$marital_status_conf <- d_2010_cc_model_fluidity$marital_status # marital status
 
-d_2010_cc_model_fluidity$living_status_conf <- d_2010_cc_model_fluidity$living_alone
+d_2010_cc_model_fluidity$living_status_conf <- d_2010_cc_model_fluidity$living_alone # living status
 
-d_2010_cc_model_fluidity$personal_support_conf <- as.factor( d_2010_cc_model_fluidity$F10U57G62 )
-
-d_2010_cc_model_fluidity$place_of_residence_conf <- d_2010_cc_model_fluidity$sampling_strata_region # place of residence
+d_2010_cc_model_fluidity$personal_support_conf <- d_2010_cc_model_fluidity$personal_support # personal support
 
 
 ##### create survey design #####
@@ -2423,13 +2718,13 @@ survey_design_cc_model_fluidity <- svydesign( ids = ~ 1,
 # the following analyses assume MCAR
 ```
 
-##### 6.1.2. Define model formula
+##### 8.1.2. Define model formula
 ```{r}
 ##### exposure of interest: sexual identity in 2010 #####
 
 fml_sexual_identity_crude <- sexual_identity_fluidity ~ sexual_identity_2010_exp
 fml_sexual_identity_model_1 <- sexual_identity_fluidity ~ sexual_identity_2010_exp + age_conf + sex_conf + country_of_birth_conf
-fml_sexual_identity_model_2 <- sexual_identity_fluidity ~ sexual_identity_2010_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf
+fml_sexual_identity_model_2 <- sexual_identity_fluidity ~ sexual_identity_2010_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf 
 
 # list of formulas
 fml_list_sexual_identity <- list(
@@ -2443,7 +2738,7 @@ fml_list_sexual_identity <- list(
 
 fml_age_crude <- sexual_identity_fluidity ~ age_exp
 fml_age_model_1 <- sexual_identity_fluidity ~ age_exp + sex_conf + country_of_birth_conf
-fml_age_model_2 <- sexual_identity_fluidity ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + sexual_identity_2010_conf
+fml_age_model_2 <- sexual_identity_fluidity ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_age <- list(
@@ -2457,7 +2752,7 @@ fml_list_age <- list(
 
 fml_age_by_sex_crude <- sexual_identity_fluidity ~ age_exp*sex_exp
 fml_age_by_sex_model_1 <- sexual_identity_fluidity ~ age_exp*sex_exp + country_of_birth_conf
-fml_age_by_sex_model_2 <- sexual_identity_fluidity ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + sexual_identity_2010_conf
+fml_age_by_sex_model_2 <- sexual_identity_fluidity ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_age_by_sex <- list(
@@ -2471,7 +2766,7 @@ fml_list_age_by_sex <- list(
 
 fml_sex_crude <- sexual_identity_fluidity ~ sex_exp
 fml_sex_model_1 <- sexual_identity_fluidity ~ sex_exp + age_conf + country_of_birth_conf
-fml_sex_model_2 <- sexual_identity_fluidity ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + sexual_identity_2010_conf
+fml_sex_model_2 <- sexual_identity_fluidity ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_sex <- list(
@@ -2485,7 +2780,7 @@ fml_list_sex <- list(
 
 fml_country_of_birth_crude <- sexual_identity_fluidity ~ country_of_birth_exp
 fml_country_of_birth_model_1 <- sexual_identity_fluidity ~ country_of_birth_exp + age_conf + sex_conf
-fml_country_of_birth_model_2 <- sexual_identity_fluidity ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + sexual_identity_2010_conf
+fml_country_of_birth_model_2 <- sexual_identity_fluidity ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_country_of_birth <- list(
@@ -2499,7 +2794,7 @@ fml_list_country_of_birth <- list(
 
 fml_education_crude <- sexual_identity_fluidity ~ education_exp
 fml_education_model_1 <- sexual_identity_fluidity ~ education_exp + age_conf + sex_conf + country_of_birth_conf
-fml_education_model_2 <- sexual_identity_fluidity ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + sexual_identity_2010_conf
+fml_education_model_2 <- sexual_identity_fluidity ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_education <- list(
@@ -2513,7 +2808,7 @@ fml_list_education <- list(
 
 fml_income_crude <- sexual_identity_fluidity ~ income_exp
 fml_income_model_1 <- sexual_identity_fluidity ~ income_exp + age_conf + sex_conf + country_of_birth_conf
-fml_income_model_2 <- sexual_identity_fluidity ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + sexual_identity_2010_conf
+fml_income_model_2 <- sexual_identity_fluidity ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + living_status_conf + personal_support_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_income <- list(
@@ -2527,7 +2822,7 @@ fml_list_income <- list(
 
 fml_marital_status_crude <- sexual_identity_fluidity ~ marital_status_exp
 fml_marital_status_model_1 <- sexual_identity_fluidity ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf
-fml_marital_status_model_2 <- sexual_identity_fluidity ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + living_status_conf + personal_support_conf + place_of_residence_conf + sexual_identity_2010_conf
+fml_marital_status_model_2 <- sexual_identity_fluidity ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + living_status_conf + personal_support_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_marital_status <- list(
@@ -2541,7 +2836,7 @@ fml_list_marital_status <- list(
 
 fml_living_status_crude <- sexual_identity_fluidity ~ living_status_exp
 fml_living_status_model_1 <- sexual_identity_fluidity ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf
-fml_living_status_model_2 <- sexual_identity_fluidity ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + personal_support_conf + place_of_residence_conf + sexual_identity_2010_conf
+fml_living_status_model_2 <- sexual_identity_fluidity ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + personal_support_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_living_status <- list(
@@ -2555,7 +2850,7 @@ fml_list_living_status <- list(
 
 fml_personal_support_crude <- sexual_identity_fluidity ~ personal_support_exp
 fml_personal_support_model_1 <- sexual_identity_fluidity ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf
-fml_personal_support_model_2 <- sexual_identity_fluidity ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + place_of_residence_conf + sexual_identity_2010_conf
+fml_personal_support_model_2 <- sexual_identity_fluidity ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_personal_support <- list(
@@ -2567,7 +2862,7 @@ fml_list_personal_support <- list(
 exposures <- c( "sexual_identity", "age", "age_by_sex", "sex", "country_of_birth", "education", "income", "marital_status", "living_status", "personal_support" )
 ```
 
-##### 6.1.3. Crude and adjusted analyses
+##### 8.1.3. Crude and adjusted analyses
 ```{r}
 # fit Poisson regression model for each exposure
 models_fluidity_cc <- list()
@@ -2601,7 +2896,7 @@ for ( name in names( fml_list_age_by_sex ) ) {
 }
 ```
 
-##### 6.1.4. Extract results
+##### 8.1.4. Extract results
 ```{r}
 ##### exposure of interest: sexual identity in 2010 #####
 
@@ -2854,4 +3149,9 @@ fluidity_cc_rr <- rbind( fluidity_cc_sexual_identity_rr,
                          )
 
 writexl::write_xlsx( fluidity_cc_rr, "fluidity_cc_rr_2010.xlsx" )
+```
+
+#### 8.2. Survey analyses of imputed datasets
+```{r}
+
 ```
