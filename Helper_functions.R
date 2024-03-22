@@ -291,6 +291,7 @@ calc_prop_imp_subgroup <- function( implist, design, sexual_identities, demog_va
   return( final_combined_df )
 }
 
+
 # in Stockholm County
 calc_prop_imp_overall <- function( design, sexual_identities, year ) {
   
@@ -326,18 +327,65 @@ calc_prop_imp_overall <- function( design, sexual_identities, year ) {
 
 ##### Function for Weighted Poisson Regression Model after Imputation #####
 
-fit_model_imp <- function( formula, design ) {
+# Poisson regression
+fit_model_imp <- function( formula, design, year ) {
   
- # Poisson regression
- model_result <- summary( MIcombine(
-   with( design,
-         svyglm( formula, family = quasipoisson( link = "log" ) ) )
-   ) )
- 
- model_result_selected <- rownames_to_column( model_result[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
- 
- model_result_selected[ , -1 ] <- exp( model_result_selected[ , -1 ] )
- 
- return( model_result_selected )
+  model_result <- summary( MIcombine(
+    with( design,
+          svyglm( formula, family = quasipoisson( link = "log" ) ) )
+    ) )
+  
+  model_result_selected <- rownames_to_column( model_result[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
+  
+  model_result_selected[ , -1 ] <- exp( model_result_selected[ , -1 ] )
+  
+  colnames( model_result_selected ) <- c( "subgroup", paste0( "point_estimate_", year ), paste0( "lower_ci_", year ), paste0( "upper_ci_", year ) )
+  
+  return( model_result_selected )
 }
 
+
+# extract results
+extract_model_imp <- function( model_results, exposure, sexual_identities, model_type, variables ) {
+  
+  pr_imp_list <- list()
+  
+  for( identity in sexual_identities ){
+    results <- model_results[[ exposure ]][[ paste( "fml", identity, exposure, model_type, sep = "_" ) ]]
+    results_selected <- subset( results, subgroup %in% variables )
+    
+    colnames( results_selected )[-1] <- paste( identity, colnames( results_selected )[-1], model_type, sep = "_" )
+    
+    pr_imp_list[[ identity ]] <- results_selected
+  }
+  
+  combined_df <- Reduce( function( x, y ) { 
+    merge( x, y, by = "subgroup" ) 
+    }, 
+    pr_imp_list )
+  
+  return( combined_df )
+  }
+
+
+# by sex
+extract_model_imp_age_by_sex <- function( model_results, exposure, sexual_identities, model_type, variables ) {
+  
+  pr_imp_age_by_sex_list <- list()
+  
+  for( identity in sexual_identities ){
+    results <- model_results[[ paste( "fml", identity, exposure, model_type, sep = "_" ) ]]
+    results_selected <- subset( results, subgroup %in% variables )
+    
+    colnames( results_selected )[-1] <- paste( identity, colnames( results_selected )[-1], model_type, sep = "_" )
+    
+    pr_imp_age_by_sex_list[[ identity ]] <- results_selected
+  }
+  
+  combined_df <- Reduce( function( x, y ) { 
+    merge( x, y, by = "subgroup" ) 
+  }, 
+  pr_imp_age_by_sex_list )
+  
+  return( combined_df )
+}

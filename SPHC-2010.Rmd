@@ -1369,7 +1369,6 @@ writexl::write_xlsx( prop_cc_summary_2010, "prop_cc_summary_2010.xlsx" )
 ```
 
 #### 5.2. Survey analyses of imputed datasets
-##### 5.2.1. Calculate proportions of sexual identities
 ```{r}
 # among demographic subgroups
 sexual_identities <- c( "Heterosexual", "Homosexual", "Bisexual", "Other" )
@@ -2560,8 +2559,216 @@ writexl::write_xlsx( results_cc_pr_all_models_2010, "results_cc_pr_all_models_20
 ```
 
 #### 6.2. Survey analyses of imputed datasets
+##### 6.2.1. Unadjusted analyses
 ```{r}
+# fit Poisson regression model for each exposure and each outcome
+pr_imp_crude <- list()
 
+for ( exposure in exposures ) {
+  pr_imp_crude[[ exposure ]] <- list()
+  
+  fml_list_name <- paste( "fml_list", exposure, "crude", sep = "_" )
+  
+  for ( name in names( get( fml_list_name ) ) ) {
+    pr_imp_crude[[ exposure ]][[ name ]] <- fit_model_imp( formula = get( fml_list_name )[[ name ]],
+                                                           design = survey_design_imp,
+                                                           year = 2010 )
+  }
+}
+
+# refit the model for age by sex, using female as the reference group
+# to extract results for age among females
+implist_2010_transformed_refit <- lapply( implist_2010_transformed, function( df ) {
+  within( df, {
+    sex_exp = relevel( sex_exp, ref = "Female" )
+    } )
+  } )
+
+survey_design_imp_refit <- svydesign( ids = ~ 1,
+                                      strata = ~ sampling_strata_region,
+                                      weights = ~ calibrated_weight,
+                                      fpc = ~ no.of.population,
+                                      data = imputationList( implist_2010_transformed_refit )
+                                      ) # without pre-calibration
+
+pr_age_by_sex_imp_crude_refit <- list()
+
+for ( name in names( fml_list_age_by_sex_crude ) ) {
+  pr_age_by_sex_imp_crude_refit[[ name ]] <- fit_model_imp( formula = fml_list_age_by_sex_crude[[ name ]],
+                                                            design = survey_design_imp_refit,
+                                                            year = 2010 )
+  }
+```
+
+##### 6.2.2. Adjusted analyses
+```{r}
+# fit Poisson regression model for each exposure and each outcome
+pr_imp_adjusted <- list()
+
+for ( exposure in exposures ) {
+  pr_imp_adjusted[[ exposure ]] <- list()
+  
+  fml_list_name <- paste( "fml_list", exposure, sep = "_" )
+  
+  for ( name in names( get( fml_list_name ) ) ) {
+    pr_imp_adjusted[[ exposure ]][[ name ]] <- fit_model_imp( formula = get( fml_list_name )[[ name ]],
+                                                              design = survey_design_imp,
+                                                              year = 2010 )
+  }
+}
+
+# refit the model for age by sex, using female as the reference group
+# to extract results for age among females
+pr_age_by_sex_imp_adjusted_refit <- list()
+
+for ( name in names( fml_list_age_by_sex ) ) {
+  pr_age_by_sex_imp_adjusted_refit[[ name ]] <- fit_model_imp( formula = fml_list_age_by_sex[[ name ]],
+                                                               design = survey_design_imp_refit,
+                                                               year = 2010 )
+  }
+```
+
+##### 6.2.3. Extract results
+```{r}
+identities <- c( "sexual_minority", "homosexual", "bisexual", "other" )
+exposures <- c( "age", "sex", "country_of_birth", "education", "income", "marital_status", "living_status", "personal_support" )
+
+exposures_age <- c( "age_exp18-29", "age_exp30-44", "age_exp>=60"  )
+exposures_sex <- c( "sex_expFemale" )
+exposures_country_of_birth <- c( "country_of_birth_expEurope", "country_of_birth_expOutside Europe" )
+exposures_education <- c( "education_exp<=9 years", "education_exp10-12 years" )
+exposures_income <- c( "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_exp(3,500, 4,500]" )
+exposures_marital_status <- c( "marital_status_expNever married", "marital_status_expOther" )
+exposures_living_status <- c( "living_status_expliving_alone_yes" )
+exposures_personal_support <- c( "personal_support_exppersonal_support_no" )
+
+
+########## Crude analyses ##########
+
+crude_model_most <- list()
+
+for( cat in exposures ){
+  crude_model_most[[ cat ]] <- extract_model_imp( model_results = pr_imp_crude,
+                                                  exposure = cat,
+                                                  sexual_identities = identities,
+                                                  model_type = "crude",
+                                                  variables = get( paste( "exposures", cat, sep = "_" ) ) )
+  }
+
+results_crude_model_most <- do.call( rbind, crude_model_most )
+rownames( results_crude_model_most ) <- NULL
+
+# among males
+results_crude_model_male <- extract_model_imp( model_results = pr_imp_crude,
+                                               exposure = "age_by_sex",
+                                               sexual_identities = identities,
+                                               model_type = "crude",
+                                               variables = exposures_age )
+
+results_crude_model_male$subgroup <- paste( "male_", results_crude_model_male$subgroup )
+
+# among females
+results_crude_model_female <- extract_model_imp_age_by_sex( 
+  model_results = pr_age_by_sex_imp_crude_refit,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "crude",
+  variables = exposures_age )
+
+results_crude_model_female$subgroup <- paste( "female_", results_crude_model_female$subgroup )
+
+# merge datasets
+results_crude_model_summary <- rbind( results_crude_model_most, results_crude_model_male, results_crude_model_female )
+
+
+########## Adjusted analyses ##########
+
+##### Model 1 #####
+adjusted_model_1_most <- list()
+
+for( cat in exposures ){
+  adjusted_model_1_most[[ cat ]] <- extract_model_imp( 
+    model_results = pr_imp_adjusted,
+    exposure = cat,
+    sexual_identities = identities,
+    model_type = "model_1",
+    variables = get( paste( "exposures", cat, sep = "_" ) ) )
+  }
+
+results_adjusted_model_1_most <- do.call( rbind, adjusted_model_1_most )
+rownames( results_adjusted_model_1_most ) <- NULL
+
+# among males
+results_adjusted_model_1_male <- extract_model_imp( 
+  model_results = pr_imp_adjusted,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "model_1",
+  variables = exposures_age )
+
+results_adjusted_model_1_male$subgroup <- paste( "male_", results_adjusted_model_1_male$subgroup )
+
+# among females
+results_adjusted_model_1_female <- extract_model_imp_age_by_sex( 
+  model_results = pr_age_by_sex_imp_adjusted_refit,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "model_1",
+  variables = exposures_age )
+
+results_adjusted_model_1_female$subgroup <- paste( "female_", results_adjusted_model_1_female$subgroup )
+
+# merge datasets
+results_adjusted_model_1_summary <- rbind( results_adjusted_model_1_most, results_adjusted_model_1_male, results_adjusted_model_1_female )
+
+
+##### Model 2 #####
+adjusted_model_2_most <- list()
+
+for( cat in exposures ){
+  adjusted_model_2_most[[ cat ]] <- extract_model_imp( 
+    model_results = pr_imp_adjusted,
+    exposure = cat,
+    sexual_identities = identities,
+    model_type = "model_2",
+    variables = get( paste( "exposures", cat, sep = "_" ) ) )
+}
+
+results_adjusted_model_2_most <- do.call( rbind, adjusted_model_2_most )
+rownames( results_adjusted_model_2_most ) <- NULL
+
+# among males
+results_adjusted_model_2_male <- extract_model_imp( 
+  model_results = pr_imp_adjusted,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "model_2",
+  variables = exposures_age )
+
+results_adjusted_model_2_male$subgroup <- paste( "male_", results_adjusted_model_2_male$subgroup )
+
+# among females
+results_adjusted_model_2_female <- extract_model_imp_age_by_sex( 
+  model_results = pr_age_by_sex_imp_adjusted_refit,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "model_2",
+  variables = exposures_age )
+
+results_adjusted_model_2_female$subgroup <- paste( "female_", results_adjusted_model_2_female$subgroup )
+
+# merge datasets
+results_adjusted_model_2_summary <- rbind( results_adjusted_model_2_most, results_adjusted_model_2_male, results_adjusted_model_2_female )
+
+
+# export results
+results_imp_pr_poisson_2010 <- merge( results_crude_model_summary,
+                                      merge( results_adjusted_model_1_summary, 
+                                             results_adjusted_model_2_summary, 
+                                             by = "subgroup" ), 
+                                      by = "subgroup" )
+
+writexl::write_xlsx( results_imp_pr_poisson_2010, "results_imp_pr_poisson_2010.xlsx" )
 ```
 
 ### 7. Estimation of Proportion of Change in Sexual Identity
