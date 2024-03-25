@@ -302,7 +302,6 @@ calc_prop_imp_overall <- function( design, sexual_identities, year ) {
     combined_summary <- summary( MIcombine( 
       with( design,
             svyciprop( formula = as.formula( paste0( "~ I( sexual_identity_", year, " == '", identity, "')" ) ),
-                       FUN = svyciprop,
                        method = "beta" ) ) ) )
     
     results_df <- rownames_to_column( combined_summary[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
@@ -386,6 +385,90 @@ extract_model_imp_age_by_sex <- function( model_results, exposure, sexual_identi
     merge( x, y, by = "subgroup" ) 
   }, 
   pr_imp_age_by_sex_list )
+  
+  return( combined_df )
+}
+
+
+##### Function to Calculate Proportion of Change in Sexual Identity after Imputation #####
+
+# among demographic subgroups
+calc_prop_fluidity_imp_subgroup <- function( implist, design, demographic_vars, year ) {
+  
+  combined_results_list <- list()
+  
+  for( demog_var in demographic_vars ) {
+    
+    # calculate sample size
+    sample_size <- lapply( implist, function( df ) {
+    table( df[[ demog_var ]] ) } )
+    
+    combined_freqs <- as.data.frame( Reduce( "+", sample_size ) / length( implist ) )
+    colnames( combined_freqs ) <- c( "subgroup", "sample_size" )
+    combined_freqs$sample_size <- prettyNum( 
+      round( combined_freqs$sample_size, 0 ), big.mark = ",", preserve.width = "none" )
+    names( combined_freqs )[ names( combined_freqs ) == "sample_size" ] <- paste0( "sample_size_", year )
+    
+    # calculate proportions
+    combined_summary <- summary( MIcombine( 
+      with( design,
+            svyby( formula = ~ I( sexual_identity_fluidity_cat == "changed" ),
+                   by = as.formula( paste0( "~", demog_var ) ),
+                   FUN = svyciprop,
+                   method = "beta" ) ) ) )
+    
+    results_df <- rownames_to_column( combined_summary[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
+    colnames( results_df ) <- c( "subgroup", paste0( "changed_point_estimate_", year ), paste0( "changed_lower_ci_", year ), paste0( "changed_upper_ci_", year ) )
+    
+    combined_df <- merge( results_df, combined_freqs, by = "subgroup" )
+    
+    combined_results_list[[ demog_var ]] <- combined_df
+    
+    }
+  
+  final_combined_df <- do.call( rbind, combined_results_list )
+  rownames( final_combined_df ) <- NULL
+  
+  return( final_combined_df )
+  }
+
+
+# in Stockholm County
+calc_prop_fluidity_imp_overall <- function( design, year ) {
+  
+  combined_summary <- summary( MIcombine( 
+    with( design,
+          svyciprop( formula = ~ I( sexual_identity_fluidity_cat == "changed" ),
+                     method = "beta" ) ) ) )
+  
+  results_df <- rownames_to_column( combined_summary[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
+  colnames( results_df ) <- c( "subgroup", paste0( "changed_point_estimate_", year ), paste0( "changed_lower_ci_", year ), paste0( "changed_upper_ci_", year ) )
+  results_df[ 1, 1 ] <- "Stockholm County"
+  
+  results_df$sample_size <- prettyNum( 
+    nrow( get( paste0( "d_", year ) ) ), big.mark = ",", preserve.width = "none" )
+  names( results_df )[ names( results_df ) == "sample_size" ] <- paste0( "sample_size_", year )
+  
+  return( results_df )
+}
+
+
+##### Function to Extract Risk Ratio for Change in Sexual Identity after Imputation #####
+extract_fluidity_model_imp <- function( model_results, exposures, model_type ) {
+  
+  rr_imp_list <- list()
+  
+  for( cat in exposures ){
+    results <- model_results[[ cat ]][[ paste( "fml", cat, model_type, sep = "_" ) ]]
+    results_selected <- subset( results, subgroup %in% get( paste( "exposures", cat, sep = "_" ) ) )
+    
+    colnames( results_selected )[-1] <- paste( colnames( results_selected )[-1], model_type, sep = "_" )
+    
+    rr_imp_list[[ cat ]] <- results_selected
+  }
+  
+  combined_df <- do.call( rbind, rr_imp_list )
+  rownames( combined_df ) <- NULL
   
   return( combined_df )
 }

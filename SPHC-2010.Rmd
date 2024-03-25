@@ -1390,12 +1390,12 @@ prop_imp_summary_subgroup_2010 <- do.call( rbind, prop_imp_list_subgroup_2010 )
 rownames( prop_imp_summary_subgroup_2010 ) <- NULL
 
 # in Stockholm County
-prop_imp_summary_overall_2010 <- calc_prop_imp_overall( design = survey_design_imp,
-                                                        sexual_identities = sexual_identities,
-                                                        year = 2010 )
+prop_imp_overall_2010 <- calc_prop_imp_overall( design = survey_design_imp,
+                                                sexual_identities = sexual_identities,
+                                                year = 2010 )
 
 # merge results
-prop_imp_summary_2010 <- rbind( prop_imp_summary_subgroup_2010, prop_imp_summary_overall_2010 )
+prop_imp_summary_2010 <- rbind( prop_imp_summary_subgroup_2010, prop_imp_overall_2010 )
 writexl::write_xlsx( prop_imp_summary_2010, "prop_imp_summary_2010.xlsx" )
 ```
 
@@ -2855,7 +2855,21 @@ writexl::write_xlsx( fluidity_cc_prop_summary_2010, "fluidity_cc_prop_summary_20
 
 #### 7.2. Survey analyses of imputed datasets
 ```{r}
+# among demographic subgroups
+demographic_vars <- c( "sexual_identity_2010_exp", "age_exp", "sex_exp", "age_sex", "country_of_birth_exp", "education_exp", "income_exp", "marital_status_exp", "living_status_exp", "personal_support_exp" )
 
+fluidity_prop_imp_subgroup <- calc_prop_fluidity_imp_subgroup( 
+  implist = implist_2010_transformed,
+  design = survey_design_imp,
+  demographic_vars = demographic_vars,
+  year = 2010 )
+
+# in Stockholm County
+fluidity_prop_imp_overall <- calc_prop_fluidity_imp_overall( design = survey_design_imp, year = 2010 )
+
+# merge results
+fluidity_imp_prop_summary_2010 <- rbind( fluidity_prop_imp_subgroup, fluidity_prop_imp_overall )
+writexl::write_xlsx( fluidity_imp_prop_summary_2010, "fluidity_imp_prop_summary_2010.xlsx" )
 ```
 
 ### 8. Relation between Change in Sexual Identity and Demographic Factors
@@ -3069,7 +3083,7 @@ fml_list_personal_support <- list(
 exposures <- c( "sexual_identity", "age", "age_by_sex", "sex", "country_of_birth", "education", "income", "marital_status", "living_status", "personal_support" )
 ```
 
-##### 8.1.3. Crude and adjusted analyses
+##### 8.1.3. Unadjusted and adjusted analyses
 ```{r}
 # fit Poisson regression model for each exposure
 models_fluidity_cc <- list()
@@ -3359,6 +3373,123 @@ writexl::write_xlsx( fluidity_cc_rr, "fluidity_cc_rr_2010.xlsx" )
 ```
 
 #### 8.2. Survey analyses of imputed datasets
+##### 8.2.1. Unadjusted and adjusted analyses
 ```{r}
+# fit Poisson regression model for each exposure
+models_fluidity_imp <- list()
 
+for ( exposure in exposures ) {
+  models_fluidity_imp[[ exposure ]] <- list()
+  
+  fml_list_name <- paste( "fml_list", exposure, sep = "_" )
+  
+  for ( name in names( get( fml_list_name ) ) ) {
+    models_fluidity_imp[[ exposure ]][[ name ]] <- fit_model_imp( formula = get( fml_list_name )[[ name ]],
+                                                                  design = survey_design_imp,
+                                                                  year = 2010 )
+  }
+}
+
+
+# refit the model for age by sex, using female as the reference group
+# to extract results for age among females
+refit_model_fluidity_imp_age_by_sex <- list()
+
+for ( name in names( fml_list_age_by_sex ) ) {
+  refit_model_fluidity_imp_age_by_sex[[ name ]] <- fit_model_imp( formula = fml_list_age_by_sex[[ name ]],
+                                                                  design = survey_design_imp_refit,
+                                                                  year = 2010 )
+}
+```
+
+##### 8.2.2. Extract results
+```{r}
+exposures <- c( "sexual_identity", "age", "sex", "country_of_birth", "education", "income", "marital_status", "living_status", "personal_support" )
+
+exposures_sexual_identity <- c( "sexual_identity_2010_expHomosexual", "sexual_identity_2010_expBisexual", "sexual_identity_2010_expOther"  )
+exposures_age <- c( "age_exp18-29", "age_exp30-44", "age_exp>=60"  )
+exposures_sex <- c( "sex_expFemale" )
+exposures_country_of_birth <- c( "country_of_birth_expEurope", "country_of_birth_expOutside Europe" )
+exposures_education <- c( "education_exp<=9 years", "education_exp10-12 years" )
+exposures_income <- c( "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_exp(3,500, 4,500]" )
+exposures_marital_status <- c( "marital_status_expNever married", "marital_status_expOther" )
+exposures_living_status <- c( "living_status_expliving_alone_yes" )
+exposures_personal_support <- c( "personal_support_exppersonal_support_no" )
+
+
+########## Crude analyses ##########
+fluidity_crude_model_most <- extract_fluidity_model_imp( model_results = models_fluidity_imp,
+                                                         exposures = exposures,
+                                                         model_type = "crude" )
+
+# among males
+fluidity_crude_model_male <- subset(
+  models_fluidity_imp[[ "age_by_sex" ]][[ "fml_age_by_sex_crude" ]], subgroup %in% exposures_age )
+
+colnames( fluidity_crude_model_male )[-1] <- paste( colnames( fluidity_crude_model_male )[-1], "crude", sep = "_" )
+fluidity_crude_model_male$subgroup <- paste( "male_", fluidity_crude_model_male$subgroup )
+
+# among females
+fluidity_crude_model_female <- subset(
+  refit_model_fluidity_imp_age_by_sex[[ "fml_age_by_sex_crude" ]], subgroup %in% exposures_age )
+    
+colnames( fluidity_crude_model_female )[-1] <- paste( colnames( fluidity_crude_model_female )[-1], "crude", sep = "_" )
+fluidity_crude_model_female$subgroup <- paste( "female_", fluidity_crude_model_female$subgroup )
+
+# merge datasets
+fluidity_crude_model_summary <- rbind( fluidity_crude_model_most, fluidity_crude_model_male, fluidity_crude_model_female )
+
+
+########## Model 1 ##########
+fluidity_model_1_most <- extract_fluidity_model_imp( model_results = models_fluidity_imp,
+                                                     exposures = exposures,
+                                                     model_type = "model_1" )
+
+# among males
+fluidity_model_1_male <- subset(
+  models_fluidity_imp[[ "age_by_sex" ]][[ "fml_age_by_sex_model_1" ]], subgroup %in% exposures_age )
+
+colnames( fluidity_model_1_male )[-1] <- paste( colnames( fluidity_model_1_male )[-1], "model_1", sep = "_" )
+fluidity_model_1_male$subgroup <- paste( "male_", fluidity_model_1_male$subgroup )
+
+# among females
+fluidity_model_1_female <- subset(
+  refit_model_fluidity_imp_age_by_sex[[ "fml_age_by_sex_model_1" ]], subgroup %in% exposures_age )
+
+colnames( fluidity_model_1_female )[-1] <- paste( colnames( fluidity_model_1_female )[-1], "model_1", sep = "_" )
+fluidity_model_1_female$subgroup <- paste( "female_", fluidity_model_1_female$subgroup )
+
+# merge datasets
+fluidity_model_1_summary <- rbind( fluidity_model_1_most, fluidity_model_1_male, fluidity_model_1_female )
+
+
+########## Model 2 ##########
+fluidity_model_2_most <- extract_fluidity_model_imp( model_results = models_fluidity_imp,
+                                                     exposures = exposures,
+                                                     model_type = "model_2" )
+
+# among males
+fluidity_model_2_male <- subset(
+  models_fluidity_imp[[ "age_by_sex" ]][[ "fml_age_by_sex_model_2" ]], subgroup %in% exposures_age )
+
+colnames( fluidity_model_2_male )[-1] <- paste( colnames( fluidity_model_2_male )[-1], "model_2", sep = "_" )
+fluidity_model_2_male$subgroup <- paste( "male_", fluidity_model_2_male$subgroup )
+
+# among females
+fluidity_model_2_female <- subset(
+  refit_model_fluidity_imp_age_by_sex[[ "fml_age_by_sex_model_2" ]], subgroup %in% exposures_age )
+
+colnames( fluidity_model_2_female )[-1] <- paste( colnames( fluidity_model_2_female )[-1], "model_2", sep = "_" )
+fluidity_model_2_female$subgroup <- paste( "female_", fluidity_model_2_female$subgroup )
+
+# merge datasets
+fluidity_model_2_summary <- rbind( fluidity_model_2_most, fluidity_model_2_male, fluidity_model_2_female )
+
+
+# export results
+fluidity_imp_rr_2010 <- merge( fluidity_crude_model_summary,
+  merge( fluidity_model_1_summary, fluidity_model_2_summary, by = "subgroup"  ),
+  by = "subgroup" )
+
+writexl::write_xlsx( fluidity_imp_rr_2010, "fluidity_imp_rr_2010.xlsx" )
 ```
