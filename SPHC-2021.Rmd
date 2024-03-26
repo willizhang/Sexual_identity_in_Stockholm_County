@@ -1,6 +1,6 @@
 ---
 title: "Self-reported sexual identity in Stockholm County in 2021"
-author: Guoqiang Zhang
+author: Guoqiang Zhang, Maya Mathur, Matteo Quartagno
 email: guoqiang.zhang@ki.se
 output: html_notebook
 editor_options: 
@@ -404,7 +404,7 @@ summary( d_2021 )
 
 selected_variables <- c( "sampling_strata_region", "calibrated_weight", "no.of.population", "sexual_identity_2021", "age", "sex", "country_of_birth", "education", "dispink2021", "marital_status" )
   
-d_2021_incomplete_prop <- d_2021 %>% 
+d_2021_incomplete <- d_2021 %>% 
   select( all_of( selected_variables ) ) %>%
   rename( income = dispink2021 ) %>%
   mutate( 
@@ -413,20 +413,18 @@ d_2021_incomplete_prop <- d_2021 %>%
         country_of_birth == "Africa" | country_of_birth == "Americas" | country_of_birth == "Asia" ~ "Outside Europe",
         country_of_birth == "Sweden" ~ "Sweden",
         country_of_birth == "Europe" ~ "Europe" ),
-      levels = c( "Sweden", "Europe", "Outside Europe" ) ),
-    education = relevel( education, ref = ">=13 years" ),
-    marital_status = relevel( marital_status, ref = "Currently married" ) 
+      levels = c( "Sweden", "Europe", "Outside Europe" ) )
     )
 
 # create weight strata (n = 25) for two-level multivariate normal imputation
-d_2021_incomplete_prop$weight_strata <- as.factor( cut( d_2021_incomplete_prop$calibrated_weight,
-                                                   breaks = quantile( d_2021_incomplete_prop$calibrated_weight, 
+d_2021_incomplete$weight_strata <- as.factor( cut( d_2021_incomplete$calibrated_weight,
+                                                   breaks = quantile( d_2021_incomplete$calibrated_weight, 
                                                                       probs = seq( 0, 1, length.out = 26 ) ),
                                                    labels = 1:25,
                                                    include.lowest = TRUE,
                                                    right = TRUE ) )
 
-ggplot( d_2021_incomplete_prop %>% 
+ggplot( d_2021_incomplete %>% 
           group_by( weight_strata ) %>% 
           summarise( mean_weight = mean( calibrated_weight ), sd_weight = sd( calibrated_weight ) ),
         aes( y = reorder( weight_strata, -mean_weight ), x = mean_weight ) ) +
@@ -444,17 +442,17 @@ ggplot( d_2021_incomplete_prop %>%
          axis.title.x = element_text( family = "Arial", size = 11 )
          )
 
-summary( d_2021_incomplete_prop )
-sapply( d_2021_incomplete_prop, class ) # all continuous variables are numeric, and all categorical variables are factor
-save( d_2021_incomplete_prop, file = "d_2021_incomplete_prop.RData" )
+summary( d_2021_incomplete )
+sapply( d_2021_incomplete, class ) # all continuous variables are numeric, and all categorical variables are factor
+save( d_2021_incomplete, file = "d_2021_incomplete.RData" )
 ```
 
 #### 4.2. Visualize missing pattern
 ```{r}
 # identify missing variables
-vis_miss( d_2021_incomplete_prop )
-n_miss( d_2021_incomplete_prop )
-miss_var_summary( d_2021_incomplete_prop ) # 2.2% missing in sexual_identity_2021, 2.1% in education, and 0.2% in income
+vis_miss( d_2021_incomplete )
+n_miss( d_2021_incomplete )
+miss_var_summary( d_2021_incomplete ) # 2.2% missing in sexual_identity_2021, 2.1% in education, and 0.2% in income
 ```
 
 #### 4.3. Two-level multivariate normal imputation
@@ -463,69 +461,70 @@ miss_var_summary( d_2021_incomplete_prop ) # 2.2% missing in sexual_identity_202
 # assume Missing At Random (MAR)
 
 # specify imputation model
-fml_imp_2021_prop <- sexual_identity_2021 + education + income ~ 1 + age*sex + country_of_birth + marital_status + ( 1 | weight_strata )
+fml_imp_2021 <- sexual_identity_2021 + education + income ~ 1 + age*sex + country_of_birth + marital_status + ( 1 | weight_strata )
 
 # perform a "dry run"
-imp_ini_2021_prop <- jomoImpute( data = d_2021_incomplete_prop, # incomplete dataset
-                                 formula = fml_imp_2021_prop, # imputation model
-                                 random.L1 = "full", # random covariance matrix of residuals
-                                 n.burn = 2, # number of burn-in iterations
-                                 n.iter = 10, # number of between-imputation iterations
-                                 m = 2, # number of imputation
-                                 seed = 12345 # set the seed so that results can be reproduced
-                                 )
+imp_ini_2021 <- jomoImpute( data = d_2021_incomplete, # incomplete dataset
+                            formula = fml_imp_2021, # imputation model
+                            random.L1 = "full", # random covariance matrix of residuals
+                            n.burn = 2, # number of burn-in iterations
+                            n.iter = 10, # number of between-imputation iterations
+                            m = 2, # number of imputation
+                            seed = 12345 # set the seed so that results can be reproduced
+                            )
 
-summary( imp_ini_2021_prop ) # check output
+summary( imp_ini_2021 ) # check output
 
 
 # increase the number of burn-in and between-imputation iterations
 # to determine the number of iterations for the final imputation
-imp_preliminary_2021_prop <- jomoImpute( data = d_2021_incomplete_prop,
-                                         formula = fml_imp_2021_prop,
-                                         random.L1 = "full",
-                                         n.burn = 5000,
-                                         n.iter = 1000,
-                                         m = 2,
-                                         seed = 12345
-                                         ) # took around 30 minutes
+imp_preliminary_2021 <- jomoImpute( data = d_2021_incomplete,
+                                    formula = fml_imp_2021,
+                                    random.L1 = "full",
+                                    n.burn = 5000,
+                                    n.iter = 1000,
+                                    m = 2,
+                                    seed = 12345
+                                    ) # took around 30 minutes
 
-save( imp_preliminary_2021_prop, file = "imp_preliminary_2021_prop.RData" )
-summary( imp_preliminary_2021_prop ) # summarize model and display convergence statistics
-plot( imp_preliminary_2021_prop, trace = "all", print = "beta" ) # check trace and autocorrelation plots
+save( imp_preliminary_2021, file = "imp_preliminary_2021.RData" )
+summary( imp_preliminary_2021 ) # summarize model and display convergence statistics
+plot( imp_preliminary_2021, trace = "all", print = "beta" ) # check trace and autocorrelation plots
 
 
 # final imputation with the chosen number of iterations
-imp_final_2021_prop <- jomoImpute( data = d_2021_incomplete_prop,
-                                   formula = fml_imp_2021_prop,
-                                   random.L1 = "full",
-                                   n.burn = 2000,
-                                   n.iter = 1000,
-                                   m = 20,
-                                   seed = 12345
-                                   ) # took around 1 hour and a half
+imp_final_2021 <- jomoImpute( data = d_2021_incomplete,
+                              formula = fml_imp_2021,
+                              random.L1 = "full",
+                              n.burn = 2000,
+                              n.iter = 1000,
+                              m = 20,
+                              seed = 12345
+                              ) # took around 1 hour and a half
 
-save( imp_final_2021_prop, file = "imp_final_2021_prop.RData" )
-summary( imp_final_2021_prop )
-plot( imp_final_2021_prop, trace = "all", print = "beta" )
+save( imp_final_2021, file = "imp_final_2021.RData" )
+summary( imp_final_2021 )
+plot( imp_final_2021, trace = "all", print = "beta" )
 ```
 
 #### 4.4. Validate imputed data
 ```{r}
 # extract imputed datasets
-original_data_2021_prop <- mitmlComplete( imp_final_2021_prop, print = 0 ) # extract original incomplete dataset
-implist_2021_prop <- mitmlComplete( imp_final_2021_prop, print = "all" ) # extract all imputed datasets
+original_data_2021 <- mitmlComplete( imp_final_2021, print = 0 ) # extract original incomplete dataset
+implist_2021 <- mitmlComplete( imp_final_2021, print = "all" ) # extract all imputed datasets
 
-original_data_2021_prop$imputation <- "0"
-all_data_2021_prop <- bind_rows( original_data_2021_prop, 
-                                 bind_rows( implist_2021_prop, .id = "imputation" ) ) # merge datasets
-all_data_2021_prop$imputation <- as.numeric( all_data_2021_prop$imputation )
-summary( all_data_2021_prop )
+original_data_2021$imputation <- "0"
+all_data_2021 <- bind_rows( original_data_2021,
+                            bind_rows( implist_2021, .id = "imputation" ) ) # merge datasets
+all_data_2021$imputation <- as.numeric( all_data_2021$imputation )
+summary( all_data_2021 )
 
 # sexual identity in 2021
-ggplot( all_data_2021_prop[ !is.na( all_data_2021_prop$sexual_identity_2021 ), ],
+ggplot( all_data_2021[ !is.na( all_data_2021$sexual_identity_2021 ), ],
         aes( fill = sexual_identity_2021, x = imputation ) ) + 
   geom_bar( position = "fill" ) + 
   scale_y_continuous( labels = scales::percent ) + 
+  scale_fill_discrete( name = "Sexual identity in 2021" ) +
   labs(
     x = "Imputation number",
     y = "Proportion",
@@ -536,16 +535,17 @@ ggplot( all_data_2021_prop[ !is.na( all_data_2021_prop$sexual_identity_2021 ), ]
          axis.text.y = element_text( family = "Arial", size = 11 ),
          axis.title.y = element_text( family = "Arial", size = 11 ),
          legend.text = element_text( family = "Arial", size = 10 ),
-         legend.title = element_blank(),
+         legend.title = element_text( family = "Arial", size = 10 ),
          legend.position = "bottom",
          plot.caption = element_text( family = "Arial", size = 10, hjust = 0 ) 
-         )
+  )
 
 # education
-ggplot( all_data_2021_prop[ !is.na( all_data_2021_prop$education ), ],
-        aes( fill = factor( education, levels = c( "<=9 years", "10-12 years",  ">=13 years" ) ), x = imputation ) ) + 
+ggplot( all_data_2021[ !is.na( all_data_2021$education ), ],
+        aes( fill = education, x = imputation ) ) + 
   geom_bar( position = "fill" ) + 
   scale_y_continuous( labels = scales::percent ) + 
+  scale_fill_discrete( name = "Level of education" ) +
   labs(
     x = "Imputation number",
     y = "Proportion",
@@ -556,15 +556,107 @@ ggplot( all_data_2021_prop[ !is.na( all_data_2021_prop$education ), ],
          axis.text.y = element_text( family = "Arial", size = 11 ),
          axis.title.y = element_text( family = "Arial", size = 11 ),
          legend.text = element_text( family = "Arial", size = 10 ),
-         legend.title = element_blank(),
+         legend.title = element_text( family = "Arial", size = 10 ),
          legend.position = "bottom",
          plot.caption = element_text( family = "Arial", size = 10, hjust = 0 ) 
-         )
+  )
 
 # income
-summary( all_data_2021_prop$income )
-nrow( all_data_2021_prop[ all_data_2021_prop$income < 0 & !is.na( all_data_2021_prop$income ), ] ) # 181 imputed values are negative
-all_data_2021_prop$income <-ifelse( all_data_2021_prop$income < 0, 0, all_data_2021_prop$income )
+summary( all_data_2021$income )
+nrow( all_data_2021[ all_data_2021$income < 0 & !is.na( all_data_2021$income ), ] ) #  152 imputed values are negative
+```
+
+#### 4.5. Prepare for survey analyses
+```{r}
+# transform certain variables in imputed datasets
+implist_2021 <- mitmlComplete( imp_final_2021, print = "all" ) # extract all imputed datasets
+summary( implist_2021[[1]] )
+
+implist_2021_transformed <- lapply( implist_2021, function( df ) {
+  within( df, {
+    
+    # age
+    age_exp <- factor( 
+      case_when( age <= 29 ~ "16-29",
+                 age >= 30 & age <= 44 ~ "30-44",
+                 age >= 45 & age <= 59 ~ "45-59",
+                 age >= 60 ~ ">=60" ),
+      levels = c( "45-59", "16-29", "30-44", ">=60" ) )
+    age_conf <- age
+    
+    # generation
+    birth_year <- 2021 - age
+    generation <- factor( 
+      case_when(
+        birth_year >= 1997 & birth_year <= 2012 ~ "Generation Z (1997–2012)",
+        birth_year >= 1981 & birth_year <= 1996 ~ "Millennials (1981–1996)",
+        birth_year >= 1965 & birth_year <= 1980 ~ "Generation X (1965–1980)",
+        birth_year >= 1946 & birth_year <= 1964 ~ "Baby Boomers (1946–1964)",
+        birth_year >= 1928 & birth_year <= 1945 ~ "Silent Generation (1928–1945)",
+        birth_year >= 1901 & birth_year <= 1927 ~ "Greatest Generation (1901–1927)" ),
+      levels = c( "Generation Z (1997–2012)", "Millennials (1981–1996)", "Generation X (1965–1980)", "Baby Boomers (1946–1964)", "Silent Generation (1928–1945)", "Greatest Generation (1901–1927)" ) 
+    )
+    
+    # sex
+    sex_exp <- sex
+    sex_conf <- sex
+    
+    # interaction term between age and sex
+    age_sex <- interaction( age_exp, sex_exp )
+    
+    # country of birth
+    country_of_birth_exp <- country_of_birth
+    country_of_birth_conf <- country_of_birth
+    
+    # education
+    education_exp <- relevel( education, ref = ">=13 years"  )
+    education_conf <- education
+    
+    # disposable income
+    income <- ifelse( income < 0, 0, income )
+    income_exp <- factor( 
+      case_when( income <= 2500 ~ "<=2,500",
+                 income > 2500 & income <= 3500 ~ "(2,500, 3,500]",
+                 income > 3500 & income <= 4500 ~ "(3,500, 4,500]", 
+                 income > 4500 ~ ">4,500" ),
+      levels = c( ">4,500", "<=2,500", "(2,500, 3,500]", "(3,500, 4,500]" ) )
+    income_conf <- income
+    
+    # marital status
+    marital_status_exp <- relevel( marital_status, ref = "Currently married" )
+    marital_status_conf <- marital_status
+
+    # sexual identity in 2021
+    levels( sexual_identity_2021 )[ levels( sexual_identity_2021 ) == "None of the above" ] <- "Other"
+    
+    # sexual minority
+    sexual_minority <- ifelse( sexual_identity_2021 == "Heterosexual", 0, 1 )
+    
+    # homosexual
+    homosexual <- ifelse( sexual_identity_2021 == "Homosexual", 1, 0 )
+    
+    # bisexual
+    bisexual <- ifelse( sexual_identity_2021 == "Bisexual", 1, 0 )
+    
+    # other
+    other <- ifelse( sexual_identity_2021 == "Other", 1, 0 )
+  } )
+} )
+
+imputed_data_2021_transformed <- bind_rows( implist_2021_transformed, .id = "imputation" ) # merge datasets
+imputed_data_2021_transformed$imputation <- as.numeric( imputed_data_2021_transformed$imputation )
+summary( imputed_data_2021_transformed )
+n_miss( imputed_data_2021_transformed ) # 0 missing
+
+
+# use calibrated weights to account for unit non-response
+# create survey design
+survey_design_imp <- svydesign( ids = ~ 1,
+                                strata = ~ sampling_strata_region,
+                                weights = ~ calibrated_weight,
+                                fpc = ~ no.of.population,
+                                data = imputationList( implist_2021_transformed )
+                                ) # without pre-calibration
 ```
 
 ### 5. Estimation of Proportions of Sexual Identities
@@ -991,95 +1083,19 @@ writexl::write_xlsx( prop_cc_summary_2021, "prop_cc_summary_2021.xlsx" )
 ```
 
 #### 5.2. Survey analyses of imputed datasets
-##### 5.2.1. Define survey design
-```{r}
-# transform certain variables in imputed datasets
-implist_2021_prop <- mitmlComplete( imp_final_2021_prop, print = "all" ) # extract all imputed datasets
-
-implist_2021_prop_transformed <- lapply( implist_2021_prop, function( df ) {
-  within( df, {
-    
-    # age
-    age_exp = factor( 
-      case_when( age <= 29 ~ "16-29",
-                 age >= 30 & age <= 44 ~ "30-44",
-                 age >= 45 & age <= 59 ~ "45-59",
-                 age >= 60 ~ ">=60" ),
-      levels = c( "45-59", "16-29", "30-44", ">=60" ) )
-    age_conf = age
-    
-    # generation
-    birth_year = 2021 - age
-    generation = factor( 
-      case_when(
-        birth_year >= 1997 & birth_year <= 2012 ~ "Generation Z (1997–2012)",
-        birth_year >= 1981 & birth_year <= 1996 ~ "Millennials (1981–1996)",
-        birth_year >= 1965 & birth_year <= 1980 ~ "Generation X (1965–1980)",
-        birth_year >= 1946 & birth_year <= 1964 ~ "Baby Boomers (1946–1964)",
-        birth_year >= 1928 & birth_year <= 1945 ~ "Silent Generation (1928–1945)",
-        birth_year >= 1901 & birth_year <= 1927 ~ "Greatest Generation (1901–1927)" ),
-      levels = c( "Generation Z (1997–2012)", "Millennials (1981–1996)", "Generation X (1965–1980)", "Baby Boomers (1946–1964)", "Silent Generation (1928–1945)", "Greatest Generation (1901–1927)" ) 
-      )
-    
-    # sex
-    sex_exp = sex
-    sex_conf = sex
-  
-    # interaction term between age and sex
-    age_sex = interaction( age_exp, sex_exp )
-
-    # country of birth
-    country_of_birth_exp = country_of_birth
-    country_of_birth_conf = country_of_birth
-  
-    # education
-    education_exp = education
-    education_conf = education
-  
-    # disposable income
-    income = ifelse( income < 0, 0, income )
-    income_exp = factor( 
-      case_when( income <= 2500 ~ "<=2,500",
-                 income > 2500 & income <= 3500 ~ "(2,500, 3,500]",
-                 income > 3500 & income <= 4500 ~ "(3,500, 4,500]", 
-                 income > 4500 ~ ">4,500" ),
-      levels = c( ">4,500", "<=2,500", "(2,500, 3,500]", "(3,500, 4,500]" ) )
-    income_conf = income
-    
-    # marital status
-    marital_status_exp = marital_status
-    marital_status_conf = marital_status
-    } )
-  } )
-
-imputed_data_2021_prop_transformed <- bind_rows( implist_2021_prop_transformed, .id = "imputation" ) # merge datasets
-imputed_data_2021_prop_transformed$imputation <- as.numeric( imputed_data_2021_prop_transformed$imputation )
-summary( imputed_data_2021_prop_transformed )
-n_miss( imputed_data_2021_prop_transformed ) # 0 missing
-
-
-# use calibrated weights to account for unit non-response
-# create survey design
-survey_design_imp_prop <- svydesign( ids = ~ 1, 
-                                     strata = ~ sampling_strata_region,
-                                     weights = ~ calibrated_weight,
-                                     fpc = ~ no.of.population,
-                                     data = imputationList( implist_2021_prop_transformed )
-                                     ) # without pre-calibration
-```
-
-##### 5.2.2. Calculate proportions of sexual identities
 ```{r}
 # among demographic subgroups
-sexual_identities <- c( "Heterosexual", "Homosexual", "Bisexual", "None of the above" )
+sexual_identities <- c( "Heterosexual", "Homosexual", "Bisexual", "Other" )
 demographic_vars <- c( "age_exp", "generation", "sex_exp", "age_sex", "country_of_birth_exp", "education_exp", "income_exp", "marital_status_exp" )
 
 prop_imp_list_subgroup_2021 <- list()
 
 for( cat in demographic_vars ) {
-  results <- calc_prop_imp_subgroup_2021( design = survey_design_imp_prop,
-                                          sexual_identities = sexual_identities, 
-                                          demog_var = cat )
+  results <- calc_prop_imp_subgroup( implist = implist_2021_transformed,
+                                     design = survey_design_imp,
+                                     sexual_identities = sexual_identities,
+                                     demog_var = cat,
+                                     year = 2021 )
   
   prop_imp_list_subgroup_2021[[ cat ]] <- results
   }
@@ -1088,11 +1104,12 @@ prop_imp_summary_subgroup_2021 <- do.call( rbind, prop_imp_list_subgroup_2021 )
 rownames( prop_imp_summary_subgroup_2021 ) <- NULL
 
 # in Stockholm County
-prop_imp_summary_overall_2021 <- calc_prop_imp_overall_2021( design = survey_design_imp_prop,
-                                                             sexual_identities = sexual_identities )
+prop_imp_overall_2021 <- calc_prop_imp_overall( design = survey_design_imp,
+                                                sexual_identities = sexual_identities,
+                                                year = 2021 )
 
 # merge results
-prop_imp_summary_2021 <- rbind( prop_imp_summary_subgroup_2021, prop_imp_summary_overall_2021 )
+prop_imp_summary_2021 <- rbind( prop_imp_summary_subgroup_2021, prop_imp_overall_2021 )
 writexl::write_xlsx( prop_imp_summary_2021, "prop_imp_summary_2021.xlsx" )
 ```
 
@@ -1145,6 +1162,7 @@ d_2021_cc_model$income_conf <- d_2021_cc_model$dispink2021 # disposable income
 
 d_2021_cc_model$marital_status_conf <- d_2021_cc_model$marital_status # marital status
 
+summary( d_2021_cc_model )
 
 ##### create survey design #####
 survey_design_cc_model <- svydesign( ids = ~ 1,
@@ -2046,6 +2064,212 @@ writexl::write_xlsx( results_cc_pr_all_models_2021, "results_cc_pr_all_models_20
 ```
 
 #### 6.2. Survey analyses of imputed datasets
+##### 6.2.1. Unadjusted analyses
 ```{r}
+# fit Poisson regression model for each exposure and each outcome
+pr_imp_crude <- list()
 
+for ( exposure in exposures ) {
+  pr_imp_crude[[ exposure ]] <- list()
+  
+  fml_list_name <- paste( "fml_list", exposure, "crude", sep = "_" )
+  
+  for ( name in names( get( fml_list_name ) ) ) {
+    pr_imp_crude[[ exposure ]][[ name ]] <- fit_model_imp( formula = get( fml_list_name )[[ name ]],
+                                                           design = survey_design_imp,
+                                                           year = 2021 )
+  }
+}
+
+# refit the model for age by sex, using female as the reference group
+# to extract results for age among females
+implist_2021_transformed_refit <- lapply( implist_2021_transformed, function( df ) {
+  within( df, {
+    sex_exp = relevel( sex_exp, ref = "Female" )
+  } )
+} )
+
+survey_design_imp_refit <- svydesign( ids = ~ 1,
+                                      strata = ~ sampling_strata_region,
+                                      weights = ~ calibrated_weight,
+                                      fpc = ~ no.of.population,
+                                      data = imputationList( implist_2021_transformed_refit )
+                                      ) # without pre-calibration
+
+pr_age_by_sex_imp_crude_refit <- list()
+
+for ( name in names( fml_list_age_by_sex_crude ) ) {
+  pr_age_by_sex_imp_crude_refit[[ name ]] <- fit_model_imp( formula = fml_list_age_by_sex_crude[[ name ]],
+                                                            design = survey_design_imp_refit,
+                                                            year = 2021 )
+}
+```
+
+##### 6.2.2. Adjusted analyses
+```{r}
+# fit Poisson regression model for each exposure and each outcome
+pr_imp_adjusted <- list()
+
+for ( exposure in exposures ) {
+  pr_imp_adjusted[[ exposure ]] <- list()
+  
+  fml_list_name <- paste( "fml_list", exposure, sep = "_" )
+  
+  for ( name in names( get( fml_list_name ) ) ) {
+    pr_imp_adjusted[[ exposure ]][[ name ]] <- fit_model_imp( formula = get( fml_list_name )[[ name ]],
+                                                              design = survey_design_imp,
+                                                              year = 2021 )
+  }
+}
+
+# refit the model for age by sex, using female as the reference group
+# to extract results for age among females
+pr_age_by_sex_imp_adjusted_refit <- list()
+
+for ( name in names( fml_list_age_by_sex ) ) {
+  pr_age_by_sex_imp_adjusted_refit[[ name ]] <- fit_model_imp( formula = fml_list_age_by_sex[[ name ]],
+                                                               design = survey_design_imp_refit,
+                                                               year = 2021 )
+}
+```
+
+##### 6.2.3. Extract results
+```{r}
+identities <- c( "sexual_minority", "homosexual", "bisexual", "other" )
+exposures <- c( "age", "sex", "country_of_birth", "education", "income", "marital_status" )
+
+exposures_age <- c( "age_exp16-29", "age_exp30-44", "age_exp>=60"  )
+exposures_sex <- c( "sex_expFemale" )
+exposures_country_of_birth <- c( "country_of_birth_expEurope", "country_of_birth_expOutside Europe" )
+exposures_education <- c( "education_exp<=9 years", "education_exp10-12 years" )
+exposures_income <- c( "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_exp(3,500, 4,500]" )
+exposures_marital_status <- c( "marital_status_expNever married", "marital_status_expOther" )
+
+
+########## Crude analyses ##########
+
+crude_model_most <- list()
+
+for( cat in exposures ){
+  crude_model_most[[ cat ]] <- extract_model_imp( model_results = pr_imp_crude,
+                                                  exposure = cat,
+                                                  sexual_identities = identities,
+                                                  model_type = "crude",
+                                                  variables = get( paste( "exposures", cat, sep = "_" ) ) )
+}
+
+results_crude_model_most <- do.call( rbind, crude_model_most )
+rownames( results_crude_model_most ) <- NULL
+
+# among males
+results_crude_model_male <- extract_model_imp( model_results = pr_imp_crude,
+                                               exposure = "age_by_sex",
+                                               sexual_identities = identities,
+                                               model_type = "crude",
+                                               variables = exposures_age )
+
+results_crude_model_male$subgroup <- paste( "male_", results_crude_model_male$subgroup )
+
+# among females
+results_crude_model_female <- extract_model_imp_age_by_sex( 
+  model_results = pr_age_by_sex_imp_crude_refit,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "crude",
+  variables = exposures_age )
+
+results_crude_model_female$subgroup <- paste( "female_", results_crude_model_female$subgroup )
+
+# merge datasets
+results_crude_model_summary <- rbind( results_crude_model_most, results_crude_model_male, results_crude_model_female )
+
+
+########## Adjusted analyses ##########
+
+##### Model 1 #####
+adjusted_model_1_most <- list()
+
+for( cat in exposures ){
+  adjusted_model_1_most[[ cat ]] <- extract_model_imp( 
+    model_results = pr_imp_adjusted,
+    exposure = cat,
+    sexual_identities = identities,
+    model_type = "model_1",
+    variables = get( paste( "exposures", cat, sep = "_" ) ) )
+}
+
+results_adjusted_model_1_most <- do.call( rbind, adjusted_model_1_most )
+rownames( results_adjusted_model_1_most ) <- NULL
+
+# among males
+results_adjusted_model_1_male <- extract_model_imp( 
+  model_results = pr_imp_adjusted,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "model_1",
+  variables = exposures_age )
+
+results_adjusted_model_1_male$subgroup <- paste( "male_", results_adjusted_model_1_male$subgroup )
+
+# among females
+results_adjusted_model_1_female <- extract_model_imp_age_by_sex( 
+  model_results = pr_age_by_sex_imp_adjusted_refit,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "model_1",
+  variables = exposures_age )
+
+results_adjusted_model_1_female$subgroup <- paste( "female_", results_adjusted_model_1_female$subgroup )
+
+# merge datasets
+results_adjusted_model_1_summary <- rbind( results_adjusted_model_1_most, results_adjusted_model_1_male, results_adjusted_model_1_female )
+
+
+##### Model 2 #####
+adjusted_model_2_most <- list()
+
+for( cat in exposures ){
+  adjusted_model_2_most[[ cat ]] <- extract_model_imp( 
+    model_results = pr_imp_adjusted,
+    exposure = cat,
+    sexual_identities = identities,
+    model_type = "model_2",
+    variables = get( paste( "exposures", cat, sep = "_" ) ) )
+}
+
+results_adjusted_model_2_most <- do.call( rbind, adjusted_model_2_most )
+rownames( results_adjusted_model_2_most ) <- NULL
+
+# among males
+results_adjusted_model_2_male <- extract_model_imp( 
+  model_results = pr_imp_adjusted,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "model_2",
+  variables = exposures_age )
+
+results_adjusted_model_2_male$subgroup <- paste( "male_", results_adjusted_model_2_male$subgroup )
+
+# among females
+results_adjusted_model_2_female <- extract_model_imp_age_by_sex( 
+  model_results = pr_age_by_sex_imp_adjusted_refit,
+  exposure = "age_by_sex",
+  sexual_identities = identities,
+  model_type = "model_2",
+  variables = exposures_age )
+
+results_adjusted_model_2_female$subgroup <- paste( "female_", results_adjusted_model_2_female$subgroup )
+
+# merge datasets
+results_adjusted_model_2_summary <- rbind( results_adjusted_model_2_most, results_adjusted_model_2_male, results_adjusted_model_2_female )
+
+
+# export results
+results_imp_pr_poisson_2021 <- merge( results_crude_model_summary,
+                                      merge( results_adjusted_model_1_summary, 
+                                             results_adjusted_model_2_summary, 
+                                             by = "subgroup" ), 
+                                      by = "subgroup" )
+
+writexl::write_xlsx( results_imp_pr_poisson_2021, "results_imp_pr_poisson_2021.xlsx" )
 ```
