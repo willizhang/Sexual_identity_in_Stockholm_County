@@ -1,5 +1,5 @@
 ---
-title: "R scripts for summary plots across surveys"
+title: "Summary plots of complete-case analyses"
 author: Guoqiang Zhang
 email: guoqiang.zhang@ki.se
 output: html_notebook
@@ -1698,7 +1698,7 @@ long_data_generation <- long_data_generation %>%
   mutate( identity = factor( identity, levels = c( "Heterosexual", "Homosexual", "Bisexual", "Other" ) ) )
 
 # plot
-ggplot( long_data_generation, 
+ggplot( drop_na( long_data_generation ), 
         aes( x = year, y = proportion, color = subgroup, group = subgroup ) ) +
   
   geom_line( linewidth = 0.5 ) + 
@@ -1740,6 +1740,11 @@ ggplot( long_data_generation,
     identity == "Bisexual" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.1 ), breaks = c( 0, 0.05, 0.1 ) ),
     identity == "Other" ~ scale_y_continuous( labels = scales::percent, limits = c( 0, 0.3 ), breaks = c( 0, 0.1, 0.2, 0.3 ) ) 
     ) )
+```
+
+#### 2.2. Imputation analysis
+```{r}
+
 ```
 
 ### 3. Plots for Relation between Sexual Identity and Demographic Factors
@@ -4960,7 +4965,7 @@ ggplot( long_data_2021,
   )
 ```
 
-### 4. Plots for Proportion of Changes in Sexual Identity
+### 4. Plots for Proportion of Change in Sexual Identity
 #### 4.1. Prepare dataset for plotting
 ```{r}
 fluidity_cc_prop_summary_2010_2021 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/fluidity_cc_prop_summary_SPHC-F_2010-2021.xlsx")
@@ -5829,7 +5834,7 @@ p_prop_cc_fluidity <- edit_plot( p_prop_cc_fluidity,
 plot( p_prop_cc_fluidity )
 ```
 
-### 5. Plots for Relation between Changes in Sexual Identity and Demographic Factors
+### 5. Plots for Relation between Change in Sexual Identity and Demographic Factors
 #### 5.1. Complete-case analysis
 ##### 5.1.1. Prepare dataset for plotting
 ```{r}
@@ -6273,7 +6278,7 @@ p_cc_pr_poisson_sexual_fluidity <- add_text(
 
 p_cc_pr_poisson_sexual_fluidity <- insert_text(
   p_cc_pr_poisson_sexual_fluidity,
-  text = "Changes in Sexual Identityᵃ",
+  text = "Change in Sexual Identityᵃ",
   col = c( 3:10 ),
   row = 1,
   part = "header",
@@ -6426,7 +6431,7 @@ p_cc_pr_poisson_sexual_fluidity <- add_text(
 
 p_cc_pr_poisson_sexual_fluidity <- insert_text(
   p_cc_pr_poisson_sexual_fluidity,
-  text = "Changes in Sexual Identityᵃ",
+  text = "Change in Sexual Identityᵃ",
   col = c( 3:10 ),
   row = 1,
   part = "header",
@@ -6579,7 +6584,7 @@ p_cc_pr_poisson_sexual_fluidity <- add_text(
 
 p_cc_pr_poisson_sexual_fluidity <- insert_text(
   p_cc_pr_poisson_sexual_fluidity,
-  text = "Changes in Sexual Identityᵃ",
+  text = "Change in Sexual Identityᵃ",
   col = c( 3:10 ),
   row = 1,
   part = "header",
@@ -6732,7 +6737,7 @@ p_cc_pr_poisson_sexual_fluidity <- add_text(
 
 p_cc_pr_poisson_sexual_fluidity <- insert_text(
   p_cc_pr_poisson_sexual_fluidity,
-  text = "Changes in Sexual Identityᵃ",
+  text = "Change in Sexual Identityᵃ",
   col = c( 3:10 ),
   row = 1,
   part = "header",

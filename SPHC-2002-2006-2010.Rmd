@@ -1,6 +1,7 @@
 ---
 title: "Fluidity of self-reported sexual identity in Stockholm County from 2010 to 2021"
-author: Guoqiang Zhang (guoqiang.zhang@ki.se)
+author: Guoqiang Zhang, Maya Mathur, Matteo Quartagno
+email: guoqiang.zhang@ki.se
 output: html_notebook
 editor_options: 
   chunk_output_type: console
@@ -8,8 +9,8 @@ editor_options:
 
 Notes:
 
-This R Notebook presents the analyses among the participants from the pooled cohort across SPHC 2002, 2006, and 2010, who provided data on sexual identity in at least two of the three follow-up surveys (SPHC-F 2010, 2014, and 2021). The analyses include:
-- Visual presentation of changes in sexual identity in 2010-2021.
+This R Notebook presents the analyses among the participants in the pooled cohort across SPHC 2002, 2006, and 2010, who provided data on sexual identity in at least two of the three follow-up survey years (2010, 2014, and 2021). The analyses include:
+- Visual presentation of change in sexual identity in 2010-2021.
 - Relationship between change in sexual identity and key demographic factors.
 
 The analyses of relationship between change in sexual identity and key demographic factors in SPHC 2010 and 2014 are available, respectively, in the R Notebooks "SPHC-2010.Rmd" and "SPHC-2014.Rmd".
@@ -20,12 +21,12 @@ library(haven)
 library(naniar)
 library(dplyr)
 library(tidyverse)
+library(finalfit)
 library(ggplot2)
 library(ggalluvial)
 library(ggbreak)
 library(ggrepel)
 library(grDevices)
-library(finalfit)
 library(sandwich)
 library(lmtest)
 source("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/Helper_functions.R") # helper function
@@ -449,9 +450,6 @@ d_2010$sampling_strata_region <- d_2010$sdk_2010
 # there are 999 individuals who participated in both SPHC-B 2002 and 2006
 # their follow-up data are included only once
 
-# 114 of the 999 individuals changed place of residence between 2002 and 2006
-# their place of residence in 2006 is used for analysis
-
 variable_list <- c( "lopnr", "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "age_2010", "sex", "country_of_birth", "sampling_strata_region" )
   
 m1 <- d_2002[ , variable_list ] %>%
@@ -487,18 +485,20 @@ m12_updated$sex_conf <- m12_updated$sex
 
 # country of birth
 summary( m12_updated$country_of_birth )
+m12_updated$country_of_birth <- factor( ifelse( m12_updated$country_of_birth == "Sweden", "Sweden",
+                                                ifelse( m12_updated$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
+                                        levels = c( "Sweden", "Europe", "Outside Europe" ) )
+m12_updated$country_of_birth_exp <- m12_updated$country_of_birth
 m12_updated$country_of_birth_conf <- m12_updated$country_of_birth
-m12_updated$country_of_birth_exp <- factor( ifelse( m12_updated$country_of_birth == "Sweden", "Sweden",
-                                                    ifelse( m12_updated$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
-                                            levels = c( "Sweden", "Europe", "Outside Europe" ) )
 table( m12_updated$country_of_birth_exp, useNA = "always" )
 
 # education
 table( m12_updated$utbniva2010, useNA = "always" )
-m12_updated$education_conf <- as.factor( m12_updated$utbniva2010 )
-m12_updated$education_exp <- factor( ifelse( m12_updated$utbniva2010 <= 2, "<=9 years",
-                                             ifelse( m12_updated$utbniva2010 <= 4, "10-12 years", ">=13 years" ) ), 
-                                     levels = c( ">=13 years", "<=9 years", "10-12 years" ) )
+m12_updated$education <- factor( ifelse( m12_updated$utbniva2010 <= 2, "<=9 years",
+                                         ifelse( m12_updated$utbniva2010 <= 4, "10-12 years", ">=13 years" ) ), 
+                                 levels = c( "<=9 years", "10-12 years", ">=13 years" ) )
+m12_updated$education_exp <- relevel( m12_updated$education, ref = ">=13 years" )
+m12_updated$education_conf <- m12_updated$education
 table( m12_updated$education_exp, useNA = "always" )
 
 # disposable income
@@ -529,13 +529,11 @@ table( m12_updated$living_status_exp, useNA = "always" )
 
 # personal support
 table( m12_updated$F10F84, useNA = "always" )
-m12_updated$personal_support_conf <- as.factor( m12_updated$F10F84 )
-m12_updated$personal_support_exp <- factor( ifelse( m12_updated$F10F84 <= 2, "yes", "no" ), 
-                                            levels = c( "yes", "no" ) )
+m12_updated$personal_support <- factor( ifelse( m12_updated$F10F84 <= 2, "yes", "no" ), 
+                                        levels = c( "yes", "no" ) )
+m12_updated$personal_support_exp <- m12_updated$personal_support
+m12_updated$personal_support_conf <- m12_updated$personal_support
 table( m12_updated$personal_support_exp, useNA = "always" )
-
-# place of residence
-m12_updated$place_of_residence_conf <- as.factor( m12_updated$sampling_strata_region )
 
 # year
 table( m12_updated$year, useNA = "always" )
@@ -544,7 +542,7 @@ m12_updated$year_exp <- factor( m12_updated$year, levels = c( "SPHC 2002", "SPHC
 
 summary( m12_updated )
 d_2002_2006_follow_up <- m12_updated %>%
-  select( "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "age_exp", "age_conf", "sex_exp", "sex_conf", "country_of_birth_exp", "country_of_birth_conf", "education_exp", "education_conf", "income_exp", "income_conf", "marital_status_exp", "marital_status_conf", "living_status_exp", "living_status_conf", "personal_support_exp", "personal_support_conf", "place_of_residence_conf", "year_exp", "year_conf" )
+  select( "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "age_exp", "age_conf", "sex_exp", "sex_conf", "country_of_birth_exp", "country_of_birth_conf", "education_exp", "education_conf", "income_exp", "income_conf", "marital_status_exp", "marital_status_conf", "living_status_exp", "living_status_conf", "personal_support_exp", "personal_support_conf", "year_exp", "year_conf" )
 
 
 ##### obtain follow-up data in 2010-2021 for SPHC-B 2010 #####
@@ -567,15 +565,16 @@ d_2010$sex_exp <- relevel( d_2010$sex, ref = "Male" )
 
 # country of birth
 summary( d_2010$country_of_birth )
+d_2010$country_of_birth <- factor( ifelse( d_2010$country_of_birth == "Sweden", "Sweden",
+                                           ifelse( d_2010$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
+                                   levels = c( "Sweden", "Europe", "Outside Europe" ) )
+d_2010$country_of_birth_exp <- d_2010$country_of_birth
 d_2010$country_of_birth_conf <- d_2010$country_of_birth
-d_2010$country_of_birth_exp <- factor( ifelse( d_2010$country_of_birth == "Sweden", "Sweden",
-                                               ifelse( d_2010$country_of_birth == "Europe", "Europe", "Outside Europe" ) ),
-                                       levels = c( "Sweden", "Europe", "Outside Europe" ) )
+
 
 # education
-table( d_2010$utbniva2010, useNA = "always" )
 summary( d_2010$education )
-d_2010$education_conf <- as.factor( d_2010$utbniva2010 )
+d_2010$education_conf <- d_2010$education
 d_2010$education_exp <- relevel( d_2010$education, ref = ">=13 years" )
 
 # disposable income
@@ -597,14 +596,9 @@ d_2010$living_status_conf <- as.factor( d_2010$F10U53aG57a )
 d_2010$living_status_exp <- relevel( d_2010$living_alone, ref = "no" )
 
 # personal support
-table( d_2010$F10U57G62, useNA = "always" )
-d_2010$F10U57G62[ d_2010$F10U57G62 == 9 ] <- NA
 summary( d_2010$personal_support )
-d_2010$personal_support_conf <- as.factor( d_2010$F10U57G62 )
+d_2010$personal_support_conf <- d_2010$personal_support
 d_2010$personal_support_exp <- relevel( d_2010$personal_support, ref = "yes" )
-
-# place of residence
-d_2010$place_of_residence_conf <- as.factor( d_2010$sampling_strata_region )
 
 # year
 table( d_2010$year, useNA = "always" )
@@ -613,7 +607,7 @@ d_2010$year_exp <- as.factor( d_2010$year )
 
 summary( d_2010 )
 d_2010_follow_up <- d_2010 %>%
-  select( "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "age_exp", "age_conf", "sex_exp", "sex_conf", "country_of_birth_exp", "country_of_birth_conf", "education_exp", "education_conf", "income_exp", "income_conf", "marital_status_exp", "marital_status_conf", "living_status_exp", "living_status_conf", "personal_support_exp", "personal_support_conf", "place_of_residence_conf", "year_exp", "year_conf" )
+  select( "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021", "age_exp", "age_conf", "sex_exp", "sex_conf", "country_of_birth_exp", "country_of_birth_conf", "education_exp", "education_conf", "income_exp", "income_conf", "marital_status_exp", "marital_status_conf", "living_status_exp", "living_status_conf", "personal_support_exp", "personal_support_conf", "year_exp", "year_conf" )
 
 
 ##### merge follow-up data in 2010-2021 for SPHC-B 2002, 2006, and 2010 #####
@@ -659,7 +653,7 @@ d_fluidity_model$sexual_identity_2010_exp <- relevel( d_fluidity_model$sexual_id
 d_fluidity_model$sexual_identity_2010_conf <- d_fluidity_model$sexual_identity_2010
 
 
-# make characteristics table by changes in sexual identity
+# make characteristics table by change in sexual identity
 explanatory =  c( "year_exp", "sex_exp", "age_exp", "country_of_birth_exp", "education_exp", "income_exp", "marital_status_exp", "living_status_exp", "personal_support_exp", "sexual_identity_2010" )
 dependent = "sexual_identity_fluidity"
 
@@ -718,7 +712,7 @@ format( round( fisher.test( x10, simulate.p.value = TRUE )$p.value, 3 ), nsmall 
 #### 3.1. Prepare dataset for plotting
 ##### 3.1.1. Among all participants
 ```{r}
-# changes in sexual identity from 2010 to 2021
+# change in sexual identity from 2010 to 2021
 m123_all <- d_sexual_identity_fluidity %>%
   count( sexual_identity_2010, sexual_identity_2014, sexual_identity_2021, name = "number" ) %>%
   mutate( percent = number / sum( number ) )
@@ -739,7 +733,7 @@ for ( col in 1:3 ) {
 m123_all_long <- to_lodes_form( m123_all, axes = 1:3, key = "year", value = "sexual_identity", id = "Cohort", diffuse = sexual_identity_2010 ) # convert to long format
 
 
-# changes in sexual identity from 2010-2014 to 2021
+# change in sexual identity from 2010-2014 to 2021
 x123_all <- d_sexual_identity_fluidity %>%
   count( sexual_identity_2010, sexual_identity_2014, sexual_identity_2021, name = "number" ) %>%
   mutate( sexual_identity_2010_2014 = paste( sexual_identity_2010, 
@@ -897,7 +891,7 @@ m123_age_60_long <- to_lodes_form( m123_age_60, axes = 1:3, key = "year", value 
 
 #### 3.2. Plotting
 ##### 3.2.1. Among all participants
-###### 3.2.1.1. Changes in sexual identity from 2010 to 2021
+###### 3.2.1.1. Change in sexual identity from 2010 to 2021
 ```{r}
 ggplot( m123_all_long,
         aes( x = year,
@@ -946,7 +940,7 @@ ggplot( m123_all_long,
                    )
 ```
 
-###### 3.2.1.2. Changes in sexual identity from 2014 to 2021
+###### 3.2.1.2. Change in sexual identity from 2014 to 2021
 ```{r}
 all_colors <- c( "#00BFC4", "#7CAE00", "#FFA500", "#F8766D", 
                  "yellow2", "#0092FF", "#00FF00", "#4B0082", 
@@ -1301,7 +1295,7 @@ ggplot( m123_age_60_long,
                    )
 ```
 
-### 4. Estimation of Proportion of Changes in Sexual Identity
+### 4. Estimation of Proportion of Change in Sexual Identity
 #### 4.1. Prepare dataset
 ```{r}
 d_prop_fluidity <- d_fluidity_model
@@ -1366,7 +1360,7 @@ final_results$changed_upper_ci <- mapply( function( x, n ) binom.test( x, n )$co
 writexl::write_xlsx( final_results, "fluidity_cc_prop_summary_SPHC-F_2010-2021.xlsx" )
 ```
 
-### 5. Relation between Changes in Sexual Identity and Demographic Factors
+### 5. Relation between Change in Sexual Identity and Demographic Factors
 #### 5.1. Complete-case analysis
 ##### 5.1.1. Define model formula
 ```{r}
@@ -1374,7 +1368,7 @@ writexl::write_xlsx( final_results, "fluidity_cc_prop_summary_SPHC-F_2010-2021.x
 
 fml_year_crude <- sexual_identity_fluidity ~ year_exp
 fml_year_model_1 <- sexual_identity_fluidity ~ year_exp + age_conf + sex_conf + country_of_birth_conf
-fml_year_model_2 <- sexual_identity_fluidity ~ year_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + sexual_identity_2010_conf
+fml_year_model_2 <- sexual_identity_fluidity ~ year_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_year <- list(
@@ -1388,7 +1382,7 @@ fml_list_year <- list(
 
 fml_sexual_identity_crude <- sexual_identity_fluidity ~ sexual_identity_2010_exp
 fml_sexual_identity_model_1 <- sexual_identity_fluidity ~ sexual_identity_2010_exp + age_conf + sex_conf + country_of_birth_conf + year_conf
-fml_sexual_identity_model_2 <- sexual_identity_fluidity ~ sexual_identity_2010_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf
+fml_sexual_identity_model_2 <- sexual_identity_fluidity ~ sexual_identity_2010_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + year_conf
 
 # list of formulas
 fml_list_sexual_identity <- list(
@@ -1402,7 +1396,7 @@ fml_list_sexual_identity <- list(
 
 fml_age_crude <- sexual_identity_fluidity ~ age_exp
 fml_age_model_1 <- sexual_identity_fluidity ~ age_exp + sex_conf + country_of_birth_conf + year_conf
-fml_age_model_2 <- sexual_identity_fluidity ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
+fml_age_model_2 <- sexual_identity_fluidity ~ age_exp + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_age <- list(
@@ -1416,7 +1410,7 @@ fml_list_age <- list(
 
 fml_age_by_sex_crude <- sexual_identity_fluidity ~ age_exp*sex_exp
 fml_age_by_sex_model_1 <- sexual_identity_fluidity ~ age_exp*sex_exp + country_of_birth_conf + year_conf
-fml_age_by_sex_model_2 <- sexual_identity_fluidity ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
+fml_age_by_sex_model_2 <- sexual_identity_fluidity ~ age_exp*sex_exp + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_age_by_sex <- list(
@@ -1430,7 +1424,7 @@ fml_list_age_by_sex <- list(
 
 fml_sex_crude <- sexual_identity_fluidity ~ sex_exp
 fml_sex_model_1 <- sexual_identity_fluidity ~ sex_exp + age_conf + country_of_birth_conf + year_conf
-fml_sex_model_2 <- sexual_identity_fluidity ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
+fml_sex_model_2 <- sexual_identity_fluidity ~ sex_exp + age_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_sex <- list(
@@ -1444,7 +1438,7 @@ fml_list_sex <- list(
 
 fml_country_of_birth_crude <- sexual_identity_fluidity ~ country_of_birth_exp
 fml_country_of_birth_model_1 <- sexual_identity_fluidity ~ country_of_birth_exp + age_conf + sex_conf + year_conf
-fml_country_of_birth_model_2 <- sexual_identity_fluidity ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
+fml_country_of_birth_model_2 <- sexual_identity_fluidity ~ country_of_birth_exp + age_conf + sex_conf + education_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_country_of_birth <- list(
@@ -1458,7 +1452,7 @@ fml_list_country_of_birth <- list(
 
 fml_education_crude <- sexual_identity_fluidity ~ education_exp
 fml_education_model_1 <- sexual_identity_fluidity ~ education_exp + age_conf + sex_conf + country_of_birth_conf + year_conf
-fml_education_model_2 <- sexual_identity_fluidity ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
+fml_education_model_2 <- sexual_identity_fluidity ~ education_exp + age_conf + sex_conf + country_of_birth_conf + income_conf + marital_status_conf + living_status_conf + personal_support_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_education <- list(
@@ -1472,7 +1466,7 @@ fml_list_education <- list(
 
 fml_income_crude <- sexual_identity_fluidity ~ income_exp
 fml_income_model_1 <- sexual_identity_fluidity ~ income_exp + age_conf + sex_conf + country_of_birth_conf + year_conf
-fml_income_model_2 <- sexual_identity_fluidity ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
+fml_income_model_2 <- sexual_identity_fluidity ~ income_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + marital_status_conf + living_status_conf + personal_support_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_income <- list(
@@ -1486,7 +1480,7 @@ fml_list_income <- list(
 
 fml_marital_status_crude <- sexual_identity_fluidity ~ marital_status_exp
 fml_marital_status_model_1 <- sexual_identity_fluidity ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + year_conf
-fml_marital_status_model_2 <- sexual_identity_fluidity ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + living_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
+fml_marital_status_model_2 <- sexual_identity_fluidity ~ marital_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + living_status_conf + personal_support_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_marital_status <- list(
@@ -1500,7 +1494,7 @@ fml_list_marital_status <- list(
 
 fml_living_status_crude <- sexual_identity_fluidity ~ living_status_exp
 fml_living_status_model_1 <- sexual_identity_fluidity ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + year_conf
-fml_living_status_model_2 <- sexual_identity_fluidity ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + personal_support_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
+fml_living_status_model_2 <- sexual_identity_fluidity ~ living_status_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + personal_support_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_living_status <- list(
@@ -1514,7 +1508,7 @@ fml_list_living_status <- list(
 
 fml_personal_support_crude <- sexual_identity_fluidity ~ personal_support_exp
 fml_personal_support_model_1 <- sexual_identity_fluidity ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + year_conf
-fml_personal_support_model_2 <- sexual_identity_fluidity ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + place_of_residence_conf + year_conf + sexual_identity_2010_conf
+fml_personal_support_model_2 <- sexual_identity_fluidity ~ personal_support_exp + age_conf + sex_conf + country_of_birth_conf + education_conf + income_conf + marital_status_conf + living_status_conf + year_conf + sexual_identity_2010_conf
 
 # list of formulas
 fml_list_personal_support <- list(
