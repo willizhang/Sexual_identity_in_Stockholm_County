@@ -324,6 +324,54 @@ calc_prop_imp_overall <- function( design, sexual_identities, year ) {
 }
 
 
+# by varying age cut-offs
+calc_prop_imp_iteration_age <- function( min_age, sexual_identities, year ) {
+  
+  for ( cut_off in ( min_age ):100 ) {
+    implist_iteration_age <- lapply( get( paste( "implist", year, "transformed", sep = "_" ) ), function( df ) {
+      within( df, {
+        age_iteration <- ifelse( age <= cut_off, "young", "old" )
+        } )
+      } )
+  
+  survey_design_iteration_age_imp <- svydesign( ids = ~ 1,
+                                                strata = ~ sampling_strata_region,
+                                                weights = ~ calibrated_weight,
+                                                fpc = ~ no.of.population,
+                                                data = imputationList( implist_iteration_age )
+                                                )
+  
+  combined_results_list <- list()
+  
+  for ( identity in sexual_identities ) {
+    combined_summary <- summary( MIcombine( 
+      with( survey_design_iteration_age_imp,
+            svyby( formula = as.formula( paste0( "~ I( sexual_identity_", year, " == '", identity, "')" ) ),
+                   by = ~ age_iteration,
+                   FUN = svyciprop,
+                   method = "beta" ) ) ) )
+    
+    results_df <- rownames_to_column( combined_summary[ , "results", drop = FALSE ], var = "subgroup" )
+    colnames( results_df ) <- c( "subgroup", paste0( identity, "_point_estimate_", year ) )
+    
+    combined_results_list[[ identity ]] <- results_df
+  }
+  
+  final_combined_df <- Reduce( function( x, y ) {
+    merge( x, y, by = "subgroup" ) 
+  }, 
+  combined_results_list )
+  
+  final_combined_df$cut_off <- cut_off
+  
+  results_summary <- rbind( results_summary, final_combined_df )
+  }
+  
+  return( results_summary )
+  }
+
+
+
 ##### Function for Weighted Poisson Regression Model after Imputation #####
 
 # Poisson regression

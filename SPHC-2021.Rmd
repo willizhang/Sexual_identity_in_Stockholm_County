@@ -1111,6 +1111,13 @@ prop_imp_overall_2021 <- calc_prop_imp_overall( design = survey_design_imp,
 # merge results
 prop_imp_summary_2021 <- rbind( prop_imp_summary_subgroup_2021, prop_imp_overall_2021 )
 writexl::write_xlsx( prop_imp_summary_2021, "prop_imp_summary_2021.xlsx" )
+
+
+# calculate proportion by varying age cut-offs
+min_age <- min( d_2021$age )
+results_summary <- data.frame()
+prop_imp_age_iteration_2021 <- calc_prop_imp_iteration_age( min_age, sexual_identities, 2021 )
+writexl::write_xlsx( prop_imp_age_iteration_2021, "prop_imp_age_iteration_2021.xlsx" )
 ```
 
 ### 6. Relation between Sexual Identity and Demographic Factors
