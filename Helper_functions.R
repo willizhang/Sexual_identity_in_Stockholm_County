@@ -57,6 +57,7 @@ fit_models <- function( formula, design ) {
 }
 
 
+
 ##### Function to Extract Coefficients and Confidence Intervals (on log scale) #####
 
 ### crude analysis ###
@@ -91,9 +92,9 @@ extract_results_coef <- function( all_models_list, exposure, outcome, model_type
                       confint( model, ddf = degf( model$survey.design ) )[ variables, , drop = FALSE ] )
     
     return( results )
-    } else {
+  } else {
     return( NULL )
-    }
+  }
 }
 
 
@@ -158,7 +159,7 @@ extract_results_pr <- function( model_base, model_type, identities, exposure ) {
   results_list <- list()
   
   for ( identity in identities ) {
-
+    
     model_name <- paste0( "fml_", identity, "_", exposure, "_", model_type )
     model <- model_base[[ model_name ]]
     
@@ -217,6 +218,7 @@ extract_rr_fluidity <- function( model_results ) {
   
   return( combined_df )
 }
+
 
 
 ##### Function for Estimation of Proportion of Change in Sexual Identity #####
