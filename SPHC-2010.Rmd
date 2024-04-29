@@ -1073,6 +1073,48 @@ prop_cc_generation <- left_join( prop_cc_generation,
   mutate( sample_size_2010 = prettyNum( sample_size_2010, big.mark = ",", preserve.width = "none" ) )
 ```
 
+###### 5.1.3.4. Calculate proportion by age groups
+```{r}
+d_2010_iteration_age_group <- d_2010_complete
+
+d_2010_iteration_age_group$age_group <- cut( d_2010_iteration_age_group$age,
+                                             breaks = seq( 18, 80, by = 2 ),
+                                             include.lowest = TRUE )
+table( d_2010_iteration_age_group$age_group )
+  
+survey_design_iteration_age_group <- svydesign( ids = ~ 1, 
+                                                strata = ~ sampling_strata_region,
+                                                weights = ~ design_weight,
+                                                fpc = ~ no.of.population,
+                                                data = d_2010_iteration_age_group )
+  
+categories <- c( "Heterosexual", "Homosexual", "Bisexual", "Uncertain" )
+
+
+list_of_df <- list()
+  
+for ( cat in categories ) {
+  prop_cc_age_group <- svyby( formula = as.formula( paste0( "~ I( sexual_identity_2010 == '", cat, "' )" ) ),
+                              by = ~ age_group,
+                              design = subset( survey_design_iteration_age_group, 
+                                               !is.na( sexual_identity_2010 ) & !is.na( age_group ) ),
+                              FUN = svyciprop,
+                              vartype = "ci",
+                              method = "beta" )
+  
+  colnames( prop_cc_age_group ) <- c( "subgroup", paste0( cat, "_point_estimate_2010" ), paste0( cat, "_lower_ci_2010" ), paste0( cat, "_upper_ci_2010" ) )
+  
+  list_of_df[[cat]] <- prop_cc_age_group
+  }
+  
+prop_cc_age_group <- Reduce( function( df1, df2 ) { 
+  merge( df1, df2, by = "subgroup" )
+  }, 
+  list_of_df )
+
+writexl::write_xlsx( prop_cc_age_group, "prop_cc_age_group_2010.xlsx" )
+```
+
 ##### 5.1.4. By sex*age group
 ```{r}
 list_of_df <- list()

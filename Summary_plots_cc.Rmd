@@ -22,8 +22,7 @@ library(ggh4x)
 ```
 
 ### 2. Plots for Proportion of Sexual Identity
-#### 2.1. Complete-case analysis
-##### 2.1.1. Prepare dataset for plotting
+#### 2.1. Prepare dataset for plotting
 ```{r}
 # datasets for proportion of sexual identity
 prop_cc_summary_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_summary_2010.xlsx")
@@ -130,7 +129,7 @@ prop_cc_summary$sample_size_2021 <- ifelse( is.na( prop_cc_summary$sample_size_2
                                                     prop_cc_summary$sample_size_2021 ) )
 ```
 
-##### 2.1.2. Heterosexual group
+#### 2.2. Heterosexual group
 ```{r}
 prop_cc_summary_heterosexual <- prop_cc_summary[ -c( 9:17 ), c( 1:4, 14:17, 27:30, 40 ) ]
   
@@ -410,7 +409,7 @@ p_cc_heterosexual <- edit_plot( p_cc_heterosexual,
 plot( p_cc_heterosexual )
 ```
 
-##### 2.1.3. Homosexual group
+#### 2.3. Homosexual group
 ```{r}
 prop_cc_summary_homosexual <- prop_cc_summary[ -c( 9:17 ), c( 1, 5:7, 14, 18:20, 27, 31:33, 40 ) ]
 
@@ -690,7 +689,7 @@ p_cc_homosexual <- edit_plot( p_cc_homosexual,
 plot( p_cc_homosexual )
 ```
 
-##### 2.1.4. Bisexual group
+#### 2.4. Bisexual group
 ```{r}
 prop_cc_summary_bisexual <- prop_cc_summary[ -c( 9:17 ), c( 1, 8:10, 14, 21:23, 27, 34:36, 40 ) ]
 
@@ -970,7 +969,7 @@ p_cc_bisexual <- edit_plot( p_cc_bisexual,
 plot( p_cc_bisexual )
 ```
 
-##### 2.1.5. Other group
+#### 2.5. Other group
 ```{r}
 prop_cc_summary_other <- prop_cc_summary[ -c( 9:17 ), c( 1, 11:13, 14, 24:26, 27, 37:39, 40 ) ]
 
@@ -1256,7 +1255,7 @@ p_cc_other <- edit_plot( p_cc_other,
 plot( p_cc_other )
 ```
 
-##### 2.1.6. Age by sex
+#### 2.6. Age by sex
 ```{r}
 prop_cc_summary_age_sex <- prop_cc_summary[ c( 10:17 ), ]
 
@@ -1660,7 +1659,7 @@ p_cc_age_sex <- add_border(
 plot( p_cc_age_sex )
 ```
 
-##### 2.1.7. By generation
+#### 2.7. By generation
 ```{r}
 # datasets for proportion of sexual identity
 prop_cc_summary_2010_generation <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_summary_2010.xlsx")
@@ -1742,14 +1741,145 @@ ggplot( drop_na( long_data_generation ),
     ) )
 ```
 
-#### 2.2. Imputation analysis
+#### 2.8. Proportion and proportion ratio by varing age cut-offs
+##### 2.8.1. Prepare dataset for plotting
 ```{r}
+prop_cc_age_iteration_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_age_iteration_2010.xlsx") %>%
+  select( "cut_off", "Heterosexual_young", "Homosexual_young", "Bisexual_young", "Uncertain_young", "Heterosexual_pr_2010", "Homosexual_pr_2010", "Bisexual_pr_2010", "Uncertain_pr_2010" ) %>%
+  rename( 
+    Heterosexual_prop_2010 = Heterosexual_young,
+    Homosexual_prop_2010 = Homosexual_young,
+    Bisexual_prop_2010 = Bisexual_young,
+    Other_prop_2010 = Uncertain_young,
+    Other_pr_2010 = Uncertain_pr_2010
+    )
 
+prop_cc_age_iteration_2014 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_age_iteration_2014.xlsx") %>%
+  select( "cut_off", "Heterosexual_young", "Homosexual_young", "Bisexual_young", "None of the above_young", "Heterosexual_pr_2014", "Homosexual_pr_2014", "Bisexual_pr_2014", "None of the above_pr_2014" ) %>%
+  rename( 
+    Heterosexual_prop_2014 = Heterosexual_young,
+    Homosexual_prop_2014 = Homosexual_young,
+    Bisexual_prop_2014 = Bisexual_young,
+    Other_prop_2014 = `None of the above_young`,
+    Other_pr_2014 = `None of the above_pr_2014`
+    )
+
+prop_cc_age_iteration_2021 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_age_iteration_2021.xlsx") %>%
+  select( "cut_off", "Heterosexual_young", "Homosexual_young", "Bisexual_young", "None of the above_young", "Heterosexual_pr_2021", "Homosexual_pr_2021", "Bisexual_pr_2021", "None of the above_pr_2021" ) %>%
+  rename( 
+    Heterosexual_prop_2021 = Heterosexual_young,
+    Homosexual_prop_2021 = Homosexual_young,
+    Bisexual_prop_2021 = Bisexual_young,
+    Other_prop_2021 = `None of the above_young`,
+    Other_pr_2021 = `None of the above_pr_2021`
+    )
+
+prop_cc_age_iteration_merged <- prop_cc_age_iteration_2010 %>%
+  full_join( prop_cc_age_iteration_2014, by = "cut_off" ) %>%
+  full_join( prop_cc_age_iteration_2021, by = "cut_off" )
+
+long_data <- prop_cc_age_iteration_merged %>% 
+  pivot_longer( 
+    cols = - cut_off, 
+    names_to = c( "Sexuality", "Age_Group", "Year" ), 
+    names_pattern = "([A-Za-z]+)_(\\w+)_(\\d+)", 
+    values_to = "Value" 
+  )
+```
+
+##### 2.8.2. Proportion
+```{r}
+ggplot( long_data[ long_data$Age_Group == "prop", ], 
+        aes( x = cut_off, y = Value, color = Sexuality, linetype = Year ) 
+        ) +
+  
+  geom_line( ) +
+  
+  scale_linetype_manual( values = c( "2010" = "dotdash", "2014" = "dashed", "2021" = "solid" ),
+                         labels = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ) 
+                         ) +
+  
+  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D" ),
+                      breaks = c( "Heterosexual", "Homosexual", "Bisexual", "Other" ),
+                      labels = c( "Heterosexual", "Homosexual", "Bisexual", "Otherᶜ" )
+                      ) +
+  
+  scale_x_continuous( limits = c( 15, 100 ), 
+                      breaks = seq( 15, 100, by = 5 ),
+                      expand = c( 0.02, 0 )
+                      ) +
+  
+  scale_y_continuous( labels = scales::percent,
+                      limits = c( 0, 1 ), 
+                      breaks = c( 0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.7, 0.8, 0.9, 1 )
+                      ) +
+  
+  scale_y_break( c( 0.12, 0.75 ), scales = 1, space = 0.3, expand = c( 0, 0 ) ) +
+  
+  labs( x = "Age cut-off (years)ᵃ", 
+        y = "Proportionᵇ"
+        ) +
+  
+  theme_classic() +
+  
+  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.position = "right",
+         legend.title = element_blank(),
+         axis.text.y.right = element_blank(),
+         axis.ticks.y.right = element_blank(),
+         axis.line.y.right = element_blank()
+         )
+```
+
+##### 2.8.3. Proportion ratio
+```{r}
+ggplot( long_data[ long_data$Age_Group == "pr", ], 
+        aes( x = cut_off, y = Value, color = Sexuality, linetype = Year ) 
+        ) +
+  
+  geom_line( ) +
+  
+  scale_linetype_manual( values = c( "2010" = "dotdash", "2014" = "dashed", "2021" = "solid" ),
+                         labels = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ) 
+                         ) +
+  
+  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D" ),
+                      breaks = c( "Heterosexual", "Homosexual", "Bisexual", "Other" ),
+                      labels = c( "Heterosexual", "Homosexual", "Bisexual", "Otherᶜ" )
+                      ) +
+  
+  scale_x_continuous( limits = c( 15, 65 ), 
+                      breaks = c( 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65 ),
+                      expand = c( 0.02, 0 )
+                      ) +
+  
+  scale_y_continuous( limits = c( 0, 7 ), 
+                      breaks = c( 0, 1, 2, 3, 4, 5, 6, 7 ),
+                      expand = c( 0.04, 0 ) 
+                      ) +
+  
+  labs( x = "Age cut-off (years)ᵃ", 
+        y = "Proportion ratioᵇ"
+        ) +
+  
+  theme_classic() +
+  
+  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
+         axis.title.y = element_text( family = "Arial", size = 11 ),
+         axis.title.x = element_text( family = "Arial", size = 11 ),
+         axis.text.x = element_text( family = "Arial", size = 11 ),
+         legend.text = element_text( family = "Arial", size = 10 ),
+         legend.position = "right",
+         legend.title = element_blank()
+         )
 ```
 
 ### 3. Plots for Relation between Sexual Identity and Demographic Factors
-#### 3.1. Complete-case analysis
-##### 3.1.1. Prepare dataset for plotting
+#### 3.1. Prepare dataset for plotting
 ```{r}
 results_cc_pr_poisson_2010 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_cc_pr_poisson_2010.xlsx")
 
@@ -1773,7 +1903,7 @@ results_cc_pr_poisson <- results_cc_pr_poisson_2010 %>%
   full_join( results_cc_pr_poisson_2021, by = "Exposure" )
 
 # modify table format
-desired_order <- c( "sex_expFemale", "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29_Male", "age_exp30-44_Male", "age_exp>=60_Male", "age_exp16-29_Female", "age_exp30-44_Female", "age_exp>=60_Female", "country_of_birth_expEurope", "country_of_birth_expOutside Europe", "education_exp<=9 years", "education_exp10-12 years", "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_exp(3,500, 4,500]", "marital_status_expNever married", "marital_status_expOther", "living_status_expyes", "personal_support_expno" )
+desired_order <- c( "sex_expFemale", "age_exp16-29", "age_exp30-44", "age_exp>=60", "age_exp16-29_Male", "age_exp30-44_Male", "age_exp>=60_Male", "age_exp16-29_Female", "age_exp30-44_Female", "age_exp>=60_Female", "country_of_birth_expEurope", "country_of_birth_expOutside Europe", "education_exp<=9 years", "education_exp10-12 years", "education_exp<=9 years_Male", "education_exp10-12 years_Male", "education_exp<=9 years_Female", "education_exp10-12 years_Female", "income_exp<=2,500", "income_exp(2,500, 3,500]", "income_exp(3,500, 4,500]", "income_exp<=2,500_Male", "income_exp(2,500, 3,500]_Male", "income_exp(3,500, 4,500]_Male", "income_exp<=2,500_Female", "income_exp(2,500, 3,500]_Female", "income_exp(3,500, 4,500]_Female", "marital_status_expNever married", "marital_status_expOther", "living_status_expyes", "personal_support_expno" )
                     
 results_cc_pr_poisson <- results_cc_pr_poisson %>%
   mutate( Exposure = factor( Exposure, levels = desired_order ) ) %>%
@@ -1792,16 +1922,16 @@ results_cc_pr_poisson <- results_cc_pr_poisson %>%
   add_row( Exposure = "Education years", .before = 16 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_row( Exposure = "Income (100 kr/yr)ᶠ", .before = 19 )
+  add_row( Exposure = "Income (100 kr/yr)ᶠ", .before = 23 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_row( Exposure = "Marital statusᵍ", .before = 23 )
+  add_row( Exposure = "Marital statusᵍ", .before = 33 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_row( Exposure = "Living alone", .before = 26 )
+  add_row( Exposure = "Living alone", .before = 36 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
-  add_row( Exposure = "Personal support", .before = 28 )
+  add_row( Exposure = "Personal support", .before = 38 )
 
 results_cc_pr_poisson$Exposure[ results_cc_pr_poisson$Exposure == "sex_expFemale" ] <- paste0( "   ", "Female\n\n" )
 results_cc_pr_poisson$Exposure[ results_cc_pr_poisson$Exposure == "age_exp16-29" ] <- paste0( "   ", "16–29 yrsᵈ\n\n" )
@@ -2307,7 +2437,7 @@ results_cc_pr_poisson <- results_cc_pr_poisson %>%
            Other_crude = "Reference",
            Other_model_1 = "Reference",
            Other_model_2 = "Reference",
-           .before = 27 )
+           .before = 31 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_row( Exposure = paste0( "   ", "Currently married" ), 
@@ -2323,7 +2453,7 @@ results_cc_pr_poisson <- results_cc_pr_poisson %>%
            Other_crude = "Reference",
            Other_model_1 = "Reference",
            Other_model_2 = "Reference",
-           .before = 29 )
+           .before = 39 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_row( Exposure = paste0( "   ", "No" ), 
@@ -2339,7 +2469,7 @@ results_cc_pr_poisson <- results_cc_pr_poisson %>%
            Other_crude = "Reference",
            Other_model_1 = "Reference",
            Other_model_2 = "Reference",
-           .before = 34 )
+           .before = 44 )
 
 results_cc_pr_poisson <- results_cc_pr_poisson %>% 
   add_row( Exposure = paste0( "   ", "Yes" ), 
@@ -2355,15 +2485,15 @@ results_cc_pr_poisson <- results_cc_pr_poisson %>%
            Other_crude = "Reference",
            Other_model_1 = "Reference",
            Other_model_2 = "Reference",
-           .before = 36 )
+           .before = 46 )
 ```
 
-##### 3.1.2. Sexual minority group
-###### 3.1.2.1. Part 1
+#### 3.2. Sexual minority group
+##### 3.2.1. Part 1
 ```{r}
 selected_cols <- grep( "exposure|sexual_minority", colnames( results_cc_pr_poisson ), ignore.case = TRUE )
 
-results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson[ -c( 9:14, 23:37 ), selected_cols ]
+results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson[ -c( 9:14, 23:47 ), selected_cols ]
 
 results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson_sexual_minority %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -2532,9 +2662,9 @@ p_cc_pr_poisson_sexual_minority <- add_border(
 plot( p_cc_pr_poisson_sexual_minority )
 ```
 
-###### 3.1.2.2. Part 2
+##### 3.2.2. Part 2
 ```{r}
-results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson[ -c( 1:22 ), selected_cols ]
+results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson[ -c( 1:26, 32:37 ), selected_cols ]
 
 results_cc_pr_poisson_sexual_minority <- results_cc_pr_poisson_sexual_minority %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -2703,12 +2833,12 @@ p_cc_pr_poisson_sexual_minority <- add_border(
 plot( p_cc_pr_poisson_sexual_minority )
 ```
 
-##### 3.1.3. Homosexual group
-###### 3.1.3.1. Part 1
+#### 3.3. Homosexual group
+##### 3.3.1. Part 1
 ```{r}
 selected_cols <- grep( "exposure|homosexual", colnames( results_cc_pr_poisson ), ignore.case = TRUE )
 
-results_cc_pr_poisson_homosexual <- results_cc_pr_poisson[ -c( 9:14, 23:37 ), selected_cols ]
+results_cc_pr_poisson_homosexual <- results_cc_pr_poisson[ -c( 9:14, 23:47 ), selected_cols ]
 
 results_cc_pr_poisson_homosexual <- results_cc_pr_poisson_homosexual %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -2877,9 +3007,9 @@ p_cc_pr_poisson_homosexual <- add_border(
 plot( p_cc_pr_poisson_homosexual )
 ```
 
-###### 3.1.3.2. Part 2
+##### 3.3.2. Part 2
 ```{r}
-results_cc_pr_poisson_homosexual <- results_cc_pr_poisson[ -c( 1:22 ), selected_cols ]
+results_cc_pr_poisson_homosexual <- results_cc_pr_poisson[ -c( 1:26, 32:37 ), selected_cols ]
 
 results_cc_pr_poisson_homosexual <- results_cc_pr_poisson_homosexual %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -3048,12 +3178,12 @@ p_cc_pr_poisson_homosexual <- add_border(
 plot( p_cc_pr_poisson_homosexual )
 ```
 
-##### 3.1.4. Bisexual group
-###### 3.1.4.1. Part 1
+#### 3.4. Bisexual group
+##### 3.4.1. Part 1
 ```{r}
 selected_cols <- grep( "exposure|bisexual", colnames( results_cc_pr_poisson ), ignore.case = TRUE )
 
-results_cc_pr_poisson_bisexual <- results_cc_pr_poisson[ -c( 9:14, 23:37 ), selected_cols ]
+results_cc_pr_poisson_bisexual <- results_cc_pr_poisson[ -c( 9:14, 23:47 ), selected_cols ]
 
 results_cc_pr_poisson_bisexual <- results_cc_pr_poisson_bisexual %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -3222,9 +3352,9 @@ p_cc_pr_poisson_bisexual <- add_border(
 plot( p_cc_pr_poisson_bisexual )
 ```
 
-###### 3.1.4.2. Part 2
+##### 3.4.2. Part 2
 ```{r}
-results_cc_pr_poisson_bisexual <- results_cc_pr_poisson[ -c( 1:22 ), selected_cols ]
+results_cc_pr_poisson_bisexual <- results_cc_pr_poisson[ -c( 1:26, 32:37 ), selected_cols ]
 
 results_cc_pr_poisson_bisexual <- results_cc_pr_poisson_bisexual %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -3393,12 +3523,12 @@ p_cc_pr_poisson_bisexual <- add_border(
 plot( p_cc_pr_poisson_bisexual )
 ```
 
-##### 3.1.5. Other group
-###### 3.1.5.1. Part 1
+#### 3.5. Other group
+##### 3.5.1. Part 1
 ```{r}
 selected_cols <- grep( "exposure|other", colnames( results_cc_pr_poisson ), ignore.case = TRUE )
 
-results_cc_pr_poisson_other <- results_cc_pr_poisson[ -c( 9:14, 23:37 ), selected_cols ]
+results_cc_pr_poisson_other <- results_cc_pr_poisson[ -c( 9:14, 23:47 ), selected_cols ]
 
 results_cc_pr_poisson_other <- results_cc_pr_poisson_other %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -3567,9 +3697,9 @@ p_cc_pr_poisson_other <- add_border(
 plot( p_cc_pr_poisson_other )
 ```
 
-###### 3.1.5.2. Part 2
+##### 3.5.2. Part 2
 ```{r}
-results_cc_pr_poisson_other <- results_cc_pr_poisson[ -c( 1:22 ), selected_cols ]
+results_cc_pr_poisson_other <- results_cc_pr_poisson[ -c( 1:26, 32:37 ), selected_cols ]
 
 results_cc_pr_poisson_other <- results_cc_pr_poisson_other %>% 
   add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
@@ -3738,8 +3868,8 @@ p_cc_pr_poisson_other <- add_border(
 plot( p_cc_pr_poisson_other )
 ```
 
-##### 3.1.6. Age by sex
-###### 3.1.6.1. Prepare dataset for plotting
+#### 3.6. Age by sex
+##### 3.6.1. Prepare dataset for plotting
 ```{r}
 results_cc_pr_poisson_age_sex <- results_cc_pr_poisson[ c( 9:14 ), ]
 
@@ -3826,7 +3956,7 @@ results_cc_pr_poisson_age_sex$Other_model_2 <- ifelse( is.na( results_cc_pr_pois
                                                       results_cc_pr_poisson_age_sex$Other_model_2 )
 ```
 
-###### 3.1.6.2. Sexual minority group
+##### 3.6.2. Sexual minority group
 ```{r}
 selected_cols <- grep( "exposure|sexual_minority", colnames( results_cc_pr_poisson_age_sex ), ignore.case = TRUE )
 
@@ -3999,7 +4129,7 @@ p_cc_pr_poisson_sexual_minority <- add_border(
 plot( p_cc_pr_poisson_sexual_minority )
 ```
 
-###### 3.1.6.3. Homosexual group
+##### 3.6.3. Homosexual group
 ```{r}
 selected_cols <- grep( "exposure|homosexual", colnames( results_cc_pr_poisson_age_sex ), ignore.case = TRUE )
 
@@ -4172,7 +4302,7 @@ p_cc_pr_poisson_homosexual <- add_border(
 plot( p_cc_pr_poisson_homosexual )
 ```
 
-###### 3.1.6.4. Bisexual group
+##### 3.6.4. Bisexual group
 ```{r}
 selected_cols <- grep( "exposure|bisexual", colnames( results_cc_pr_poisson_age_sex ), ignore.case = TRUE )
 
@@ -4345,7 +4475,7 @@ p_cc_pr_poisson_bisexual <- add_border(
 plot( p_cc_pr_poisson_bisexual )
 ```
 
-###### 3.1.6.5. Other group
+##### 3.6.5. Other group
 ```{r}
 selected_cols <- grep( "exposure|other", colnames( results_cc_pr_poisson_age_sex ), ignore.case = TRUE )
 
@@ -4518,145 +4648,793 @@ p_cc_pr_poisson_other <- add_border(
 plot( p_cc_pr_poisson_other )
 ```
 
-##### 3.1.7. Proportion and proportion ratio by varing age cut-offs
-###### 3.1.7.1. Prepare dataset for plotting
+#### 3.7. Education by sex
 ```{r}
-prop_cc_age_iteration_2010 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_age_iteration_2010.xlsx") %>%
-  select( "cut_off", "Heterosexual_young", "Homosexual_young", "Bisexual_young", "Uncertain_young", "Heterosexual_pr_2010", "Homosexual_pr_2010", "Bisexual_pr_2010", "Uncertain_pr_2010" ) %>%
-  rename( 
-    Heterosexual_prop_2010 = Heterosexual_young,
-    Homosexual_prop_2010 = Homosexual_young,
-    Bisexual_prop_2010 = Bisexual_young,
-    Other_prop_2010 = Uncertain_young,
-    Other_pr_2010 = Uncertain_pr_2010
-    )
 
-prop_cc_age_iteration_2014 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_age_iteration_2014.xlsx") %>%
-  select( "cut_off", "Heterosexual_young", "Homosexual_young", "Bisexual_young", "None of the above_young", "Heterosexual_pr_2014", "Homosexual_pr_2014", "Bisexual_pr_2014", "None of the above_pr_2014" ) %>%
-  rename( 
-    Heterosexual_prop_2014 = Heterosexual_young,
-    Homosexual_prop_2014 = Homosexual_young,
-    Bisexual_prop_2014 = Bisexual_young,
-    Other_prop_2014 = `None of the above_young`,
-    Other_pr_2014 = `None of the above_pr_2014`
-    )
+```
 
-prop_cc_age_iteration_2021 <- read_excel("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/prop_cc_age_iteration_2021.xlsx") %>%
-  select( "cut_off", "Heterosexual_young", "Homosexual_young", "Bisexual_young", "None of the above_young", "Heterosexual_pr_2021", "Homosexual_pr_2021", "Bisexual_pr_2021", "None of the above_pr_2021" ) %>%
-  rename( 
-    Heterosexual_prop_2021 = Heterosexual_young,
-    Homosexual_prop_2021 = Homosexual_young,
-    Bisexual_prop_2021 = Bisexual_young,
-    Other_prop_2021 = `None of the above_young`,
-    Other_pr_2021 = `None of the above_pr_2021`
-    )
+#### 3.8. Income by sex
+##### 3.8.1. Prepare dataset for plotting
+```{r}
+results_cc_pr_poisson_income_sex <- results_cc_pr_poisson[ c( 32:37 ), ]
 
-prop_cc_age_iteration_merged <- prop_cc_age_iteration_2010 %>%
-  full_join( prop_cc_age_iteration_2014, by = "cut_off" ) %>%
-  full_join( prop_cc_age_iteration_2021, by = "cut_off" )
+results_cc_pr_poisson_income_sex <- results_cc_pr_poisson_income_sex %>% 
+  add_row( Exposure = "Male", .before = 1 )
 
-long_data <- prop_cc_age_iteration_merged %>% 
-  pivot_longer( 
-    cols = - cut_off, 
-    names_to = c( "Sexuality", "Age_Group", "Year" ), 
-    names_pattern = "([A-Za-z]+)_(\\w+)_(\\d+)", 
-    values_to = "Value" 
+results_cc_pr_poisson_income_sex <- results_cc_pr_poisson_income_sex %>% 
+  add_row( Exposure = "Female", .before = 5 )
+
+results_cc_pr_poisson_income_sex$Exposure[ results_cc_pr_poisson_income_sex$Exposure == "income_exp<=2,500_Male" ] <- paste0( "   ", "\u2264 2,500\n\n" )
+results_cc_pr_poisson_income_sex$Exposure[ results_cc_pr_poisson_income_sex$Exposure == "income_exp(2,500, 3,500]_Male" ] <- paste0( "   ", "(2,500, 3,500]\n\n" )
+results_cc_pr_poisson_income_sex$Exposure[ results_cc_pr_poisson_income_sex$Exposure == "income_exp(3,500, 4,500]_Male" ] <- paste0( "   ", "(3,500, 4,500]\n\n" )
+
+results_cc_pr_poisson_income_sex$Exposure[ results_cc_pr_poisson_income_sex$Exposure == "income_exp<=2,500_Female" ] <- paste0( "   ", "\u2264 2,500\n\n" )
+results_cc_pr_poisson_income_sex$Exposure[ results_cc_pr_poisson_income_sex$Exposure == "income_exp(2,500, 3,500]_Female" ] <- paste0( "   ", "(2,500, 3,500]\n\n" )
+results_cc_pr_poisson_income_sex$Exposure[ results_cc_pr_poisson_income_sex$Exposure == "income_exp(3,500, 4,500]_Female" ] <- paste0( "   ", "(3,500, 4,500]\n\n" )
+
+results_cc_pr_poisson_income_sex <- results_cc_pr_poisson_income_sex %>% 
+  add_row( Exposure = paste0( "   ", "> 4,500" ), 
+           Sexual_minority_crude = "Reference",
+           Sexual_minority_model_1 = "Reference",
+           Sexual_minority_model_2 = "Reference",
+           Homosexual_crude = "Reference",
+           Homosexual_model_1 = "Reference",
+           Homosexual_model_2 = "Reference",
+           Bisexual_crude = "Reference",
+           Bisexual_model_1 = "Reference",
+           Bisexual_model_2 = "Reference",
+           Other_crude = "Reference",
+           Other_model_1 = "Reference",
+           Other_model_2 = "Reference",
+           .before = 5 )
+
+results_cc_pr_poisson_income_sex <- results_cc_pr_poisson_income_sex %>% 
+  add_row( Exposure = paste0( "   ", "> 4,500" ), 
+           Sexual_minority_crude = "Reference",
+           Sexual_minority_model_1 = "Reference",
+           Sexual_minority_model_2 = "Reference",
+           Homosexual_crude = "Reference",
+           Homosexual_model_1 = "Reference",
+           Homosexual_model_2 = "Reference",
+           Bisexual_crude = "Reference",
+           Bisexual_model_1 = "Reference",
+           Bisexual_model_2 = "Reference",
+           Other_crude = "Reference",
+           Other_model_1 = "Reference",
+           Other_model_2 = "Reference",
+           .before = 10 )
+
+results_cc_pr_poisson_income_sex$Sexual_minority_crude <- ifelse( is.na( results_cc_pr_poisson_income_sex$Sexual_minority_crude ), "",
+                                                               results_cc_pr_poisson_income_sex$Sexual_minority_crude )
+
+results_cc_pr_poisson_income_sex$Sexual_minority_model_1 <- ifelse( is.na( results_cc_pr_poisson_income_sex$Sexual_minority_model_1 ), "",
+                                                                 results_cc_pr_poisson_income_sex$Sexual_minority_model_1 )
+
+results_cc_pr_poisson_income_sex$Sexual_minority_model_2 <- ifelse( is.na( results_cc_pr_poisson_income_sex$Sexual_minority_model_2 ), "",
+                                                                 results_cc_pr_poisson_income_sex$Sexual_minority_model_2 )
+
+results_cc_pr_poisson_income_sex$Homosexual_crude <- ifelse( is.na( results_cc_pr_poisson_income_sex$Homosexual_crude ), "",
+                                                          results_cc_pr_poisson_income_sex$Homosexual_crude )
+
+results_cc_pr_poisson_income_sex$Homosexual_model_1 <- ifelse( is.na( results_cc_pr_poisson_income_sex$Homosexual_model_1 ), "",
+                                                            results_cc_pr_poisson_income_sex$Homosexual_model_1 )
+
+results_cc_pr_poisson_income_sex$Homosexual_model_2 <- ifelse( is.na( results_cc_pr_poisson_income_sex$Homosexual_model_2 ), "",
+                                                            results_cc_pr_poisson_income_sex$Homosexual_model_2 )
+
+results_cc_pr_poisson_income_sex$Bisexual_crude <- ifelse( is.na( results_cc_pr_poisson_income_sex$Bisexual_crude ), "",
+                                                        results_cc_pr_poisson_income_sex$Bisexual_crude )
+
+results_cc_pr_poisson_income_sex$Bisexual_model_1 <- ifelse( is.na( results_cc_pr_poisson_income_sex$Bisexual_model_1 ), "",
+                                                          results_cc_pr_poisson_income_sex$Bisexual_model_1 )
+
+results_cc_pr_poisson_income_sex$Bisexual_model_2 <- ifelse( is.na( results_cc_pr_poisson_income_sex$Bisexual_model_2 ), "",
+                                                          results_cc_pr_poisson_income_sex$Bisexual_model_2 )
+
+results_cc_pr_poisson_income_sex$Other_crude <- ifelse( is.na( results_cc_pr_poisson_income_sex$Other_crude ), "",
+                                                     results_cc_pr_poisson_income_sex$Other_crude )
+
+results_cc_pr_poisson_income_sex$Other_model_1 <- ifelse( is.na( results_cc_pr_poisson_income_sex$Other_model_1 ), "",
+                                                       results_cc_pr_poisson_income_sex$Other_model_1 )
+
+results_cc_pr_poisson_income_sex$Other_model_2 <- ifelse( is.na( results_cc_pr_poisson_income_sex$Other_model_2 ), "",
+                                                       results_cc_pr_poisson_income_sex$Other_model_2 )
+```
+
+##### 3.8.2. Sexual minority group
+```{r}
+selected_cols <- grep( "exposure|sexual_minority", colnames( results_cc_pr_poisson_income_sex ), ignore.case = TRUE )
+
+results_cc_pr_poisson_income_sex_sexual_minorities <- results_cc_pr_poisson_income_sex[ , selected_cols ]
+
+results_cc_pr_poisson_income_sex_sexual_minorities <- results_cc_pr_poisson_income_sex_sexual_minorities %>% 
+  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
+
+results_cc_pr_poisson_income_sex_sexual_minorities <- results_cc_pr_poisson_income_sex_sexual_minorities %>% 
+  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
+
+results_cc_pr_poisson_income_sex_sexual_minorities <- results_cc_pr_poisson_income_sex_sexual_minorities %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
+results_cc_pr_poisson_income_sex_sexual_minorities <- results_cc_pr_poisson_income_sex_sexual_minorities %>%
+  add_column( temp1 = " ", .before = 2 ) %>%
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
+
+colnames( results_cc_pr_poisson_income_sex_sexual_minorities )[1] <- "Income (100 kr/yr)ᵃ"
+
+names( results_cc_pr_poisson_income_sex_sexual_minorities )[ names( results_cc_pr_poisson_income_sex_sexual_minorities ) %in% c( "temp1", "temp2", "temp3", "Sexual_minority_crude", "Sexual_minority_model_1", "Sexual_minority_model_2" ) ] <- ""
+
+tm <- forest_theme(
+  base_size = 10,
+  colhead = list( fg_params = list( fontsize = 10 ) ),
+  legend_value = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
+  legend_name = NULL,
+  legend_position = "bottom",
+  base_family = "Arial",
+  refline_lty = "dashed",
+  refline_lwd = 1,
+  refline_col = "grey20"
+)
+
+p_cc_pr_poisson_sexual_minority <- forest(
+  results_cc_pr_poisson_income_sex_sexual_minorities[ , c( 1:10 ) ],
+  
+  est = list( results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_point_estimate_crude_2010,
+              results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_point_estimate_model_1_2010,
+              results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_point_estimate_model_2_2010,
+              
+              results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_point_estimate_crude_2014,
+              results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_point_estimate_model_1_2014,
+              results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_point_estimate_model_2_2014,
+              
+              results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_point_estimate_crude_2021,
+              results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_point_estimate_model_1_2021,
+              results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_point_estimate_model_2_2021
+  ),
+  
+  lower = list( results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_lower_ci_crude_2010,
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_lower_ci_model_1_2010,
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_lower_ci_model_2_2010,
+                
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_lower_ci_crude_2014,
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_lower_ci_model_1_2014,
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_lower_ci_model_2_2014,
+                
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_lower_ci_crude_2021,
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_lower_ci_model_1_2021,
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_lower_ci_model_2_2021
+  ),
+  
+  upper = list( results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_upper_ci_crude_2010,
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_upper_ci_model_1_2010,
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_upper_ci_model_2_2010,
+                
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_upper_ci_crude_2014,
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_upper_ci_model_1_2014,
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_upper_ci_model_2_2014,
+                
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_upper_ci_crude_2021,
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_upper_ci_model_1_2021,
+                results_cc_pr_poisson_income_sex_sexual_minorities$sexual_minority_upper_ci_model_2_2021
+  ),
+  
+  ci_column = c( 3, 6, 9 ),
+  sizes = 0.4,
+  
+  ref_line = 1,
+  
+  xlim = c( 0, 5 ),
+  ticks_at = c( 0, 1, 2, 3, 4, 5 ),
+  
+  xlab = "Proportion Ratio (95% CI)",
+  nudge_y = 0.33,
+  theme = tm
+)
+
+p_cc_pr_poisson_sexual_minority <- edit_plot( p_cc_pr_poisson_sexual_minority,
+                                              row = c( 1, 6 ),
+                                              col = 1,
+                                              gp = gpar( fontface = "bold" ) 
+)
+
+p_cc_pr_poisson_sexual_minority <- add_text(
+  p_cc_pr_poisson_sexual_minority,
+  text = "Crude Proportion Ratio (95% CI)",
+  col = c( 3:4 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
   )
+)
+
+p_cc_pr_poisson_sexual_minority <- add_text(
+  p_cc_pr_poisson_sexual_minority,
+  text = "Model 1, Proportion Ratio (95% CI)ᶜ",
+  col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_sexual_minority <- add_text(
+  p_cc_pr_poisson_sexual_minority,
+  text = "Model 2, Proportion Ratio (95% CI)ᵈ",
+  col = c( 9:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_sexual_minority <- insert_text(
+  p_cc_pr_poisson_sexual_minority,
+  text = "Sexual Minoritiesᵇ",
+  col = c( 3:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_sexual_minority <- edit_plot( p_cc_pr_poisson_sexual_minority,
+                                              row = c( 1, 6 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "white" )
+)
+
+p_cc_pr_poisson_sexual_minority <- edit_plot( p_cc_pr_poisson_sexual_minority,
+                                              row = c( 2:5, 7:10 ), 
+                                              which = "background",
+                                              gp = gpar( fill = "#eff3f2" )
+)
+
+p_cc_pr_poisson_sexual_minority <- add_border(
+  p_cc_pr_poisson_sexual_minority,
+  part = "header",
+  row = 2,
+  col = c( 3:10 ),
+  where = "top",
+  gp = gpar(lwd = 1)
+)
+
+plot( p_cc_pr_poisson_sexual_minority )
 ```
 
-###### 3.1.7.2. Proportion
+##### 3.8.3. Homosexual group
 ```{r}
-ggplot( long_data[ long_data$Age_Group == "prop", ], 
-        aes( x = cut_off, y = Value, color = Sexuality, linetype = Year ) 
-        ) +
+selected_cols <- grep( "exposure|homosexual", colnames( results_cc_pr_poisson_income_sex ), ignore.case = TRUE )
+
+results_cc_pr_poisson_income_sex_homosexual <- results_cc_pr_poisson_income_sex[ , selected_cols ]
+
+results_cc_pr_poisson_income_sex_homosexual <- results_cc_pr_poisson_income_sex_homosexual %>% 
+  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
+
+results_cc_pr_poisson_income_sex_homosexual <- results_cc_pr_poisson_income_sex_homosexual %>% 
+  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
+
+results_cc_pr_poisson_income_sex_homosexual <- results_cc_pr_poisson_income_sex_homosexual %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
+results_cc_pr_poisson_income_sex_homosexual <- results_cc_pr_poisson_income_sex_homosexual %>%
+  add_column( temp1 = " ", .before = 2 ) %>%
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
+
+colnames( results_cc_pr_poisson_income_sex_homosexual )[1] <- "Income (100 kr/yr)ᵃ"
+
+names( results_cc_pr_poisson_income_sex_homosexual )[ names( results_cc_pr_poisson_income_sex_homosexual ) %in% c( "temp1", "temp2", "temp3", "Homosexual_crude", "Homosexual_model_1", "Homosexual_model_2" ) ] <- ""
+
+tm <- forest_theme(
+  base_size = 10,
+  colhead = list( fg_params = list( fontsize = 10 ) ),
+  legend_value = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
+  legend_name = NULL,
+  legend_position = "bottom",
+  base_family = "Arial",
+  refline_lty = "dashed",
+  refline_lwd = 1,
+  refline_col = "grey20"
+)
+
+p_cc_pr_poisson_homosexual <- forest(
+  results_cc_pr_poisson_income_sex_homosexual[ , c( 1:10 ) ],
   
-  geom_line( ) +
+  est = list( results_cc_pr_poisson_income_sex_homosexual$homosexual_point_estimate_crude_2010,
+              results_cc_pr_poisson_income_sex_homosexual$homosexual_point_estimate_model_1_2010,
+              results_cc_pr_poisson_income_sex_homosexual$homosexual_point_estimate_model_2_2010,
+              
+              results_cc_pr_poisson_income_sex_homosexual$homosexual_point_estimate_crude_2014,
+              results_cc_pr_poisson_income_sex_homosexual$homosexual_point_estimate_model_1_2014,
+              results_cc_pr_poisson_income_sex_homosexual$homosexual_point_estimate_model_2_2014,
+              
+              results_cc_pr_poisson_income_sex_homosexual$homosexual_point_estimate_crude_2021,
+              results_cc_pr_poisson_income_sex_homosexual$homosexual_point_estimate_model_1_2021,
+              results_cc_pr_poisson_income_sex_homosexual$homosexual_point_estimate_model_2_2021
+  ),
   
-  scale_linetype_manual( values = c( "2010" = "dotdash", "2014" = "dashed", "2021" = "solid" ),
-                         labels = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ) 
-                         ) +
+  lower = list( results_cc_pr_poisson_income_sex_homosexual$homosexual_lower_ci_crude_2010,
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_lower_ci_model_1_2010,
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_lower_ci_model_2_2010,
+                
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_lower_ci_crude_2014,
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_lower_ci_model_1_2014,
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_lower_ci_model_2_2014,
+                
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_lower_ci_crude_2021,
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_lower_ci_model_1_2021,
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_lower_ci_model_2_2021
+  ),
   
-  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D" ),
-                      breaks = c( "Heterosexual", "Homosexual", "Bisexual", "Other" ),
-                      labels = c( "Heterosexual", "Homosexual", "Bisexual", "Otherᶜ" )
-                      ) +
+  upper = list( results_cc_pr_poisson_income_sex_homosexual$homosexual_upper_ci_crude_2010,
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_upper_ci_model_1_2010,
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_upper_ci_model_2_2010,
+                
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_upper_ci_crude_2014,
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_upper_ci_model_1_2014,
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_upper_ci_model_2_2014,
+                
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_upper_ci_crude_2021,
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_upper_ci_model_1_2021,
+                results_cc_pr_poisson_income_sex_homosexual$homosexual_upper_ci_model_2_2021
+  ),
   
-  scale_x_continuous( limits = c( 15, 100 ), 
-                      breaks = seq( 15, 100, by = 5 ),
-                      expand = c( 0.02, 0 )
-                      ) +
+  ci_column = c( 3, 6, 9 ),
+  sizes = 0.4,
   
-  scale_y_continuous( labels = scales::percent,
-                      limits = c( 0, 1 ), 
-                      breaks = c( 0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.7, 0.8, 0.9, 1 )
-                      ) +
+  ref_line = 1,
   
-  scale_y_break( c( 0.12, 0.75 ), scales = 1, space = 0.3, expand = c( 0, 0 ) ) +
+  xlim = c( 0, 3 ),
+  ticks_at = c( 0, 1, 2, 3 ),
   
-  labs( x = "Age cut-off (years)ᵃ", 
-        y = "Proportionᵇ"
-        ) +
-  
-  theme_classic() +
-  
-  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
-         axis.title.y = element_text( family = "Arial", size = 11 ),
-         axis.title.x = element_text( family = "Arial", size = 11 ),
-         axis.text.x = element_text( family = "Arial", size = 11 ),
-         legend.text = element_text( family = "Arial", size = 10 ),
-         legend.position = "right",
-         legend.title = element_blank(),
-         axis.text.y.right = element_blank(),
-         axis.ticks.y.right = element_blank(),
-         axis.line.y.right = element_blank()
-         )
+  xlab = "Proportion Ratio (95% CI)",
+  nudge_y = 0.33,
+  theme = tm
+)
+
+p_cc_pr_poisson_homosexual <- edit_plot( p_cc_pr_poisson_homosexual,
+                                         row = c( 1, 6 ),
+                                         col = 1,
+                                         gp = gpar( fontface = "bold" ) 
+)
+
+p_cc_pr_poisson_homosexual <- add_text(
+  p_cc_pr_poisson_homosexual,
+  text = "Crude Proportion Ratio (95% CI)",
+  col = c( 3:4 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_homosexual <- add_text(
+  p_cc_pr_poisson_homosexual,
+  text = "Model 1, Proportion Ratio (95% CI)ᶜ",
+  col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_homosexual <- add_text(
+  p_cc_pr_poisson_homosexual,
+  text = "Model 2, Proportion Ratio (95% CI)ᵈ",
+  col = c( 9:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_homosexual <- insert_text(
+  p_cc_pr_poisson_homosexual,
+  text = "Homosexual Identityᵇ",
+  col = c( 3:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_homosexual <- edit_plot( p_cc_pr_poisson_homosexual,
+                                         row = c( 1, 6 ), 
+                                         which = "background",
+                                         gp = gpar( fill = "white" )
+)
+
+p_cc_pr_poisson_homosexual <- edit_plot( p_cc_pr_poisson_homosexual,
+                                         row = c( 2:5, 7:10 ), 
+                                         which = "background",
+                                         gp = gpar( fill = "#eff3f2" )
+)
+
+p_cc_pr_poisson_homosexual <- add_border(
+  p_cc_pr_poisson_homosexual,
+  part = "header",
+  row = 2,
+  col = c( 3:10 ),
+  where = "top",
+  gp = gpar(lwd = 1)
+)
+
+plot( p_cc_pr_poisson_homosexual )
 ```
 
-###### 3.1.7.3. Proportion ratio
+##### 3.8.4. Bisexual group
 ```{r}
-ggplot( long_data[ long_data$Age_Group == "pr", ], 
-        aes( x = cut_off, y = Value, color = Sexuality, linetype = Year ) 
-        ) +
+selected_cols <- grep( "exposure|bisexual", colnames( results_cc_pr_poisson_income_sex ), ignore.case = TRUE )
+
+results_cc_pr_poisson_income_sex_bisexual <- results_cc_pr_poisson_income_sex[ , selected_cols ]
+
+results_cc_pr_poisson_income_sex_bisexual <- results_cc_pr_poisson_income_sex_bisexual %>% 
+  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
+
+results_cc_pr_poisson_income_sex_bisexual <- results_cc_pr_poisson_income_sex_bisexual %>% 
+  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
+
+results_cc_pr_poisson_income_sex_bisexual <- results_cc_pr_poisson_income_sex_bisexual %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
+results_cc_pr_poisson_income_sex_bisexual <- results_cc_pr_poisson_income_sex_bisexual %>%
+  add_column( temp1 = " ", .before = 2 ) %>%
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
+
+colnames( results_cc_pr_poisson_income_sex_bisexual )[1] <- "Income (100 kr/yr)ᵃ"
+
+names( results_cc_pr_poisson_income_sex_bisexual )[ names( results_cc_pr_poisson_income_sex_bisexual ) %in% c( "temp1", "temp2", "temp3", "Bisexual_crude", "Bisexual_model_1", "Bisexual_model_2" ) ] <- ""
+
+tm <- forest_theme(
+  base_size = 10,
+  colhead = list( fg_params = list( fontsize = 10 ) ),
+  legend_value = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
+  legend_name = NULL,
+  legend_position = "bottom",
+  base_family = "Arial",
+  refline_lty = "dashed",
+  refline_lwd = 1,
+  refline_col = "grey20"
+)
+
+p_cc_pr_poisson_bisexual <- forest(
+  results_cc_pr_poisson_income_sex_bisexual[ , c( 1:10 ) ],
   
-  geom_line( ) +
+  est = list( results_cc_pr_poisson_income_sex_bisexual$bisexual_point_estimate_crude_2010,
+              results_cc_pr_poisson_income_sex_bisexual$bisexual_point_estimate_model_1_2010,
+              results_cc_pr_poisson_income_sex_bisexual$bisexual_point_estimate_model_2_2010,
+              
+              results_cc_pr_poisson_income_sex_bisexual$bisexual_point_estimate_crude_2014,
+              results_cc_pr_poisson_income_sex_bisexual$bisexual_point_estimate_model_1_2014,
+              results_cc_pr_poisson_income_sex_bisexual$bisexual_point_estimate_model_2_2014,
+              
+              results_cc_pr_poisson_income_sex_bisexual$bisexual_point_estimate_crude_2021,
+              results_cc_pr_poisson_income_sex_bisexual$bisexual_point_estimate_model_1_2021,
+              results_cc_pr_poisson_income_sex_bisexual$bisexual_point_estimate_model_2_2021
+  ),
   
-  scale_linetype_manual( values = c( "2010" = "dotdash", "2014" = "dashed", "2021" = "solid" ),
-                         labels = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ) 
-                         ) +
+  lower = list( results_cc_pr_poisson_income_sex_bisexual$bisexual_lower_ci_crude_2010,
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_lower_ci_model_1_2010,
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_lower_ci_model_2_2010,
+                
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_lower_ci_crude_2014,
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_lower_ci_model_1_2014,
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_lower_ci_model_2_2014,
+                
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_lower_ci_crude_2021,
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_lower_ci_model_1_2021,
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_lower_ci_model_2_2021
+  ),
   
-  scale_color_manual( values = c( "#C77CFF", "#00BFC4", "#7CAE00", "#F8766D" ),
-                      breaks = c( "Heterosexual", "Homosexual", "Bisexual", "Other" ),
-                      labels = c( "Heterosexual", "Homosexual", "Bisexual", "Otherᶜ" )
-                      ) +
+  upper = list( results_cc_pr_poisson_income_sex_bisexual$bisexual_upper_ci_crude_2010,
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_upper_ci_model_1_2010,
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_upper_ci_model_2_2010,
+                
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_upper_ci_crude_2014,
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_upper_ci_model_1_2014,
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_upper_ci_model_2_2014,
+                
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_upper_ci_crude_2021,
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_upper_ci_model_1_2021,
+                results_cc_pr_poisson_income_sex_bisexual$bisexual_upper_ci_model_2_2021
+  ),
   
-  scale_x_continuous( limits = c( 15, 65 ), 
-                      breaks = c( 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65 ),
-                      expand = c( 0.02, 0 )
-                      ) +
+  ci_column = c( 3, 6, 9 ),
+  sizes = 0.4,
   
-  scale_y_continuous( limits = c( 0, 7 ), 
-                      breaks = c( 0, 1, 2, 3, 4, 5, 6, 7 ),
-                      expand = c( 0.04, 0 ) 
-                      ) +
+  ref_line = 1,
   
-  labs( x = "Age cut-off (years)ᵃ", 
-        y = "Proportion ratioᵇ"
-        ) +
+  xlim = c( 0, 6 ),
+  ticks_at = c( 0, 1, 2, 4, 6 ),
   
-  theme_classic() +
-  
-  theme( axis.text.y = element_text( family = "Arial", size = 11 ),
-         axis.title.y = element_text( family = "Arial", size = 11 ),
-         axis.title.x = element_text( family = "Arial", size = 11 ),
-         axis.text.x = element_text( family = "Arial", size = 11 ),
-         legend.text = element_text( family = "Arial", size = 10 ),
-         legend.position = "right",
-         legend.title = element_blank()
-         )
+  xlab = "Proportion Ratio (95% CI)",
+  nudge_y = 0.33,
+  theme = tm
+)
+
+p_cc_pr_poisson_bisexual <- edit_plot( p_cc_pr_poisson_bisexual,
+                                       row = c( 1, 6 ),
+                                       col = 1,
+                                       gp = gpar( fontface = "bold" ) 
+)
+
+p_cc_pr_poisson_bisexual <- add_text(
+  p_cc_pr_poisson_bisexual,
+  text = "Crude Proportion Ratio (95% CI)",
+  col = c( 3:4 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_bisexual <- add_text(
+  p_cc_pr_poisson_bisexual,
+  text = "Model 1, Proportion Ratio (95% CI)ᶜ",
+  col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_bisexual <- add_text(
+  p_cc_pr_poisson_bisexual,
+  text = "Model 2, Proportion Ratio (95% CI)ᵈ",
+  col = c( 9:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_bisexual <- insert_text(
+  p_cc_pr_poisson_bisexual,
+  text = "Bisexual Identityᵇ",
+  col = c( 3:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_bisexual <- edit_plot( p_cc_pr_poisson_bisexual,
+                                       row = c( 1, 6 ), 
+                                       which = "background",
+                                       gp = gpar( fill = "white" )
+)
+
+p_cc_pr_poisson_bisexual <- edit_plot( p_cc_pr_poisson_bisexual,
+                                       row = c( 2:5, 7:10 ), 
+                                       which = "background",
+                                       gp = gpar( fill = "#eff3f2" )
+)
+
+p_cc_pr_poisson_bisexual <- add_border(
+  p_cc_pr_poisson_bisexual,
+  part = "header",
+  row = 2,
+  col = c( 3:10 ),
+  where = "top",
+  gp = gpar(lwd = 1)
+)
+
+plot( p_cc_pr_poisson_bisexual )
 ```
 
-##### 3.1.8. Compare across models
-###### 3.1.8.1. SPHC-B 2010
+##### 3.8.5. Other group
+```{r}
+selected_cols <- grep( "exposure|other", colnames( results_cc_pr_poisson_income_sex ), ignore.case = TRUE )
+
+results_cc_pr_poisson_income_sex_other <- results_cc_pr_poisson_income_sex[ , selected_cols ]
+
+results_cc_pr_poisson_income_sex_other <- results_cc_pr_poisson_income_sex_other %>% 
+  add_column( ` ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 2 )
+
+results_cc_pr_poisson_income_sex_other <- results_cc_pr_poisson_income_sex_other %>% 
+  add_column( `  ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 4 )
+
+results_cc_pr_poisson_income_sex_other <- results_cc_pr_poisson_income_sex_other %>% 
+  add_column( `   ` = paste( rep( " ", 20 ) , collapse = " " ), .before = 6 )
+
+results_cc_pr_poisson_income_sex_other <- results_cc_pr_poisson_income_sex_other %>%
+  add_column( temp1 = " ", .before = 2 ) %>%
+  add_column( temp2 = " ", .before = 5 ) %>%
+  add_column( temp3 = " ", .before = 8 )
+
+colnames( results_cc_pr_poisson_income_sex_other )[1] <- "Income (100 kr/yr)ᵃ"
+
+names( results_cc_pr_poisson_income_sex_other )[ names( results_cc_pr_poisson_income_sex_other ) %in% c( "temp1", "temp2", "temp3", "Other_crude", "Other_model_1", "Other_model_2" ) ] <- ""
+
+tm <- forest_theme(
+  base_size = 10,
+  colhead = list( fg_params = list( fontsize = 10 ) ),
+  legend_value = c( "SPHC-B 2010", "SPHC-B 2014", "SPHC-B 2021" ),
+  legend_name = NULL,
+  legend_position = "bottom",
+  base_family = "Arial",
+  refline_lty = "dashed",
+  refline_lwd = 1,
+  refline_col = "grey20"
+)
+
+p_cc_pr_poisson_other <- forest(
+  results_cc_pr_poisson_income_sex_other[ , c( 1:10 ) ],
+  
+  est = list( results_cc_pr_poisson_income_sex_other$other_point_estimate_crude_2010,
+              results_cc_pr_poisson_income_sex_other$other_point_estimate_model_1_2010,
+              results_cc_pr_poisson_income_sex_other$other_point_estimate_model_2_2010,
+              
+              results_cc_pr_poisson_income_sex_other$other_point_estimate_crude_2014,
+              results_cc_pr_poisson_income_sex_other$other_point_estimate_model_1_2014,
+              results_cc_pr_poisson_income_sex_other$other_point_estimate_model_2_2014,
+              
+              results_cc_pr_poisson_income_sex_other$other_point_estimate_crude_2021,
+              results_cc_pr_poisson_income_sex_other$other_point_estimate_model_1_2021,
+              results_cc_pr_poisson_income_sex_other$other_point_estimate_model_2_2021
+  ),
+  
+  lower = list( results_cc_pr_poisson_income_sex_other$other_lower_ci_crude_2010,
+                results_cc_pr_poisson_income_sex_other$other_lower_ci_model_1_2010,
+                results_cc_pr_poisson_income_sex_other$other_lower_ci_model_2_2010,
+                
+                results_cc_pr_poisson_income_sex_other$other_lower_ci_crude_2014,
+                results_cc_pr_poisson_income_sex_other$other_lower_ci_model_1_2014,
+                results_cc_pr_poisson_income_sex_other$other_lower_ci_model_2_2014,
+                
+                results_cc_pr_poisson_income_sex_other$other_lower_ci_crude_2021,
+                results_cc_pr_poisson_income_sex_other$other_lower_ci_model_1_2021,
+                results_cc_pr_poisson_income_sex_other$other_lower_ci_model_2_2021
+  ),
+  
+  upper = list( results_cc_pr_poisson_income_sex_other$other_upper_ci_crude_2010,
+                results_cc_pr_poisson_income_sex_other$other_upper_ci_model_1_2010,
+                results_cc_pr_poisson_income_sex_other$other_upper_ci_model_2_2010,
+                
+                results_cc_pr_poisson_income_sex_other$other_upper_ci_crude_2014,
+                results_cc_pr_poisson_income_sex_other$other_upper_ci_model_1_2014,
+                results_cc_pr_poisson_income_sex_other$other_upper_ci_model_2_2014,
+                
+                results_cc_pr_poisson_income_sex_other$other_upper_ci_crude_2021,
+                results_cc_pr_poisson_income_sex_other$other_upper_ci_model_1_2021,
+                results_cc_pr_poisson_income_sex_other$other_upper_ci_model_2_2021
+  ),
+  
+  ci_column = c( 3, 6, 9 ),
+  sizes = 0.4,
+  
+  ref_line = 1,
+  
+  xlim = c( 0, 10 ),
+  ticks_at = c( 0, 1, 2, 4, 6, 8, 10 ),
+  
+  xlab = "Proportion Ratio (95% CI)",
+  nudge_y = 0.33,
+  theme = tm
+)
+
+p_cc_pr_poisson_other <- edit_plot( p_cc_pr_poisson_other,
+                                    row = c( 1, 6 ),
+                                    col = 1,
+                                    gp = gpar( fontface = "bold" ) 
+)
+
+p_cc_pr_poisson_other <- add_text(
+  p_cc_pr_poisson_other,
+  text = "Crude Proportion Ratio (95% CI)",
+  col = c( 3:4 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_other <- add_text(
+  p_cc_pr_poisson_other,
+  text = "Model 1, Proportion Ratio (95% CI)ᶜ",
+  col = c( 6:7 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_other <- add_text(
+  p_cc_pr_poisson_other,
+  text = "Model 2, Proportion Ratio (95% CI)ᵈ",
+  col = c( 9:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_other <- insert_text(
+  p_cc_pr_poisson_other,
+  text = "Uncertain/Other Sexual Identitiesᵇ",
+  col = c( 3:10 ),
+  row = 1,
+  part = "header",
+  gp = gpar(
+    fontface = "bold",
+    fontsize = 10,
+    fontfamily = "Arial"
+  )
+)
+
+p_cc_pr_poisson_other <- edit_plot( p_cc_pr_poisson_other,
+                                    row = c( 1, 6 ), 
+                                    which = "background",
+                                    gp = gpar( fill = "white" )
+)
+
+p_cc_pr_poisson_other <- edit_plot( p_cc_pr_poisson_other,
+                                    row = c( 2:5, 7:10 ), 
+                                    which = "background",
+                                    gp = gpar( fill = "#eff3f2" )
+)
+
+p_cc_pr_poisson_other <- add_border(
+  p_cc_pr_poisson_other,
+  part = "header",
+  row = 2,
+  col = c( 3:10 ),
+  where = "top",
+  gp = gpar(lwd = 1)
+)
+
+plot( p_cc_pr_poisson_other )
+```
+
+#### 3.9. Compare across models
+##### 3.9.1. SPHC-B 2010
 ```{r}
 results_cc_pr_all_models_2010 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_cc_pr_all_models_2010.xlsx")
 
@@ -4664,25 +5442,35 @@ results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure =
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp18-29" ] <- "Age: 18–29 yrs"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp30-44" ] <- "Age: 30–44 yrs"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp>=60" ] <- "Age: \u2265 60 yrs"
-results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp18-29_Male" ] <- "Age: 18–29 yrs (among males)"
-results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp30-44_Male" ] <- "Age: 30–44 yrs (among males)"
-results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp>=60_Male" ] <- "Age: \u2265 60 yrs (among males)"
-results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp18-29_Female" ] <- "Age: 18–29 yrs (among females)"
-results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp30-44_Female" ] <- "Age: 30–44 yrs (among females)"
-results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp>=60_Female" ] <- "Age: \u2265 60 yrs (among females)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp18-29_Male" ] <- "Age: 18–29 yrs (males)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp30-44_Male" ] <- "Age: 30–44 yrs (males)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp>=60_Male" ] <- "Age: \u2265 60 yrs (males)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp18-29_Female" ] <- "Age: 18–29 yrs (females)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp30-44_Female" ] <- "Age: 30–44 yrs (females)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "age_exp>=60_Female" ] <- "Age: \u2265 60 yrs (females)"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "country_of_birth_expEurope" ] <- "Country of birth: Europeᵃ"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "country_of_birth_expOutside Europe" ] <- "Country of birth: Outside Europe"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "education_exp<=9 years" ] <- "Education: \u2264 9 yrs"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "education_exp10-12 years" ] <- "Education: 10–12 yrs"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "education_exp<=9 years_Male" ] <- "Education: \u2264 9 yrs (males)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "education_exp10-12 years_Male" ] <- "Education: 10–12 yrs (males)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "education_exp<=9 years_Female" ] <- "Education: \u2264 9 yrs (females)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "education_exp10-12 years_Female" ] <- "Education: 10–12 yrs (females)"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "income_exp<=2,500" ] <- "Incomeᵇ: \u2264 2,500"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "income_exp(2,500, 3,500]" ] <- "Incomeᵇ: (2,500, 3,500]"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "income_exp(3,500, 4,500]" ] <- "Incomeᵇ: (3,500, 4,500]"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "income_exp<=2,500_Male" ] <- "Incomeᵇ: \u2264 2,500 (males)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "income_exp(2,500, 3,500]_Male" ] <- "Incomeᵇ: (2,500, 3,500] (males)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "income_exp(3,500, 4,500]_Male" ] <- "Incomeᵇ: (3,500, 4,500] (males)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "income_exp<=2,500_Female" ] <- "Incomeᵇ: \u2264 2,500 (females)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "income_exp(2,500, 3,500]_Female" ] <- "Incomeᵇ: (2,500, 3,500] (females)"
+results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "income_exp(3,500, 4,500]_Female" ] <- "Incomeᵇ: (3,500, 4,500] (females)"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "marital_status_expNever married" ] <- "Marital status: Never married"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "marital_status_expOther" ] <- "Marital status: Otherᶜ"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "living_status_expyes" ] <- "Living alone: Yes"
 results_cc_pr_all_models_2010$Exposure[ results_cc_pr_all_models_2010$Exposure == "personal_support_expno" ] <- "Personal support: No"
 
-desired_order <- c( "Sex: Female", "Age: 18–29 yrs", "Age: 30–44 yrs", "Age: ≥ 60 yrs", "Age: 18–29 yrs (among males)", "Age: 30–44 yrs (among males)", "Age: ≥ 60 yrs (among males)", "Age: 18–29 yrs (among females)", "Age: 30–44 yrs (among females)", "Age: ≥ 60 yrs (among females)", "Country of birth: Europeᵃ", "Country of birth: Outside Europe", "Education: ≤ 9 yrs", "Education: 10–12 yrs", "Incomeᵇ: ≤ 2,500", "Incomeᵇ: (2,500, 3,500]", "Incomeᵇ: (3,500, 4,500]", "Marital status: Never married", "Marital status: Otherᶜ", "Living alone: Yes", "Personal support: No" )
+desired_order <- c( "Sex: Female", "Age: 18–29 yrs", "Age: 30–44 yrs", "Age: ≥ 60 yrs", "Age: 18–29 yrs (males)", "Age: 30–44 yrs (males)", "Age: ≥ 60 yrs (males)", "Age: 18–29 yrs (females)", "Age: 30–44 yrs (females)", "Age: ≥ 60 yrs (females)", "Country of birth: Europeᵃ", "Country of birth: Outside Europe", "Education: ≤ 9 yrs", "Education: 10–12 yrs", "Education: ≤ 9 yrs (males)", "Education: 10–12 yrs (males)", "Education: ≤ 9 yrs (females)", "Education: 10–12 yrs (females)", "Incomeᵇ: ≤ 2,500", "Incomeᵇ: (2,500, 3,500]", "Incomeᵇ: (3,500, 4,500]", "Incomeᵇ: ≤ 2,500 (males)", "Incomeᵇ: (2,500, 3,500] (males)", "Incomeᵇ: (3,500, 4,500] (males)", "Incomeᵇ: ≤ 2,500 (females)", "Incomeᵇ: (2,500, 3,500] (females)", "Incomeᵇ: (3,500, 4,500] (females)", "Marital status: Never married", "Marital status: Otherᶜ", "Living alone: Yes", "Personal support: No" )
                     
 results_cc_pr_all_models_2010 <- results_cc_pr_all_models_2010 %>%
   mutate( Exposure = factor( Exposure, levels = desired_order ) ) %>%
@@ -4755,11 +5543,12 @@ ggplot( long_data_2010,
          axis.title.y = element_text( family = "Arial", size = 11, margin = margin( r = 10, unit = "pt" ) ),
          legend.title = element_text( family = "Arial", size = 11 ),
          legend.text = element_text( family = "Arial", size = 10 ),
-         strip.text = element_text( family = "Arial", size = 9 )
+         strip.text = element_text( family = "Arial", size = 9 ),
+         panel.spacing = unit( 0.5, "lines" )
          )
 ```
 
-###### 3.1.8.2. SPHC-B 2014
+##### 3.9.2. SPHC-B 2014
 ```{r}
 results_cc_pr_all_models_2014 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_cc_pr_all_models_2014.xlsx")
 
@@ -4767,25 +5556,35 @@ results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure =
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp16-29" ] <- "Age: 16–29 yrs"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp30-44" ] <- "Age: 30–44 yrs"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp>=60" ] <- "Age: \u2265 60 yrs"
-results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp16-29_Male" ] <- "Age: 16–29 yrs (among males)"
-results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp30-44_Male" ] <- "Age: 30–44 yrs (among males)"
-results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp>=60_Male" ] <- "Age: \u2265 60 yrs (among males)"
-results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp16-29_Female" ] <- "Age: 16–29 yrs (among females)"
-results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp30-44_Female" ] <- "Age: 30–44 yrs (among females)"
-results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp>=60_Female" ] <- "Age: \u2265 60 yrs (among females)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp16-29_Male" ] <- "Age: 16–29 yrs (males)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp30-44_Male" ] <- "Age: 30–44 yrs (males)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp>=60_Male" ] <- "Age: \u2265 60 yrs (males)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp16-29_Female" ] <- "Age: 16–29 yrs (females)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp30-44_Female" ] <- "Age: 30–44 yrs (females)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "age_exp>=60_Female" ] <- "Age: \u2265 60 yrs (females)"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "country_of_birth_expEurope" ] <- "Country of birth: Europeᵃ"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "country_of_birth_expOutside Europe" ] <- "Country of birth: Outside Europe"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "education_exp<=9 years" ] <- "Education: \u2264 9 yrs"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "education_exp10-12 years" ] <- "Education: 10–12 yrs"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "education_exp<=9 years_Male" ] <- "Education: \u2264 9 yrs (males)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "education_exp10-12 years_Male" ] <- "Education: 10–12 yrs (males)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "education_exp<=9 years_Female" ] <- "Education: \u2264 9 yrs (females)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "education_exp10-12 years_Female" ] <- "Education: 10–12 yrs (females)"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "income_exp<=2,500" ] <- "Incomeᵇ: \u2264 2,500"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "income_exp(2,500, 3,500]" ] <- "Incomeᵇ: (2,500, 3,500]"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "income_exp(3,500, 4,500]" ] <- "Incomeᵇ: (3,500, 4,500]"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "income_exp<=2,500_Male" ] <- "Incomeᵇ: \u2264 2,500 (males)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "income_exp(2,500, 3,500]_Male" ] <- "Incomeᵇ: (2,500, 3,500] (males)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "income_exp(3,500, 4,500]_Male" ] <- "Incomeᵇ: (3,500, 4,500] (males)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "income_exp<=2,500_Female" ] <- "Incomeᵇ: \u2264 2,500 (females)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "income_exp(2,500, 3,500]_Female" ] <- "Incomeᵇ: (2,500, 3,500] (females)"
+results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "income_exp(3,500, 4,500]_Female" ] <- "Incomeᵇ: (3,500, 4,500] (females)"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "marital_status_expNever married" ] <- "Marital status: Never married"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "marital_status_expOther" ] <- "Marital status: Otherᶜ"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "living_status_expyes" ] <- "Living alone: Yes"
 results_cc_pr_all_models_2014$Exposure[ results_cc_pr_all_models_2014$Exposure == "personal_support_expno" ] <- "Personal support: No"
 
-desired_order <- c( "Sex: Female", "Age: 16–29 yrs", "Age: 30–44 yrs", "Age: ≥ 60 yrs", "Age: 16–29 yrs (among males)", "Age: 30–44 yrs (among males)", "Age: ≥ 60 yrs (among males)", "Age: 16–29 yrs (among females)", "Age: 30–44 yrs (among females)", "Age: ≥ 60 yrs (among females)", "Country of birth: Europeᵃ", "Country of birth: Outside Europe", "Education: ≤ 9 yrs", "Education: 10–12 yrs", "Incomeᵇ: ≤ 2,500", "Incomeᵇ: (2,500, 3,500]", "Incomeᵇ: (3,500, 4,500]", "Marital status: Never married", "Marital status: Otherᶜ", "Living alone: Yes", "Personal support: No" )
+desired_order <- c( "Sex: Female", "Age: 16–29 yrs", "Age: 30–44 yrs", "Age: ≥ 60 yrs", "Age: 16–29 yrs (males)", "Age: 30–44 yrs (males)", "Age: ≥ 60 yrs (males)", "Age: 16–29 yrs (females)", "Age: 30–44 yrs (females)", "Age: ≥ 60 yrs (females)", "Country of birth: Europeᵃ", "Country of birth: Outside Europe", "Education: ≤ 9 yrs", "Education: 10–12 yrs", "Education: ≤ 9 yrs (males)", "Education: 10–12 yrs (males)", "Education: ≤ 9 yrs (females)", "Education: 10–12 yrs (females)", "Incomeᵇ: ≤ 2,500", "Incomeᵇ: (2,500, 3,500]", "Incomeᵇ: (3,500, 4,500]", "Incomeᵇ: ≤ 2,500 (males)", "Incomeᵇ: (2,500, 3,500] (males)", "Incomeᵇ: (3,500, 4,500] (males)", "Incomeᵇ: ≤ 2,500 (females)", "Incomeᵇ: (2,500, 3,500] (females)", "Incomeᵇ: (3,500, 4,500] (females)", "Marital status: Never married", "Marital status: Otherᶜ", "Living alone: Yes", "Personal support: No" )
 
 results_cc_pr_all_models_2014 <- results_cc_pr_all_models_2014 %>%
   mutate( Exposure = factor( Exposure, levels = desired_order ) ) %>%
@@ -4859,11 +5658,12 @@ ggplot( long_data_2014,
          axis.title.y = element_text( family = "Arial", size = 11, margin = margin( r = 10, unit = "pt" ) ),
          legend.title = element_text( family = "Arial", size = 11 ),
          legend.text = element_text( family = "Arial", size = 10 ),
-         strip.text = element_text( family = "Arial", size = 9 )
+         strip.text = element_text( family = "Arial", size = 9 ),
+         panel.spacing = unit( 0.5, "lines" )
   )
 ```
 
-###### 3.1.8.3. SPHC-B 2021
+##### 3.9.3. SPHC-B 2021
 ```{r}
 results_cc_pr_all_models_2021 <- read_xlsx("/Users/guoqiang.zhang/Documents/Karolinska Institutet/Research Projects/Trends and Fluidity of Sexual Identity/Sexual_identity_in_Stockholm_County/results_cc_pr_all_models_2021.xlsx")
 
@@ -4871,23 +5671,33 @@ results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure =
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp16-29" ] <- "Age: 16–29 yrs"
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp30-44" ] <- "Age: 30–44 yrs"
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp>=60" ] <- "Age: \u2265 60 yrs"
-results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp16-29_Male" ] <- "Age: 16–29 yrs (among males)"
-results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp30-44_Male" ] <- "Age: 30–44 yrs (among males)"
-results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp>=60_Male" ] <- "Age: \u2265 60 yrs (among males)"
-results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp16-29_Female" ] <- "Age: 16–29 yrs (among females)"
-results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp30-44_Female" ] <- "Age: 30–44 yrs (among females)"
-results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp>=60_Female" ] <- "Age: \u2265 60 yrs (among females)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp16-29_Male" ] <- "Age: 16–29 yrs (males)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp30-44_Male" ] <- "Age: 30–44 yrs (males)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp>=60_Male" ] <- "Age: \u2265 60 yrs (males)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp16-29_Female" ] <- "Age: 16–29 yrs (females)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp30-44_Female" ] <- "Age: 30–44 yrs (females)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "age_exp>=60_Female" ] <- "Age: \u2265 60 yrs (females)"
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "country_of_birth_expEurope" ] <- "Country of birth: Europeᵃ"
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "country_of_birth_expOutside Europe" ] <- "Country of birth: Outside Europe"
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "education_exp<=9 years" ] <- "Education: \u2264 9 yrs"
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "education_exp10-12 years" ] <- "Education: 10–12 yrs"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "education_exp<=9 years_Male" ] <- "Education: \u2264 9 yrs (males)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "education_exp10-12 years_Male" ] <- "Education: 10–12 yrs (males)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "education_exp<=9 years_Female" ] <- "Education: \u2264 9 yrs (females)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "education_exp10-12 years_Female" ] <- "Education: 10–12 yrs (females)"
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "income_exp<=2,500" ] <- "Incomeᵇ: \u2264 2,500"
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "income_exp(2,500, 3,500]" ] <- "Incomeᵇ: (2,500, 3,500]"
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "income_exp(3,500, 4,500]" ] <- "Incomeᵇ: (3,500, 4,500]"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "income_exp<=2,500_Male" ] <- "Incomeᵇ: \u2264 2,500 (males)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "income_exp(2,500, 3,500]_Male" ] <- "Incomeᵇ: (2,500, 3,500] (males)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "income_exp(3,500, 4,500]_Male" ] <- "Incomeᵇ: (3,500, 4,500] (males)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "income_exp<=2,500_Female" ] <- "Incomeᵇ: \u2264 2,500 (females)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "income_exp(2,500, 3,500]_Female" ] <- "Incomeᵇ: (2,500, 3,500] (females)"
+results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "income_exp(3,500, 4,500]_Female" ] <- "Incomeᵇ: (3,500, 4,500] (females)"
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "marital_status_expNever married" ] <- "Marital status: Never married"
 results_cc_pr_all_models_2021$Exposure[ results_cc_pr_all_models_2021$Exposure == "marital_status_expOther" ] <- "Marital status: Otherᶜ"
 
-desired_order <- c( "Sex: Female", "Age: 16–29 yrs", "Age: 30–44 yrs", "Age: ≥ 60 yrs", "Age: 16–29 yrs (among males)", "Age: 30–44 yrs (among males)", "Age: ≥ 60 yrs (among males)", "Age: 16–29 yrs (among females)", "Age: 30–44 yrs (among females)", "Age: ≥ 60 yrs (among females)", "Country of birth: Europeᵃ", "Country of birth: Outside Europe", "Education: ≤ 9 yrs", "Education: 10–12 yrs", "Incomeᵇ: ≤ 2,500", "Incomeᵇ: (2,500, 3,500]", "Incomeᵇ: (3,500, 4,500]", "Marital status: Never married", "Marital status: Otherᶜ" )
+desired_order <- c( "Sex: Female", "Age: 16–29 yrs", "Age: 30–44 yrs", "Age: ≥ 60 yrs", "Age: 16–29 yrs (males)", "Age: 30–44 yrs (males)", "Age: ≥ 60 yrs (males)", "Age: 16–29 yrs (females)", "Age: 30–44 yrs (females)", "Age: ≥ 60 yrs (females)", "Country of birth: Europeᵃ", "Country of birth: Outside Europe", "Education: ≤ 9 yrs", "Education: 10–12 yrs", "Education: ≤ 9 yrs (males)", "Education: 10–12 yrs (males)", "Education: ≤ 9 yrs (females)", "Education: 10–12 yrs (females)", "Incomeᵇ: ≤ 2,500", "Incomeᵇ: (2,500, 3,500]", "Incomeᵇ: (3,500, 4,500]", "Incomeᵇ: ≤ 2,500 (males)", "Incomeᵇ: (2,500, 3,500] (males)", "Incomeᵇ: (3,500, 4,500] (males)", "Incomeᵇ: ≤ 2,500 (females)", "Incomeᵇ: (2,500, 3,500] (females)", "Incomeᵇ: (3,500, 4,500] (females)", "Marital status: Never married", "Marital status: Otherᶜ" )
 
 results_cc_pr_all_models_2021 <- results_cc_pr_all_models_2021 %>%
   mutate( Exposure = factor( Exposure, levels = desired_order ) ) %>%
@@ -4961,7 +5771,8 @@ ggplot( long_data_2021,
          axis.title.y = element_text( family = "Arial", size = 11, margin = margin( r = 10, unit = "pt" ) ),
          legend.title = element_text( family = "Arial", size = 11 ),
          legend.text = element_text( family = "Arial", size = 10 ),
-         strip.text = element_text( family = "Arial", size = 9 )
+         strip.text = element_text( family = "Arial", size = 9 ),
+         panel.spacing = unit( 0.5, "lines" )
   )
 ```
 
