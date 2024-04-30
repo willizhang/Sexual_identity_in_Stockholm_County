@@ -755,6 +755,12 @@ implist_2014_transformed <- lapply( implist_2014, function( df ) {
       levels = c( "45-59", "16-29", "30-44", ">=60" ) )
     age_conf <- age
     
+    # age group
+    age_group <- cut( age,
+                      breaks = seq( 15, 79, by = 2 ),
+                      include.lowest = TRUE,
+                      right = TRUE )
+    
     # generation
     birth_year <- 2014 - age
     generation <- factor( 
@@ -1052,8 +1058,9 @@ prop_cc_generation <- left_join( prop_cc_generation,
 d_2014_iteration_age_group <- d_2014_complete
 
 d_2014_iteration_age_group$age_group <- cut( d_2014_iteration_age_group$age,
-                                             breaks = c( 16, 17, 20, seq( 22, 80, by = 2 ) ),
-                                             include.lowest = TRUE )
+                                             breaks = seq( 15, 79, by = 2 ),
+                                             include.lowest = TRUE,
+                                             right = TRUE )
 table( d_2014_iteration_age_group$age_group )
 
 survey_design_iteration_age_group <- svydesign( ids = ~ 1, 
@@ -1425,6 +1432,14 @@ min_age <- min( d_2014$age )
 results_summary <- data.frame()
 prop_imp_age_iteration_2014 <- calc_prop_imp_iteration_age( min_age, sexual_identities, 2014 )
 writexl::write_xlsx( prop_imp_age_iteration_2014, "prop_imp_age_iteration_2014.xlsx" )
+
+# among age group
+prop_imp_age_group <- calc_prop_imp_subgroup( implist = implist_2014_transformed,
+                                              design = survey_design_imp,
+                                              sexual_identities = sexual_identities,
+                                              demog_var = "age_group",
+                                              year = 2014 )
+writexl::write_xlsx( prop_imp_age_group, "prop_imp_age_group_2014.xlsx" )
 ```
 
 ### 6. Relation between Sexual Identity and Demographic Factors
