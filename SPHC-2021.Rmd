@@ -634,6 +634,11 @@ implist_2021_transformed <- lapply( implist_2021, function( df ) {
 
     # sexual identity in 2021
     levels( sexual_identity_2021 )[ levels( sexual_identity_2021 ) == "None of the above" ] <- "Other"
+    sexual_identity_lgb <- factor(
+      case_when( sexual_identity_2021 == "Homosexual" | sexual_identity_2021 == "Bisexual" ~ "LGB",
+                 sexual_identity_2021 == "Heterosexual" ~ "Heterosexual",
+                 sexual_identity_2021 == "Other" ~ "Other" ),
+      levels = c( "Heterosexual", "LGB", "Other" ) )
     
     # sexual minority
     sexual_minority <- ifelse( sexual_identity_2021 == "Heterosexual", 0, 1 )
@@ -1175,6 +1180,13 @@ prop_imp_age_group <- calc_prop_imp_subgroup( implist = implist_2021_transformed
                                               demog_var = "age_group",
                                               year = 2021 )
 writexl::write_xlsx( prop_imp_age_group, "prop_imp_age_group_2021.xlsx" )
+
+# calculate overall proportion of LGB identity
+prop_lgb <- summary( MIcombine( with( survey_design_imp,
+                                      svyciprop( formula = ~ I( sexual_identity_lgb == "LGB" ), method = "beta" ) ) ) )
+prop_lgb <- rownames_to_column( prop_lgb[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
+round( prop_lgb[ -1 ] * 100, 1 ) # proportion of LGB identity
+round( sum( d_2021$design_weight_unit_nonresponse ) * prop_lgb[ 1, 2 ], 0 ) # number of LGB population
 ```
 
 ### 6. Relation between Sexual Identity and Demographic Factors
