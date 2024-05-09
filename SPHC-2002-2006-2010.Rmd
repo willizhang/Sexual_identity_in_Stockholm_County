@@ -1171,7 +1171,7 @@ ggplot( m123_age_30_long,
                      na.value = NA ) +
   scale_x_discrete( limits = c( "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021" ), labels = c( "2010", "2014", "2021" ), expand = c( 0, 0 ) ) +
   theme_classic() +
-  scale_y_break( c( 0.12, 0.91 ), scales = 10, space = 0.3 ) +
+  scale_y_break( c( 0.12, 0.915 ), scales = 10, space = 0.3 ) +
   scale_y_continuous( labels = scales::percent, breaks = c( 0, 0.1, 0.9, 0.95, 1 ) ) +
   labs( x = NULL, y = NULL) +
   theme( axis.text.x = element_text( family = "Arial", size = 11 ),
@@ -1195,7 +1195,7 @@ ggplot( m123_age_30_long,
                    segment.linetype = 3,
                    segment.size = 0.55,
                    direction = "y",
-                   nudge_x = 0.25,
+                   nudge_x = 0.4,
                    box.padding = 0.5,
                    point.padding = 0,
                    show.legend = FALSE,
@@ -1217,7 +1217,7 @@ ggplot( m123_age_45_long,
                      na.value = NA ) +
   scale_x_discrete( limits = c( "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021" ), labels = c( "2010", "2014", "2021" ), expand = c( 0, 0 ) ) +
   theme_classic() +
-  scale_y_break( c( 0.12, 0.91 ), scales = 10, space = 0.3 ) +
+  scale_y_break( c( 0.12, 0.916 ), scales = 10, space = 0.3 ) +
   scale_y_continuous( labels = scales::percent, breaks = c( 0, 0.1, 0.9, 0.95, 1 ) ) +
   labs( x = NULL, y = NULL) +
   theme( axis.text.x = element_text( family = "Arial", size = 11 ),
@@ -1241,7 +1241,7 @@ ggplot( m123_age_45_long,
                    segment.linetype = 3,
                    segment.size = 0.55,
                    direction = "y",
-                   nudge_x = 0.25,
+                   nudge_x = 0.4,
                    box.padding = 0.5,
                    point.padding = 0,
                    show.legend = FALSE,
@@ -1263,7 +1263,7 @@ ggplot( m123_age_60_long,
                      na.value = NA ) +
   scale_x_discrete( limits = c( "sexual_identity_2010", "sexual_identity_2014", "sexual_identity_2021" ), labels = c( "2010", "2014", "2021" ), expand = c( 0, 0 ) ) +
   theme_classic() +
-  scale_y_break( c( 0.12, 0.88 ), scales = 10, space = 0.3 ) +
+  scale_y_break( c( 0.12, 0.881 ), scales = 10, space = 0.3 ) +
   scale_y_continuous( labels = scales::percent, breaks = c( 0, 0.1, 0.9, 0.95, 1 ) ) +
   labs( x = NULL, y = NULL) +
   theme( axis.text.x = element_text( family = "Arial", size = 11 ),
@@ -1281,13 +1281,13 @@ ggplot( m123_age_60_long,
   geom_text_repel( stat = "alluvium",
                    aes( x = as.integer( year ) + 0.15,
                         color = factor( sexual_identity_2010, levels = c( "Other", "Bisexual", "Homosexual", "Heterosexual" ) ),
-                        label = ifelse( year == "sexual_identity_2021" & ( percent_for_label >= 0.1 | number >= 20 ), label, NA ) ),
+                        label = ifelse( year == "sexual_identity_2021" & ( percent_for_label >= 0.1 | number >= 15 ), label, NA ) ),
                    size = 4.5,
                    family = "Arial",
                    segment.linetype = 3,
                    segment.size = 0.55,
                    direction = "y",
-                   nudge_x = 0.25,
+                   nudge_x = 0.4,
                    box.padding = 0.5,
                    point.padding = 0,
                    show.legend = FALSE,
