@@ -1187,6 +1187,15 @@ prop_lgb <- summary( MIcombine( with( survey_design_imp,
 prop_lgb <- rownames_to_column( prop_lgb[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" )
 round( prop_lgb[ -1 ] * 100, 1 ) # proportion of LGB identity
 round( sum( d_2021$design_weight_unit_nonresponse ) * prop_lgb[ 1, 2 ], 0 ) # number of LGB population
+
+# calculate overall proportion of LGB identity by generation
+prop_lgb_generation <- summary( MIcombine( with( survey_design_imp,
+                                                 svyby( formula = ~ I( sexual_identity_lgb == "LGB" ),
+                                                        by = ~ generation,
+                                                        FUN = svyciprop,
+                                                        method = "beta" ) ) ) )
+rownames_to_column( prop_lgb_generation[ , c( "results", "(lower", "upper)" ) ], var = "subgroup" ) %>%
+  mutate( across( -1, ~ round(. * 100, 1 ) ) )
 ```
 
 ### 6. Relation between Sexual Identity and Demographic Factors
