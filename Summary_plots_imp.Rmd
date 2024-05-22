@@ -5171,7 +5171,7 @@ fluidity_imp_rr <- fluidity_imp_rr %>%
   arrange( subgroup )
 
 fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Sexual identityᵈ", .before = 1 )
+  add_row( subgroup = "Sexual identityᶜ", .before = 1 )
 
 fluidity_imp_rr <- fluidity_imp_rr %>% 
   add_row( subgroup = "Sex", .before = 5 )
@@ -5192,10 +5192,10 @@ fluidity_imp_rr <- fluidity_imp_rr %>%
   add_row( subgroup = "Education years", .before = 22 )
 
 fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Income (100 kr/yr)ᶠ", .before = 25 )
+  add_row( subgroup = "Income (100 kr/yr)ᵉ", .before = 25 )
 
 fluidity_imp_rr <- fluidity_imp_rr %>% 
-  add_row( subgroup = "Marital statusᵉ", .before = 29 )
+  add_row( subgroup = "Marital statusᵈ", .before = 29 )
 
 fluidity_imp_rr <- fluidity_imp_rr %>% 
   add_row( subgroup = "Living alone", .before = 32 )
@@ -5207,16 +5207,16 @@ fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "Homosexual" ] <- paste0( 
 fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "Bisexual" ] <- paste0( "   ", "Bisexual\n" )
 fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "Other" ] <- paste0( "   ", "Other\n" )
 fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "sex_expFemale" ] <- paste0( "   ", "Female\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp16-29" ] <- paste0( "   ", "16–29 yrsᵈ\n" )
+fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp16-29" ] <- paste0( "   ", "16–29 yrsᶜ\n" )
 fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp30-44" ] <- paste0( "   ", "30–44 yrs\n" )
 fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp>=60" ] <- paste0( "   ", "\u2265 60 yrs\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp16-29_Male" ] <- paste0( "   ", "16–29 yrsᵈ\n" )
+fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp16-29_Male" ] <- paste0( "   ", "16–29 yrsᶜ\n" )
 fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp30-44_Male" ] <- paste0( "   ", "30–44 yrs\n" )
 fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp>=60_Male" ] <- paste0( "   ", "\u2265 60 yrs\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp16-29_Female" ] <- paste0( "   ", "16–29 yrsᵈ\n" )
+fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp16-29_Female" ] <- paste0( "   ", "16–29 yrsᶜ\n" )
 fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp30-44_Female" ] <- paste0( "   ", "30–44 yrs\n" )
 fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "age_exp>=60_Female" ] <- paste0( "   ", "\u2265 60 yrs\n" )
-fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "country_of_birth_expEurope" ] <- paste0( "   ", "Europeᵉ\n" )
+fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "country_of_birth_expEurope" ] <- paste0( "   ", "Europeᵈ\n" )
 fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "country_of_birth_expOutside Europe" ] <- paste0( "   ", "Outside Europe\n" )
 fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "education_exp<=9 years" ] <- paste0( "   ", "\u2264 9 yrs\n" )
 fluidity_imp_rr$subgroup[ fluidity_imp_rr$subgroup == "education_exp10-12 years" ] <- paste0( "   ", "10–12 yrs\n" )
@@ -5474,7 +5474,7 @@ p_imp_pr_poisson_sexual_fluidity <- add_text(
 
 p_imp_pr_poisson_sexual_fluidity <- add_text(
   p_imp_pr_poisson_sexual_fluidity,
-  text = "Model 1, Risk Ratio (95% CI)ᵇ",
+  text = "Model 1, Risk Ratio (95% CI)ᵃ",
   col = c( 6:7 ),
   row = 1,
   part = "header",
@@ -5487,7 +5487,7 @@ p_imp_pr_poisson_sexual_fluidity <- add_text(
 
 p_imp_pr_poisson_sexual_fluidity <- add_text(
   p_imp_pr_poisson_sexual_fluidity,
-  text = "Model 2, Risk Ratio (95% CI)ᶜ",
+  text = "Model 2, Risk Ratio (95% CI)ᵇ",
   col = c( 9:10 ),
   row = 1,
   part = "header",
@@ -5500,7 +5500,7 @@ p_imp_pr_poisson_sexual_fluidity <- add_text(
 
 p_imp_pr_poisson_sexual_fluidity <- insert_text(
   p_imp_pr_poisson_sexual_fluidity,
-  text = "Change in Sexual Identityᵃ",
+  text = "Change in Sexual Identity",
   col = c( 3:10 ),
   row = 1,
   part = "header",
@@ -5615,7 +5615,7 @@ p_imp_pr_poisson_sexual_fluidity <- add_text(
 
 p_imp_pr_poisson_sexual_fluidity <- add_text(
   p_imp_pr_poisson_sexual_fluidity,
-  text = "Model 1, Risk Ratio (95% CI)ᵇ",
+  text = "Model 1, Risk Ratio (95% CI)ᵃ",
   col = c( 6:7 ),
   row = 1,
   part = "header",
@@ -5628,7 +5628,7 @@ p_imp_pr_poisson_sexual_fluidity <- add_text(
 
 p_imp_pr_poisson_sexual_fluidity <- add_text(
   p_imp_pr_poisson_sexual_fluidity,
-  text = "Model 2, Risk Ratio (95% CI)ᶜ",
+  text = "Model 2, Risk Ratio (95% CI)ᵇ",
   col = c( 9:10 ),
   row = 1,
   part = "header",
@@ -5641,7 +5641,7 @@ p_imp_pr_poisson_sexual_fluidity <- add_text(
 
 p_imp_pr_poisson_sexual_fluidity <- insert_text(
   p_imp_pr_poisson_sexual_fluidity,
-  text = "Change in Sexual Identityᵃ",
+  text = "Change in Sexual Identity",
   col = c( 3:10 ),
   row = 1,
   part = "header",
@@ -5691,6 +5691,8 @@ tm <- forest_theme(
 )
 
 fluidity_imp_rr_age_by_sex <- fluidity_imp_rr[ c( 14:23 ), ]
+
+colnames( fluidity_imp_rr_age_by_sex )[1] <- "Age Group"
 
 p_imp_pr_poisson_sexual_fluidity <- forest(
   fluidity_imp_rr_age_by_sex[ , c( 1:10 ) ],
@@ -5756,7 +5758,7 @@ p_imp_pr_poisson_sexual_fluidity <- add_text(
 
 p_imp_pr_poisson_sexual_fluidity <- add_text(
   p_imp_pr_poisson_sexual_fluidity,
-  text = "Model 1, Risk Ratio (95% CI)ᵇ",
+  text = "Model 1, Risk Ratio (95% CI)ᵃ",
   col = c( 6:7 ),
   row = 1,
   part = "header",
@@ -5769,7 +5771,7 @@ p_imp_pr_poisson_sexual_fluidity <- add_text(
 
 p_imp_pr_poisson_sexual_fluidity <- add_text(
   p_imp_pr_poisson_sexual_fluidity,
-  text = "Model 2, Risk Ratio (95% CI)ᶜ",
+  text = "Model 2, Risk Ratio (95% CI)ᵇ",
   col = c( 9:10 ),
   row = 1,
   part = "header",
@@ -5782,7 +5784,7 @@ p_imp_pr_poisson_sexual_fluidity <- add_text(
 
 p_imp_pr_poisson_sexual_fluidity <- insert_text(
   p_imp_pr_poisson_sexual_fluidity,
-  text = "Change in Sexual Identityᵃ",
+  text = "Change in Sexual Identity",
   col = c( 3:10 ),
   row = 1,
   part = "header",

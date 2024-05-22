@@ -8312,6 +8312,8 @@ tm <- forest_theme(
 
 fluidity_cc_rr_age_by_sex <- fluidity_cc_rr[ c( 14:23 ), ]
 
+colnames( fluidity_cc_rr_age_by_sex )[1] <- "Age Group"
+
 p_cc_pr_poisson_sexual_fluidity <- forest(
   fluidity_cc_rr_age_by_sex[ , c( 1:10 ) ],
   
