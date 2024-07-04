@@ -1,6 +1,6 @@
 ### This repository contains the R scripts for:
 
-Guoqiang Zhang, Per Tynelius, Maya B. Mathur, Matteo Quartagno, Gunnar Brandén, Fredrik Liljeros, Kyriaki Kosidou. **Population Trends and Individual Fluidity of Sexual Identity in Stockholm County, 2010 to 2021.** 2024. _In Preparation._
+Guoqiang Zhang, Per Tynelius, Maya B. Mathur, Matteo Quartagno, Gunnar Brandén, Fredrik Liljeros, Kyriaki Kosidou. **Population Trends and Individual Fluidity of Sexual Identity and Associated Sociodemographic Factors in Stockholm County, 2010 to 2021.** 2024. _In Preparation._
 
 The R scripts include:
 * **SPHC-2010.Rmd:** analyses of sexual identity using SPHC 2010 dataset.
